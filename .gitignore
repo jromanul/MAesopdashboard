@@ -1,0 +1,30 @@
+# Virtual environment
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# SQLite WAL files (regenerated at runtime)
+*.db-shm
+*.db-wal
+
+# Empty/legacy databases
+data/form5500.db
+
+# PDF working directory
+data/pdfs/
+
+# Streamlit secrets (if any)
+.streamlit/secrets.toml
