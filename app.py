@@ -161,11 +161,23 @@ st.markdown("""
     [data-testid="collapsedControl"] {
         display: none !important;
     }
-    [data-testid="stSidebar"] * {
+    [data-testid="stSidebar"] *,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] div {
         color: #FFFFFF !important;
     }
-    [data-testid="stSidebar"] .stMetricValue {
+    [data-testid="stSidebar"] .stMetricValue,
+    [data-testid="stSidebar"] [data-testid="stMetricValue"],
+    [data-testid="stSidebar"] [data-testid="stMetricValue"] div {
         color: #F6C51B !important;
+    }
+    [data-testid="stSidebar"] .stMetricLabel,
+    [data-testid="stSidebar"] [data-testid="stMetricLabel"],
+    [data-testid="stSidebar"] [data-testid="stMetricLabel"] p,
+    [data-testid="stSidebar"] [data-testid="stMetricLabel"] div {
+        color: rgba(255,255,255,0.7) !important;
     }
     [data-testid="stSidebar"] a {
         color: #F6C51B !important;
@@ -287,12 +299,16 @@ st.markdown("""
         padding: 1.5rem 2rem;
         border-radius: 10px;
         margin-bottom: 1.5rem;
-        color: white;
+        color: white !important;
         border-bottom: 4px solid #F6C51B;
     }
-    .main-header h1 { color: white !important; margin: 0; font-size: 2rem; }
-    .main-header p { color: #F6C51B; margin: 0.3rem 0 0 0; font-size: 1rem; }
-    .header-date { color: rgba(255,255,255,0.8); font-size: 0.85rem; text-align: right; }
+    .main-header h1,
+    .main-header h1 *,
+    [data-testid="stAppViewContainer"] .main-header h1 { color: #FFFFFF !important; margin: 0; font-size: 2rem; }
+    .main-header p,
+    [data-testid="stAppViewContainer"] .main-header p { color: #F6C51B !important; margin: 0.3rem 0 0 0; font-size: 1rem; }
+    .main-header .header-date,
+    [data-testid="stAppViewContainer"] .main-header .header-date { color: rgba(255,255,255,0.8) !important; font-size: 0.85rem; text-align: right; }
 
     .section-header {
         border-bottom: 3px solid #F6C51B;
