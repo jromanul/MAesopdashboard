@@ -953,16 +953,6 @@ if f5500_summaries:
             fig_phist = charts.build_f5500_participant_histogram(partcp_vals)
             st.plotly_chart(fig_phist, use_container_width=True, config=charts.PLOTLY_CONFIG)
 
-        if asset_vals:
-            st.markdown(
-                '<div class="callout-eo">'
-                '<h4>What This Tells Us</h4>'
-                '<p>The distribution of MA ESOP plan sizes reveals the diversity of employee ownership '
-                'in the Commonwealth \u2014 from small local businesses to billion-dollar enterprises. '
-                'Understanding this distribution helps target policy interventions appropriately.</p>'
-                '</div>',
-                unsafe_allow_html=True,
-            )
         if partcp_vals and not asset_vals:
             st.markdown(
                 '<div class="callout-eo" style="border-left-color: #C5960C;">'
