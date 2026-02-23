@@ -791,43 +791,61 @@ if f5500_summaries:
         latest = next((s for s in reversed(f5500_summaries) if s.get("ma_plan_count", 0) > 0), f5500_summaries[-1])
         st.markdown(f"#### Most Recent Filing Year: {latest_year}")
 
+        # Compute Overview metrics from *active* filings only (excluding zombie plans)
+        _ov_fin = form5500_analysis.get_financial_summary(
+            latest_year, exclude_zombie=True)
+        _ov_plan_count = _ov_fin.get("plans_total", 0) or 0
+        _ov_total_part = _ov_fin.get("total_participants", 0) or 0
+        _ov_total_assets = _ov_fin.get("total_assets", 0) or 0
+        _ov_total_contrib = _ov_fin.get("total_employer_contributions", 0) or 0
+        _ov_avg_assets = _ov_fin.get("avg_assets_per_plan", 0) or 0
+        _ov_avg_part = (_ov_total_part / _ov_plan_count) if _ov_plan_count > 0 else 0
+        _ov_unique_cos = len({f["ein"] for f in
+                             form5500_analysis.get_ma_filings(latest_year,
+                                                              exclude_zombie=True)})
+
         # Row 1: Core counts
         oc1, oc2, oc3 = st.columns(3)
-        _render_metric(oc1, f"{latest['ma_plan_count']:,}", "MA ESOP Plans Filed",
-                      "DOL Form 5500 (109 unique companies)", ma=True)
-        _render_metric(oc2, f"{latest.get('ma_total_participants') or 0:,}", "Total MA ESOP Participants",
+        _render_metric(oc1, f"{_ov_plan_count:,}", "Active MA ESOP Plans",
+                      f"DOL Form 5500 ({_ov_unique_cos} unique companies)", ma=True)
+        _render_metric(oc2, f"{_ov_total_part:,}", "Total MA ESOP Participants",
                       "DOL Form 5500", ma=True)
-        assets_b = latest.get("ma_total_assets", 0) or 0
-        if assets_b > 0:
-            assets_label = f"${assets_b / 1e9:.1f}B" if assets_b >= 1e9 else f"${assets_b / 1e6:.0f}M"
+        if _ov_total_assets > 0:
+            assets_label = f"${_ov_total_assets / 1e9:.1f}B" if _ov_total_assets >= 1e9 else f"${_ov_total_assets / 1e6:.0f}M"
         else:
             assets_label = "N/A"
         _render_metric(oc3, assets_label, "Total MA ESOP Assets",
-                      "DOL Form 5500 (Schedule H/I)" if assets_b > 0 else "Financial data not in main filing", ma=True)
+                      "DOL Form 5500 (Schedule H/I)" if _ov_total_assets > 0 else "Financial data not in main filing", ma=True)
 
         # Row 2: Averages and contributions
         oc4, oc5, oc6 = st.columns(3)
-        avg_assets = latest.get("ma_avg_plan_assets", 0) or 0
-        if avg_assets > 0:
-            avg_label = f"${avg_assets / 1e6:.1f}M" if avg_assets >= 1e6 else f"${avg_assets:,.0f}"
+        if _ov_avg_assets > 0:
+            avg_label = f"${_ov_avg_assets / 1e6:.1f}M" if _ov_avg_assets >= 1e6 else f"${_ov_avg_assets:,.0f}"
         else:
             avg_label = "N/A"
         _render_metric(oc4, avg_label, "Average Plan Size (Assets)",
-                      "DOL Form 5500 (Schedule H/I)" if avg_assets > 0 else "Requires Schedule H/I data")
-        avg_part = latest.get("ma_avg_participants") or 0
-        _render_metric(oc5, f"{avg_part:,.0f}", "Avg Participants Per Plan", "DOL Form 5500")
-        total_contrib = latest.get("ma_total_contributions", 0) or 0
-        if total_contrib > 0:
-            contrib_label = f"${total_contrib / 1e6:.0f}M" if total_contrib >= 1e6 else f"${total_contrib:,.0f}"
+                      "DOL Form 5500 (Schedule H/I)" if _ov_avg_assets > 0 else "Requires Schedule H/I data")
+        _render_metric(oc5, f"{_ov_avg_part:,.0f}", "Avg Participants Per Plan", "DOL Form 5500")
+        if _ov_total_contrib > 0:
+            contrib_label = f"${_ov_total_contrib / 1e6:.0f}M" if _ov_total_contrib >= 1e6 else f"${_ov_total_contrib:,.0f}"
         else:
             contrib_label = "N/A"
         _render_metric(oc6, contrib_label, "Total Employer Contributions",
-                      "DOL Form 5500 (Schedule H/I)" if total_contrib > 0 else "Requires Schedule H/I data")
+                      "DOL Form 5500 (Schedule H/I)" if _ov_total_contrib > 0 else "Requires Schedule H/I data")
 
         # KSOP note
         ksop_count = latest.get("ma_ksop_count") or 0
         if ksop_count > 0:
-            st.caption(f"_Note: {ksop_count} of the {latest['ma_plan_count']} plans are KSOPs (combined 401(k)/ESOP plans)._")
+            st.caption(f"_Note: {ksop_count} of the {latest['ma_plan_count']} total filed plans are KSOPs (combined 401(k)/ESOP plans)._")
+
+        # Zombie / exclusion note
+        _zombie_count = len(form5500_analysis.ZOMBIE_PLAN_EINS)
+        st.caption(
+            f"_Note: {_zombie_count} plans with $0 assets or 0 active participants "
+            f"(appearing defunct / winding down) are excluded from the Overview metrics above. "
+            f"All {latest['ma_plan_count']} filed plans are included in the full table below "
+            f"and in other tabs. See the Year-over-Year tab for details._"
+        )
 
         # 2024 data disclaimer
         if latest_year == 2024:
@@ -845,7 +863,8 @@ if f5500_summaries:
         # Financial data: show employer securities section if available
         _has_fin = form5500_analysis.has_financial_data()
         if _has_fin:
-            _fin_summary = form5500_analysis.get_financial_summary(latest_year)
+            _fin_summary = form5500_analysis.get_financial_summary(
+                latest_year, exclude_zombie=True)
             _es = _fin_summary.get("total_employer_securities", 0) or 0
             if _es > 0:
                 st.markdown("---")
@@ -874,13 +893,14 @@ if f5500_summaries:
                 unsafe_allow_html=True,
             )
 
-        # ── Full Data Table (all MA ESOP filings) ──
+        # ── Full Data Table (active MA ESOP filings) ──
         st.markdown("---")
-        st.markdown(f"#### All MA ESOP Filings ({latest_year})")
+        st.markdown(f"#### Active MA ESOP Filings ({latest_year})")
 
         f5500_search = st.text_input("Search by plan name, sponsor, or city", key="f5500_search")
 
-        filings = form5500_analysis.get_ma_filings(latest_year)
+        filings = form5500_analysis.get_ma_filings(latest_year,
+                                                     exclude_zombie=True)
         if filings:
             f_df = pd.DataFrame(filings)
             if f5500_search:
@@ -946,10 +966,15 @@ if f5500_summaries:
                                numbered=True,
                                sortable_cols=_sortable,
                                show_totals=True)
-            st.caption(f"Showing {len(show_df)} of {len(filings)} MA ESOP filings for {latest_year}")
+            _zombie_n = len(form5500_analysis.ZOMBIE_PLAN_EINS)
+            _total_filed = latest['ma_plan_count']
+            st.caption(
+                f"Showing {len(show_df)} of {len(filings)} active MA ESOP filings "
+                f"for {latest_year} ({_zombie_n} defunct/winding-down plans excluded "
+                f"from {_total_filed} total filed)")
 
             csv_data = utils.to_csv_bytes(filings)
-            st.download_button("Download MA ESOP Data as CSV", csv_data,
+            st.download_button("Download Active MA ESOP Data as CSV", csv_data,
                               f"ma_esops_form5500_{latest_year}.csv", "text/csv")
         else:
             st.info("No filing-level data available. Run the Form 5500 processor with "
@@ -961,11 +986,13 @@ if f5500_summaries:
 
         dcol1, dcol2 = st.columns(2)
         with dcol1:
-            asset_vals = form5500_analysis.get_asset_distribution(latest_year)
+            asset_vals = form5500_analysis.get_asset_distribution(
+                latest_year, exclude_zombie=True)
             fig_ahist = charts.build_f5500_asset_histogram(asset_vals)
             st.plotly_chart(fig_ahist, use_container_width=True, config=charts.PLOTLY_CONFIG)
         with dcol2:
-            partcp_vals = form5500_analysis.get_participant_distribution(latest_year)
+            partcp_vals = form5500_analysis.get_participant_distribution(
+                latest_year, exclude_zombie=True)
             fig_phist = charts.build_f5500_participant_histogram(partcp_vals)
             st.plotly_chart(fig_phist, use_container_width=True, config=charts.PLOTLY_CONFIG)
 
@@ -983,7 +1010,8 @@ if f5500_summaries:
         st.markdown("---")
         st.markdown(f"#### MA ESOPs by Industry ({latest_year})")
 
-        industry_data = form5500_analysis.get_ma_filings_by_industry(latest_year)
+        industry_data = form5500_analysis.get_ma_filings_by_industry(
+            latest_year, exclude_zombie=True)
         if industry_data:
             fig_ind = charts.build_f5500_industry_bar(industry_data)
             st.plotly_chart(fig_ind, use_container_width=True, config=charts.PLOTLY_CONFIG)
@@ -1270,11 +1298,16 @@ with st.sidebar:
     if f5500_summaries:
         _sidebar_latest = next((s for s in reversed(f5500_summaries) if s.get("ma_plan_count", 0) > 0), None)
         if _sidebar_latest:
-            st.metric("MA ESOP Plans", f"{_sidebar_latest['ma_plan_count']:,}")
-            st.metric("Total Participants", f"{_sidebar_latest.get('ma_total_participants', 0):,}")
-            _sa = _sidebar_latest.get("ma_total_assets", 0) or 0
-            if _sa > 0:
-                st.metric("Total Assets", f"${_sa / 1e9:.1f}B" if _sa >= 1e9 else f"${_sa / 1e6:.0f}M")
-            st.metric("Filing Year", str(_sidebar_latest["filing_year"]))
+            _sb_yr = _sidebar_latest["filing_year"]
+            _sb_fin = form5500_analysis.get_financial_summary(
+                _sb_yr, exclude_zombie=True)
+            _sb_plans = _sb_fin.get("plans_total", 0) or 0
+            _sb_part = _sb_fin.get("total_participants", 0) or 0
+            _sb_assets = _sb_fin.get("total_assets", 0) or 0
+            st.metric("Active MA ESOP Plans", f"{_sb_plans:,}")
+            st.metric("Total Participants", f"{_sb_part:,}")
+            if _sb_assets > 0:
+                st.metric("Total Assets", f"${_sb_assets / 1e9:.1f}B" if _sb_assets >= 1e9 else f"${_sb_assets / 1e6:.0f}M")
+            st.metric("Filing Year", str(_sb_yr))
     else:
         st.info("No data loaded yet")

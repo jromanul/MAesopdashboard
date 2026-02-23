@@ -28,6 +28,19 @@ logger = logging.getLogger(__name__)
 
 # ── Constants ─────────────────────────────────
 
+# EINs of plans that filed in 2024 but appear to be zombie / winding-down:
+# $0 (or near-$0) total assets and/or 0 active participants with minimal assets.
+# These are excluded from Overview metrics but still appear in the full dataset
+# and Year-over-Year analysis.
+ZOMBIE_PLAN_EINS: set[str] = {
+    "42175284",   # Green International Affiliates ($0 assets, 0 active)
+    "42348065",   # Janis Research ($0 assets, 0 active)
+    "42760904",   # Process Cooling Systems ($0 assets, 59 active)
+    "42942412",   # Washburn-Garfield Corporation ($0 assets, 0 active)
+    "43484613",   # Tri-Wire ($62 assets, 0 active, 539 total participants)
+    "42501424",   # B&B Engineering Corporation ($39K assets, 0 active)
+}
+
 FIELD_MAPPINGS = {
     "sponsor_name": ["SPONSOR_DFE_NAME", "SPONS_DFE_NAME", "SPONS_SIGNED_NAME",
                      "SPONS_DFE_MAIL_US_ADDRESS"],
@@ -294,18 +307,25 @@ def get_annual_summaries() -> list[dict]:
     return [dict(r) for r in rows]
 
 
-def get_ma_filings(year: int | None = None) -> list[dict]:
+def _zombie_clause() -> str:
+    """Return SQL clause that excludes zombie-plan EINs."""
+    placeholders = ",".join(f"'{e}'" for e in ZOMBIE_PLAN_EINS)
+    return f" AND CAST(ein AS TEXT) NOT IN ({placeholders})"
+
+
+def get_ma_filings(year: int | None = None, *,
+                   exclude_zombie: bool = False) -> list[dict]:
+    base = ("SELECT * FROM form5500_filings WHERE sponsor_state = 'MA' "
+            "AND is_esop = 1")
+    params: list = []
     if year:
-        rows = _get_conn().execute(
-            "SELECT * FROM form5500_filings WHERE sponsor_state = 'MA' AND is_esop = 1 "
-            "AND filing_year = ? ORDER BY total_assets DESC",
-            (year,)
-        ).fetchall()
-    else:
-        rows = _get_conn().execute(
-            "SELECT * FROM form5500_filings WHERE sponsor_state = 'MA' AND is_esop = 1 "
-            "ORDER BY filing_year DESC, total_assets DESC"
-        ).fetchall()
+        base += " AND filing_year = ?"
+        params.append(year)
+    if exclude_zombie:
+        base += _zombie_clause()
+    base += " ORDER BY " + ("total_assets DESC" if year
+                            else "filing_year DESC, total_assets DESC")
+    rows = _get_conn().execute(base, params).fetchall()
     return [dict(r) for r in rows]
 
 
@@ -316,7 +336,8 @@ def get_latest_year() -> int | None:
     return row["yr"] if row and row["yr"] else None
 
 
-def get_ma_filings_by_city(year: int | None = None) -> list[dict]:
+def get_ma_filings_by_city(year: int | None = None, *,
+                           exclude_zombie: bool = False) -> list[dict]:
     query = """
         SELECT sponsor_city, COUNT(*) as plan_count,
                SUM(total_participants) as total_partcp,
@@ -328,12 +349,15 @@ def get_ma_filings_by_city(year: int | None = None) -> list[dict]:
     if year:
         query += " AND filing_year = ?"
         params.append(year)
+    if exclude_zombie:
+        query += _zombie_clause()
     query += " GROUP BY sponsor_city ORDER BY plan_count DESC"
     rows = _get_conn().execute(query, params).fetchall()
     return [dict(r) for r in rows]
 
 
-def get_ma_filings_by_industry(year: int | None = None) -> list[dict]:
+def get_ma_filings_by_industry(year: int | None = None, *,
+                               exclude_zombie: bool = False) -> list[dict]:
     query = """
         SELECT industry_sector, COUNT(*) as plan_count,
                SUM(total_participants) as total_partcp,
@@ -346,6 +370,8 @@ def get_ma_filings_by_industry(year: int | None = None) -> list[dict]:
     if year:
         query += " AND filing_year = ?"
         params.append(year)
+    if exclude_zombie:
+        query += _zombie_clause()
     query += " GROUP BY industry_sector ORDER BY plan_count DESC"
     rows = _get_conn().execute(query, params).fetchall()
     return [dict(r) for r in rows]
@@ -452,7 +478,8 @@ def get_new_and_terminated(year: int) -> tuple[list[dict], list[dict]]:
     return new_plans, terminated, late_filers
 
 
-def get_asset_distribution(year: int | None = None) -> list[float]:
+def get_asset_distribution(year: int | None = None, *,
+                           exclude_zombie: bool = False) -> list[float]:
     query = """
         SELECT total_assets FROM form5500_filings
         WHERE sponsor_state = 'MA' AND is_esop = 1
@@ -462,11 +489,14 @@ def get_asset_distribution(year: int | None = None) -> list[float]:
     if year:
         query += " AND filing_year = ?"
         params.append(year)
+    if exclude_zombie:
+        query += _zombie_clause()
     rows = _get_conn().execute(query, params).fetchall()
     return [r["total_assets"] for r in rows]
 
 
-def get_participant_distribution(year: int | None = None) -> list[int]:
+def get_participant_distribution(year: int | None = None, *,
+                                 exclude_zombie: bool = False) -> list[int]:
     query = """
         SELECT total_participants FROM form5500_filings
         WHERE sponsor_state = 'MA' AND is_esop = 1
@@ -476,6 +506,8 @@ def get_participant_distribution(year: int | None = None) -> list[int]:
     if year:
         query += " AND filing_year = ?"
         params.append(year)
+    if exclude_zombie:
+        query += _zombie_clause()
     rows = _get_conn().execute(query, params).fetchall()
     return [r["total_participants"] for r in rows]
 
@@ -495,7 +527,8 @@ def has_financial_data() -> bool:
     return row["cnt"] > 0 if row else False
 
 
-def get_financial_summary(year: int = None) -> dict:
+def get_financial_summary(year: int = None, *,
+                          exclude_zombie: bool = False) -> dict:
     query = """
         SELECT
             COUNT(*) as plans_total,
@@ -514,6 +547,8 @@ def get_financial_summary(year: int = None) -> dict:
     if year:
         query += " AND filing_year = ?"
         params.append(year)
+    if exclude_zombie:
+        query += _zombie_clause()
     row = _get_conn().execute(query, params).fetchone()
     if not row:
         return {}
