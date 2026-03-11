@@ -842,9 +842,9 @@ if f5500_summaries:
         _zombie_count = len(form5500_analysis.ZOMBIE_PLAN_EINS)
         st.caption(
             f"_Note: {_zombie_count} plans with $0 assets or 0 active participants "
-            f"(appearing defunct / winding down) are excluded from the Overview metrics above. "
-            f"All {latest['ma_plan_count']} filed plans are included in the full table below "
-            f"and in other tabs. See the Year-over-Year tab for details._"
+            f"(appearing defunct / winding down) are excluded from this page. "
+            f"All {latest['ma_plan_count']} filed plans are included in other tabs. "
+            f"See the Year-over-Year tab for details._"
         )
 
         # 2024 data disclaimer
