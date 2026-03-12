@@ -441,17 +441,17 @@ def get_new_and_terminated(year: int) -> tuple[list[dict], list[dict]]:
     """, (prev, year)).fetchall()
 
     # Categorise plans that did not file in current year.
-    # As of Feb 2026 DOL EFAST2 search confirms:
+    # As of Mar 2026 DOL EFAST2 search confirms:
     #   - "Potentially Terminated" plans filed a 401K/other benefit plan in 2024 but
     #     did NOT file their ESOP, suggesting the ESOP may have been closed.
     #   - "Late Filer" plans have NO 2024 filing of any kind on DOL yet,
     #     so they are likely still preparing / filing on extension.
+    #   - Acentech removed: filed 2024 ESOP (received 2026-02-25)
     _CONFIRMED_TERMINATED_EINS: set[str] = {
         "813645861",   # Shawmut Group
         "42880295",    # Web Industries
         "42471226",    # Aerodyne Research
         "43053085",    # Scientific Systems
-        "43024663",    # Acentech
         "43247749",    # Diamond Antenna
         "42932946",    # Darmann Abrasive
         "42472856",    # James Monroe
