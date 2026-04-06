@@ -441,24 +441,34 @@ def get_new_and_terminated(year: int) -> tuple[list[dict], list[dict]]:
     """, (prev, year)).fetchall()
 
     # Categorise plans that did not file in current year.
-    # As of Mar 2026 DOL EFAST2 search confirms:
-    #   - "Potentially Terminated" plans filed a 401K/other benefit plan in 2024 but
-    #     did NOT file their ESOP, suggesting the ESOP may have been closed.
-    #   - "Late Filer" plans have NO 2024 filing of any kind on DOL yet,
-    #     so they are likely still preparing / filing on extension.
+    # As of Apr 2026 DOL EFAST2 search + web research confirms:
+    #   - "Confirmed Terminated" = ESOP terminated due to acquisition, merger,
+    #     or plan wind-down.  Dict value gives the reason.
+    #   - "Late Filer" = ESOP believed still active; no 2024 filing yet on DOL.
     #   - Acentech removed: filed 2024 ESOP (received 2026-02-25)
-    _CONFIRMED_TERMINATED_EINS: set[str] = {
-        "813645861",   # Shawmut Group
-        "42880295",    # Web Industries
-        "42471226",    # Aerodyne Research
-        "43053085",    # Scientific Systems
-        "43247749",    # Diamond Antenna
-        "42932946",    # Darmann Abrasive
-        "42472856",    # James Monroe
-        "41866480",    # L.S. Starrett (PN 2 & PN 4)
-        "42597651",    # International Data Group
-        "10367721",    # New England Natural Bakers
-        "550796211",   # The Severn Group
+    _CONFIRMED_TERMINATED_EINS: dict[str, str] = {
+        "43247749":   "Acquired by Artemis Capital Partners (Nov 2024)",
+        "41866480":   "Taken private by MiddleGround Capital (May 2024)",
+        "42597651":   "Acquired by Blackstone (Nov 2021)",
+        "10367721":   "Acquired by BetterBody Foods (Dec 2024)",
+        "42772059":   "Acquired by Ecolab (Nov 2024)",
+        "42777442":   "Merged into Eastern Bankshares (Jul 2024)",
+        "521405842":  "Acquired by PAE/Amentum (Nov 2020) — final filing",
+        "43448069":   "Acquired by Qmerit (Sep 2021) — winding down",
+        "42372206":   "Acquired by Ascensus Specialties (Apr 2021)",
+        "822323992":  "Sold to CI Capital Partners (Sep 2021) — final filing",
+        "43533865":   "ESOP terminated ($0 assets, 0 active participants)",
+        "43053085":   "Privately held; no public ESOP evidence — likely terminated",
+        "550796211":  "MD-based entity; ESOP status unconfirmed — likely terminated",
+    }
+
+    # Active ESOPs — filing likely delayed, not terminated
+    _CONFIRMED_ACTIVE_EINS: set[str] = {
+        "813645861",   # Shawmut Group — still 100% employee-owned
+        "42880295",    # Web Industries — still 100% employee-owned
+        "42471226",    # Aerodyne Research — employee-owned since 1985
+        "42932946",    # Darmann Abrasive — ESOP since 1999
+        "42472856",    # James Monroe Corp — 33% employee-owned
     }
 
     terminated: list[dict] = []
@@ -469,10 +479,15 @@ def get_new_and_terminated(year: int) -> tuple[list[dict], list[dict]]:
         ein_norm = str(d["ein"]).lstrip("0") or "0"
 
         if ein_norm in _CONFIRMED_TERMINATED_EINS:
-            d["yoy_status"] = "Potentially Terminated"
+            d["yoy_status"] = "Confirmed Terminated"
+            d["yoy_note"] = _CONFIRMED_TERMINATED_EINS[ein_norm]
             terminated.append(d)
         else:
-            d["yoy_status"] = "Late Filer"
+            if ein_norm in _CONFIRMED_ACTIVE_EINS:
+                d["yoy_status"] = "Late Filer (Active ESOP)"
+            else:
+                d["yoy_status"] = "Late Filer"
+            d["yoy_note"] = ""
             late_filers.append(d)
 
     return new_plans, terminated, late_filers

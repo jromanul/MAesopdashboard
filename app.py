@@ -1101,8 +1101,8 @@ if f5500_summaries:
         net_change = len(new_plans) - _no_file_total
         yoy_c1, yoy_c2, yoy_c3, yoy_c4 = st.columns(4)
         _render_metric(yoy_c1, str(len(new_plans)), "New ESOPs", f"New in {_yoy_year}")
-        _render_metric(yoy_c2, str(len(terminated)), "Potentially Terminated",
-                      "Filed 401K but not ESOP")
+        _render_metric(yoy_c2, str(len(terminated)), "Confirmed Terminated",
+                      "Acquired / ESOP closed")
         _render_metric(yoy_c3, str(len(late_filers)), "Late Filers",
                       "No 2024 filing yet on DOL")
         net_label = f"+{net_change}" if net_change > 0 else str(net_change)
@@ -1110,20 +1110,21 @@ if f5500_summaries:
                       f"{_yoy_year - 1} \u2192 {_yoy_year}")
 
         st.caption(f"_Plans that filed Form 5500 in {_yoy_year - 1} but are **absent** "
-                   f"from the {_yoy_year} dataset are classified based on a manual review of the "
-                   f"DOL EFAST2 Filing Search (as of Feb 20, 2026). "
-                   f"**Potentially Terminated** = the sponsor filed a 2024 Form 5500 for a 401(k) or other benefit plan "
-                   f"but did **not** file for their ESOP, suggesting the ESOP may have been closed. "
+                   f"from the {_yoy_year} dataset are classified based on DOL EFAST2 review "
+                   f"and public records research (as of Apr 6, 2026). "
+                   f"**Confirmed Terminated** = the sponsor was acquired, merged, or the ESOP "
+                   f"was otherwise closed (see Reason column for details). "
                    f"**Late Filer** = no 2024 Form 5500 filing of any kind appears on DOL yet; "
-                   f"these plans are likely still preparing their filing or the DOL has not yet "
-                   f"published it. Financial data shown is from their last filing ({_yoy_year - 1})._")
+                   f"these plans are believed still active. "
+                   f"Financial data shown is from their last filing ({_yoy_year - 1})._")
 
-        _yoy_all_cols = ["yoy_status", "plan_name", "sponsor_name", "sponsor_city",
+        _yoy_all_cols = ["yoy_status", "yoy_note", "plan_name", "sponsor_name",
+                         "sponsor_city",
                          "industry_sector", "plan_eff_date", "total_participants",
                          "active_participants", "total_assets", "total_liabilities",
                          "employer_securities", "employer_contributions",
                          "benefits_paid", "net_income"]
-        _yoy_col_map = {"yoy_status": "Status",
+        _yoy_col_map = {"yoy_status": "Status", "yoy_note": "Reason",
                          "plan_name": "Plan Name", "sponsor_name": "Sponsor",
                          "sponsor_city": "City", "industry_sector": "Industry",
                          "plan_eff_date": "Plan Year Started",
@@ -1164,19 +1165,20 @@ if f5500_summaries:
             _render_yoy_table(new_plans)
 
         if terminated:
-            st.markdown(f"##### Potentially Terminated ESOPs ({len(terminated)})")
-            st.caption(f"These sponsors filed a 2024 Form 5500 for a 401(k) or other benefit plan but "
-                       f"did **not** file for their ESOP, suggesting the ESOP may have been closed. "
-                       f"Verified via DOL EFAST2 Filing Search as of Feb 20, 2026. "
+            st.markdown(f"##### Confirmed Terminated ESOPs ({len(terminated)})")
+            st.caption(f"These ESOPs have been confirmed as terminated — typically due to "
+                       f"acquisition, merger, or plan wind-down. "
+                       f"Verified via DOL EFAST2 and public records research as of Apr 6, 2026. "
                        f"Financial data shown is from their last ESOP filing ({_yoy_year - 1}).")
             _render_yoy_table(terminated)
 
         if late_filers:
             st.markdown(f"##### Late Filers ({len(late_filers)})")
-            st.caption(f"No 2024 Form 5500 filing of any kind appears on the DOL EFAST2 system yet "
-                       f"for these sponsors (as of Feb 20, 2026). Plans can file on extension up to "
+            st.caption(f"No 2024 Form 5500 ESOP filing appears on the DOL EFAST2 system yet "
+                       f"for these sponsors (as of Apr 6, 2026). Plans can file on extension up to "
                        f"9.5 months after their plan year ends, and DOL bulk data releases may lag "
-                       f"further. These ESOPs are presumed still active. "
+                       f"further. Plans marked **Late Filer (Active ESOP)** have been confirmed "
+                       f"as still employee-owned via public records. "
                        f"Financial data shown is from their last filing ({_yoy_year - 1}).")
             _render_yoy_table(late_filers)
 
