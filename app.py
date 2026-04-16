@@ -805,16 +805,13 @@ if f5500_summaries:
 
         # Row 1: Core counts
         oc1, oc2, oc3 = st.columns(3)
-        _render_metric(oc1, f"{_ov_plan_count:,}", "Active MA ESOP Plans",
-                      f"DOL Form 5500 ({_ov_unique_cos} unique companies)", ma=True)
-        _render_metric(oc2, f"{_ov_total_part:,}", "Total MA ESOP Participants",
-                      "DOL Form 5500", ma=True)
+        _render_metric(oc1, f"{_ov_plan_count:,}", "Active MA ESOP Plans", ma=True)
+        _render_metric(oc2, f"{_ov_total_part:,}", "Total MA ESOP Participants", ma=True)
         if _ov_total_assets > 0:
             assets_label = f"${_ov_total_assets / 1e9:.1f}B" if _ov_total_assets >= 1e9 else f"${_ov_total_assets / 1e6:.0f}M"
         else:
             assets_label = "N/A"
-        _render_metric(oc3, assets_label, "Total MA ESOP Assets",
-                      "DOL Form 5500 (Schedule H/I)" if _ov_total_assets > 0 else "Financial data not in main filing", ma=True)
+        _render_metric(oc3, assets_label, "Total MA ESOP Assets", ma=True)
 
         # Row 2: Averages
         oc4, oc5, oc6 = st.columns(3)
@@ -822,16 +819,14 @@ if f5500_summaries:
             avg_label = f"${_ov_avg_assets / 1e6:.1f}M" if _ov_avg_assets >= 1e6 else f"${_ov_avg_assets:,.0f}"
         else:
             avg_label = "N/A"
-        _render_metric(oc4, avg_label, "Average Plan Size (Assets)",
-                      "DOL Form 5500 (Schedule H/I)" if _ov_avg_assets > 0 else "Requires Schedule H/I data")
-        _render_metric(oc5, f"{_ov_avg_part:,.0f}", "Avg Participants Per Plan", "DOL Form 5500")
+        _render_metric(oc4, avg_label, "Average Plan Size (Assets)")
+        _render_metric(oc5, f"{_ov_avg_part:,.0f}", "Avg Participants Per Plan")
         if _ov_total_assets > 0 and _ov_total_part > 0:
             _ov_avg_assets_per_part = _ov_total_assets / _ov_total_part
             avg_per_part_label = f"${_ov_avg_assets_per_part:,.0f}"
         else:
             avg_per_part_label = "N/A"
-        _render_metric(oc6, avg_per_part_label, "Avg Assets Per Participant",
-                      "DOL Form 5500 (Schedule H/I)" if _ov_total_assets > 0 else "Requires Schedule H/I data")
+        _render_metric(oc6, avg_per_part_label, "Avg Assets Per Participant")
 
         # KSOP note
         ksop_count = latest.get("ma_ksop_count") or 0
