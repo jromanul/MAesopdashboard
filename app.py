@@ -797,7 +797,6 @@ if f5500_summaries:
         _ov_plan_count = _ov_fin.get("plans_total", 0) or 0
         _ov_total_part = _ov_fin.get("total_participants", 0) or 0
         _ov_total_assets = _ov_fin.get("total_assets", 0) or 0
-        _ov_total_contrib = _ov_fin.get("total_employer_contributions", 0) or 0
         _ov_avg_assets = _ov_fin.get("avg_assets_per_plan", 0) or 0
         _ov_avg_part = (_ov_total_part / _ov_plan_count) if _ov_plan_count > 0 else 0
         _ov_unique_cos = len({f["ein"] for f in
@@ -817,7 +816,7 @@ if f5500_summaries:
         _render_metric(oc3, assets_label, "Total MA ESOP Assets",
                       "DOL Form 5500 (Schedule H/I)" if _ov_total_assets > 0 else "Financial data not in main filing", ma=True)
 
-        # Row 2: Averages and contributions
+        # Row 2: Averages
         oc4, oc5, oc6 = st.columns(3)
         if _ov_avg_assets > 0:
             avg_label = f"${_ov_avg_assets / 1e6:.1f}M" if _ov_avg_assets >= 1e6 else f"${_ov_avg_assets:,.0f}"
@@ -826,12 +825,13 @@ if f5500_summaries:
         _render_metric(oc4, avg_label, "Average Plan Size (Assets)",
                       "DOL Form 5500 (Schedule H/I)" if _ov_avg_assets > 0 else "Requires Schedule H/I data")
         _render_metric(oc5, f"{_ov_avg_part:,.0f}", "Avg Participants Per Plan", "DOL Form 5500")
-        if _ov_total_contrib > 0:
-            contrib_label = f"${_ov_total_contrib / 1e6:.0f}M" if _ov_total_contrib >= 1e6 else f"${_ov_total_contrib:,.0f}"
+        if _ov_total_assets > 0 and _ov_total_part > 0:
+            _ov_avg_assets_per_part = _ov_total_assets / _ov_total_part
+            avg_per_part_label = f"${_ov_avg_assets_per_part:,.0f}"
         else:
-            contrib_label = "N/A"
-        _render_metric(oc6, contrib_label, "Total Employer Contributions",
-                      "DOL Form 5500 (Schedule H/I)" if _ov_total_contrib > 0 else "Requires Schedule H/I data")
+            avg_per_part_label = "N/A"
+        _render_metric(oc6, avg_per_part_label, "Avg Assets Per Participant",
+                      "DOL Form 5500 (Schedule H/I)" if _ov_total_assets > 0 else "Requires Schedule H/I data")
 
         # KSOP note
         ksop_count = latest.get("ma_ksop_count") or 0
