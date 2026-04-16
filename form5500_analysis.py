@@ -441,25 +441,25 @@ def get_new_and_terminated(year: int) -> tuple[list[dict], list[dict]]:
     """, (prev, year)).fetchall()
 
     # Categorise plans that did not file in current year.
-    # As of Apr 2026 DOL EFAST2 search + web research confirms:
+    # As of Apr 2026 DOL FOIA bulk data + web research confirms:
     #   - "Confirmed Terminated" = ESOP terminated due to acquisition, merger,
     #     or plan wind-down.  Dict value gives the reason.
-    #   - "Late Filer" = ESOP believed still active; no 2024 filing yet on DOL.
+    #   - "Late Filer" = ESOP believed still active; no 2024 ESOP filing yet.
     #   - Acentech removed: filed 2024 ESOP (received 2026-02-25)
+    #   - Scientific Systems removed: filed 2024 ESOP (received 2026-03-13)
     _CONFIRMED_TERMINATED_EINS: dict[str, str] = {
         "43247749":   "Acquired by Artemis Capital Partners (Nov 2024)",
         "41866480":   "Taken private by MiddleGround Capital (May 2024)",
-        "42597651":   "Acquired by Blackstone (Nov 2021)",
+        "42597651":   "Acquired by Blackstone (Nov 2021) — filed 401K only",
         "10367721":   "Acquired by BetterBody Foods (Dec 2024)",
         "42772059":   "Acquired by Ecolab (Nov 2024)",
         "42777442":   "Merged into Eastern Bankshares (Jul 2024)",
         "521405842":  "Acquired by PAE/Amentum (Nov 2020) — final filing",
         "43448069":   "Acquired by Qmerit (Sep 2021) — winding down",
         "42372206":   "Acquired by Ascensus Specialties (Apr 2021)",
-        "822323992":  "Sold to CI Capital Partners (Sep 2021) — final filing",
+        "822323992":  "Sold to CI Capital Partners (Sep 2021) — filed 401K only",
         "43533865":   "ESOP terminated ($0 assets, 0 active participants)",
-        "43053085":   "Privately held; no public ESOP evidence — likely terminated",
-        "550796211":  "MD-based entity; ESOP status unconfirmed — likely terminated",
+        "550796211":  "MD-based; filed 401K only, no ESOP filing",
     }
 
     # Active ESOPs — filing likely delayed, not terminated
