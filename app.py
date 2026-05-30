@@ -833,12 +833,13 @@ if f5500_summaries:
         if ksop_count > 0:
             st.caption(f"_Note: {ksop_count} of the {latest['ma_plan_count']} total filed plans are KSOPs (combined 401(k)/ESOP plans)._")
 
-        # Zombie / exclusion note
-        _zombie_count = len(form5500_analysis.ZOMBIE_PLAN_EINS)
+        # Zombie / exclusion note (defunct EINs + 0-active plans)
+        _all_filed = latest.get("ma_plan_count") or 0
+        _excluded_count = _all_filed - _ov_plan_count
         st.caption(
-            f"_Note: {_zombie_count} plans with $0 assets or 0 active participants "
-            f"(appearing defunct / winding down) are excluded from this page. "
-            f"All {latest['ma_plan_count']} filed plans are included in other tabs. "
+            f"_Note: {_excluded_count} plans with $0 assets or 0 active participants "
+            f"(defunct, terminating, or in final distribution) are excluded from this "
+            f"page's active counts. All {_all_filed} filed plans are included in other tabs. "
             f"See the Year-over-Year tab for details._"
         )
 

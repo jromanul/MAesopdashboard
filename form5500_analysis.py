@@ -308,9 +308,15 @@ def get_annual_summaries() -> list[dict]:
 
 
 def _zombie_clause() -> str:
-    """Return SQL clause that excludes zombie-plan EINs."""
+    """Return SQL clause that excludes zombie / wind-down plans.
+
+    Drops the hardcoded defunct EINs AND any plan reporting 0 active
+    participants (terminating / final-distribution plans), so "active"
+    counts reflect plans with living active membership.
+    """
     placeholders = ",".join(f"'{e}'" for e in ZOMBIE_PLAN_EINS)
-    return f" AND CAST(ein AS TEXT) NOT IN ({placeholders})"
+    return (f" AND CAST(ein AS TEXT) NOT IN ({placeholders})"
+            f" AND COALESCE(active_participants, 0) > 0")
 
 
 def get_ma_filings(year: int | None = None, *,
