@@ -26,6 +26,55 @@ MA_ESOP_DATA = {
     "note": "119 unique ESOP companies filed 122 plans (5 are KSOPs)",
 }
 
+# ──────────────────────────────────────────────
+# INVESTOR-OWNED COMPANIES WITH EMPLOYEE STOCK PLANS
+# ──────────────────────────────────────────────
+# These MA-connected entities surface in DOL Form 5500 data with an
+# ESOP-related pension code (2O = "ESOP other than leveraged", 2P, etc.)
+# but are NOT employee-owned businesses in the ESOP sense. They are
+# DELIBERATELY EXCLUDED from the MA ESOP inventory above. Two distinct types:
+#
+#   Type A — Publicly-traded corporations whose 401(k)/savings plan holds
+#            company stock (or matches in stock). The "2O" code flags an
+#            ESOP *component* inside a 401(k); the company is controlled by
+#            public shareholders, not employees. NOT employee-owned.
+#
+#   Type B — Bank ESOPs created in mutual-to-stock conversions. These ARE
+#            genuine ESOP trusts, but at publicly-traded / acquired banks
+#            where the ESOP holds only a minority stake. Partially
+#            employee-owned (legal ESOP) but not employee-controlled.
+INVESTOR_OWNED_STOCK_PLANS = [
+    # Type A — public company 401(k)/savings plans with company stock
+    {"name": "State Street Corporation", "ticker": "NYSE: STT", "ein": "042456637",
+     "plan": "State Street Salary Savings Program", "type": "Public 401(k) w/ company stock",
+     "employee_owned": "No", "participants": 33216, "note": "Investor-owned; stock is a 401(k) option/match"},
+    {"name": "Raytheon / RTX Corporation", "ticker": "NYSE: RTX", "ein": "951778500",
+     "plan": "Raytheon Savings and Investment Plan", "type": "Public 401(k) w/ company stock",
+     "employee_owned": "No", "participants": 11936, "note": "Investor-owned defense contractor"},
+    {"name": "General Electric / GE Aerospace", "ticker": "NYSE: GE", "ein": "140689340",
+     "plan": "GE Retirement Savings Plan", "type": "Public 401(k) w/ company stock",
+     "employee_owned": "No", "participants": None, "note": "Investor-owned; MA operations (Lynn)"},
+    {"name": "Cabot Corporation", "ticker": "NYSE: CBT", "ein": "042271897",
+     "plan": "Cabot Corporation 401(k) and ESOP", "type": "Public KSOP (401k + stock match)",
+     "employee_owned": "No", "participants": None, "note": "Boston-HQ public specialty chemicals co"},
+    {"name": "Waters Corporation", "ticker": "NYSE: WAT", "ein": "043234558",
+     "plan": "Waters 401(k) Retirement Plan", "type": "Public 401(k) w/ company stock",
+     "employee_owned": "No", "participants": None, "note": "Milford-HQ public instrument maker"},
+    {"name": "Crane NXT", "ticker": "NYSE: CXT", "ein": "880706021",
+     "plan": "Crane 401(k) Plan", "type": "Public 401(k) w/ company stock",
+     "employee_owned": "No", "participants": 2050, "note": "Investor-owned"},
+    # Type B — bank ESOPs at publicly-traded / acquired banks (partial EO)
+    {"name": "Rockland Trust (Independent Bank Corp)", "ticker": "NASDAQ: INDB", "ein": "041782600",
+     "plan": "East Boston Savings Bank / Central Co-op ESOPs (absorbed)", "type": "Bank ESOP (public)",
+     "employee_owned": "Partial", "participants": None, "note": "Genuine ESOP trusts but publicly-traded bank; minority stake"},
+    {"name": "Wellesley Bank", "ticker": "Acquired", "ein": "041956610",
+     "plan": "Wellesley Bank Employees Stock Ownership Plan", "type": "Bank ESOP (acquired)",
+     "employee_owned": "Partial", "participants": None, "note": "Acquired by Brookline Bancorp 2018"},
+    {"name": "Chicopee Savings Bank", "ticker": "Acquired", "ein": "041174490",
+     "plan": "Chicopee Savings Bank Employee Stock Ownership Plan", "type": "Bank ESOP (acquired)",
+     "employee_owned": "Partial", "participants": None, "note": "Acquired by Westfield Bank 2016"},
+]
+
 NATIONAL_ESOP_DATA = {
     "source": "DOL Form 5500 Filings (via NCEO analysis)",
     "as_of_year": 2023,

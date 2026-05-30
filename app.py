@@ -772,6 +772,7 @@ if f5500_summaries:
         "\U0001f4c8 Trends",
         "\U0001f5fa\ufe0f Geography",
         "\U0001f504 Year-over-Year",
+        "\U0001f3e2 Investor-Owned",
         "\U0001f1fa\U0001f1f8 National Comparison",
         "\U0001f4d6 Methodology",
     ]
@@ -1209,6 +1210,50 @@ if f5500_summaries:
 
         _fig_flow = charts.build_f5500_contributions_vs_distributions(f5500_summaries)
         st.plotly_chart(_fig_flow, use_container_width=True, config=charts.PLOTLY_CONFIG)
+
+    # ────────────────────────────────────
+    # PAGE: Investor-Owned Companies w/ Employee Stock Plans
+    # ────────────────────────────────────
+    elif _selected_page == "\U0001f3e2 Investor-Owned":
+        st.markdown("#### Investor-Owned Companies with Employee Stock Plans")
+        st.caption(
+            "These MA-connected entities appear in DOL Form 5500 data with an "
+            "ESOP-related pension benefit code (most commonly **2O** \u2014 an ESOP "
+            "component held inside a 401(k)), so a naive code-based search would "
+            "sweep them into an \u201cESOP\u201d count. They are **excluded** from the "
+            "Massachusetts ESOP inventory because they are not employee-owned "
+            "businesses. This page documents them and explains why.")
+
+        st.info(
+            "**Are they technically employee-owned?** Narrow answer: these plans "
+            "do contain a legally-recognized ESOP feature, so employees hold *some* "
+            "company stock through them. But \u201cemployee-owned\u201d in the ESOP-"
+            "inventory sense means employees own a controlling or substantial stake "
+            "in a privately-held company. None of these qualify:\n\n"
+            "- **Type A \u2014 Public corporations** (State Street, Raytheon/RTX, GE, "
+            "Cabot, Waters, Crane NXT): the company is owned by public shareholders. "
+            "The \u201cESOP\u201d is just a company-stock fund / match inside the 401(k) "
+            "(IRC \u00a7404(k)). Employees own a tiny fraction; the public owns the rest.\n"
+            "- **Type B \u2014 Bank ESOPs** (Rockland Trust, Wellesley Bank, Chicopee "
+            "Savings): these are genuine ESOP trusts created in mutual-to-stock bank "
+            "conversions, but at publicly-traded or since-acquired banks where the "
+            "ESOP holds only a minority stake \u2014 partially employee-owned, not "
+            "employee-controlled.")
+
+        _io = pd.DataFrame(config.INVESTOR_OWNED_STOCK_PLANS)
+        _io_disp = _io.rename(columns={
+            "name": "Company", "ticker": "Status / Ticker", "ein": "EIN",
+            "plan": "Plan", "type": "Plan Type",
+            "employee_owned": "Employee-Owned?", "note": "Notes"})
+        _io_disp = _io_disp[["Company", "Status / Ticker", "EIN", "Plan Type",
+                             "Employee-Owned?", "Plan", "Notes"]]
+        st.dataframe(_io_disp, use_container_width=True, hide_index=True)
+
+        st.caption(
+            "_Source: DOL Form 5500 filings. \u201cEmployee-Owned?\u201d = No (investor-"
+            "owned) or Partial (genuine ESOP trust holding a minority stake at a "
+            "public/acquired company). Excluded from all ESOP counts on the other "
+            "tabs._")
 
     # ────────────────────────────────────
     # PAGE: National Comparison
