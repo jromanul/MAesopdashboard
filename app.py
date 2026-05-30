@@ -833,17 +833,6 @@ if f5500_summaries:
         if ksop_count > 0:
             st.caption(f"_Note: {ksop_count} of the {latest['ma_plan_count']} total filed plans are KSOPs (combined 401(k)/ESOP plans)._")
 
-        # Winding-down note: plans counted but with 0 active participants
-        _winddown = [f for f in form5500_analysis.get_ma_filings(
-            latest_year, exclude_zombie=True) if not (f.get("active_participants") or 0)]
-        if _winddown:
-            st.caption(
-                f"_Note: {len(_winddown)} of the {_ov_plan_count} plans above reported "
-                f"**0 active participants** in their latest DOL Form 5500 and appear to be "
-                f"winding down or terminating (e.g., post-acquisition or final distribution). "
-                f"They remain counted here because they still hold plan assets and report to DOL._"
-            )
-
         # Zombie / exclusion note
         _zombie_count = len(form5500_analysis.ZOMBIE_PLAN_EINS)
         st.caption(
