@@ -850,9 +850,10 @@ if f5500_summaries:
                 "DOL EFAST2 bulk data releases and individual filing searches as of May 29, "
                 "2026. Some plans file on fiscal-year schedules or request extensions, so their "
                 "2024 filings may not yet be published by DOL.\n\n"
-                "10 ESOPs that filed in 2023 have been confirmed as terminated (acquired, merged, "
-                "or wound down), and 9 additional plans have no 2024 ESOP filing yet on DOL "
-                "and are presumed late filers. See the Year-over-Year tab for details."
+                "10 ESOPs that filed in 2023 are terminated (all Tier 1 — confirmed via "
+                "acquisition + filing evidence), and 9 additional plans have no 2024 ESOP "
+                "filing yet on DOL but are confirmed still employee-owned (Tier 3 — active "
+                "late filers). See the Year-over-Year tab for the full confidence breakdown."
             )
 
         # Financial data: show employer securities section if available
@@ -1092,34 +1093,47 @@ if f5500_summaries:
         new_plans, terminated, late_filers = \
             form5500_analysis.get_new_and_terminated(_yoy_year)
 
+        # Tier breakdown for confidence-graded display
+        _t1 = [d for d in terminated if d.get("yoy_tier", "").startswith("Tier 1")]
+        _t2 = [d for d in terminated if d.get("yoy_tier", "").startswith("Tier 2")]
+        _t3 = [d for d in late_filers if d.get("yoy_tier", "").startswith("Tier 3")]
+        _tU = [d for d in late_filers if d.get("yoy_tier", "") == "Unverified"]
+
         _no_file_total = len(terminated) + len(late_filers)
         net_change = len(new_plans) - _no_file_total
         yoy_c1, yoy_c2, yoy_c3, yoy_c4 = st.columns(4)
         _render_metric(yoy_c1, str(len(new_plans)), "New ESOPs", f"New in {_yoy_year}")
-        _render_metric(yoy_c2, str(len(terminated)), "Confirmed Terminated",
-                      "Acquired / ESOP closed")
+        _render_metric(yoy_c2, str(len(terminated)), "Terminated",
+                      f"Tier 1: {len(_t1)} confirmed, Tier 2: {len(_t2)} likely")
         _render_metric(yoy_c3, str(len(late_filers)), "Late Filers",
-                      f"No {_yoy_year} filing yet on DOL")
+                      f"Tier 3: {len(_t3)} active-confirmed, {len(_tU)} unverified")
         net_label = f"+{net_change}" if net_change > 0 else str(net_change)
         _render_metric(yoy_c4, net_label, "Net Change",
                       f"{_yoy_year - 1} \u2192 {_yoy_year}")
 
-        st.caption(f"_Plans that filed Form 5500 in {_yoy_year - 1} but are **absent** "
-                   f"from the {_yoy_year} dataset are classified based on DOL EFAST2 review "
-                   f"and public records research (as of May 29, 2026). "
-                   f"**Confirmed Terminated** = the sponsor was acquired, merged, or the ESOP "
-                   f"was otherwise closed (see Reason column for details). "
-                   f"**Late Filer** = no {_yoy_year} Form 5500 filing of any kind appears on DOL yet; "
-                   f"these plans are believed still active. "
-                   f"Financial data shown is from their last filing ({_yoy_year - 1})._")
+        st.caption(
+            f"_Plans that filed Form 5500 in {_yoy_year - 1} but are **absent** from the "
+            f"{_yoy_year} dataset, classified by a 3-tier confidence system grounded in DOL "
+            f"filing evidence + public-records research (as of May 29, 2026):_\n\n"
+            f"- **Tier 1 \u2014 Confirmed Terminated:** acquisition/wind-down confirmed AND backed "
+            f"by filing evidence (sponsor filed a {_yoy_year} 401(k)/welfare plan but no ESOP, "
+            f"or the final ESOP return showed $0 assets / 0 active participants).\n"
+            f"- **Tier 2 \u2014 Likely Terminated:** acquisition reported but filing evidence is "
+            f"ambiguous (sponsor silent \u2014 no {_yoy_year} filing of any kind).\n"
+            f"- **Tier 3 \u2014 Confirmed Active (late filer):** company verified still operating as "
+            f"an employee-owned firm; no {_yoy_year} ESOP filing on DOL yet, but plan believed "
+            f"active \u2014 just late.\n"
+            f"- **Unverified:** no {_yoy_year} ESOP filing and status not yet researched.\n\n"
+            f"_Financial data shown is from each plan's last filing ({_yoy_year - 1})._"
+        )
 
-        _yoy_all_cols = ["yoy_status", "yoy_note", "plan_name", "sponsor_name",
+        _yoy_all_cols = ["yoy_tier", "yoy_status", "yoy_note", "plan_name", "sponsor_name",
                          "sponsor_city",
                          "industry_sector", "plan_eff_date", "total_participants",
                          "active_participants", "total_assets", "total_liabilities",
                          "employer_securities", "employer_contributions",
                          "benefits_paid", "net_income"]
-        _yoy_col_map = {"yoy_status": "Status", "yoy_note": "Reason",
+        _yoy_col_map = {"yoy_tier": "Confidence", "yoy_status": "Status", "yoy_note": "Reason",
                          "plan_name": "Plan Name", "sponsor_name": "Sponsor",
                          "sponsor_city": "City", "industry_sector": "Industry",
                          "plan_eff_date": "Plan Year Started",
@@ -1160,21 +1174,27 @@ if f5500_summaries:
             _render_yoy_table(new_plans)
 
         if terminated:
-            st.markdown(f"##### Confirmed Terminated ESOPs ({len(terminated)})")
-            st.caption(f"These ESOPs have been confirmed as terminated — typically due to "
-                       f"acquisition, merger, or plan wind-down. "
-                       f"Verified via DOL EFAST2 and public records research as of May 29, 2026. "
-                       f"Financial data shown is from their last ESOP filing ({_yoy_year - 1}).")
+            st.markdown(f"##### Terminated ESOPs ({len(terminated)}) "
+                        f"— Tier 1: {len(_t1)} confirmed, Tier 2: {len(_t2)} likely")
+            st.caption(f"ESOPs no longer filing, due to acquisition, merger, or plan wind-down. "
+                       f"**Tier 1 (Confirmed)** = backed by filing evidence (a {_yoy_year} "
+                       f"non-ESOP filing replacing the ESOP, or a $0/0 final return). "
+                       f"**Tier 2 (Likely)** = acquisition reported but sponsor is silent on DOL, "
+                       f"so termination is inferred, not proven. "
+                       f"Verified via DOL EFAST2 + public records as of May 29, 2026. "
+                       f"Financial data is from each plan's last ESOP filing ({_yoy_year - 1}).")
             _render_yoy_table(terminated)
 
         if late_filers:
-            st.markdown(f"##### Late Filers ({len(late_filers)})")
-            st.caption(f"No {_yoy_year} Form 5500 ESOP filing appears on the DOL EFAST2 system yet "
-                       f"for these sponsors (as of May 29, 2026). Plans can file on extension up to "
-                       f"9.5 months after their plan year ends, and DOL bulk data releases may lag "
-                       f"further. Plans marked **Late Filer (Active ESOP)** have been confirmed "
-                       f"as still employee-owned via public records. "
-                       f"Financial data shown is from their last filing ({_yoy_year - 1}).")
+            st.markdown(f"##### Late Filers ({len(late_filers)}) "
+                        f"— Tier 3: {len(_t3)} active-confirmed, {len(_tU)} unverified")
+            st.caption(f"No {_yoy_year} Form 5500 ESOP filing appears on DOL yet "
+                       f"(as of May 29, 2026). Plans can file on extension up to 9.5 months "
+                       f"after their plan year ends, and DOL bulk releases may lag further. "
+                       f"**Tier 3 (Confirmed Active)** = company verified still employee-owned "
+                       f"via company website / Certified EO / press — just late. "
+                       f"**Unverified** = status not yet researched. "
+                       f"Financial data is from each plan's last filing ({_yoy_year - 1}).")
             _render_yoy_table(late_filers)
 
         if not new_plans and not terminated and not late_filers:

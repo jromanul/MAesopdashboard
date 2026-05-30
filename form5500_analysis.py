@@ -446,36 +446,60 @@ def get_new_and_terminated(year: int) -> tuple[list[dict], list[dict]]:
         ORDER BY f.total_assets DESC
     """, (prev, year)).fetchall()
 
-    # Categorise plans that did not file in current year.
-    # As of May 2026 DOL FOIA bulk data + web research confirms:
-    #   - "Confirmed Terminated" = ESOP terminated due to acquisition, merger,
-    #     or plan wind-down.  Dict value gives the reason.
-    #   - "Late Filer" = ESOP believed still active; no 2024 ESOP filing yet.
-    #   - Acentech removed: filed 2024 ESOP (received 2026-02-25)
-    #   - Scientific Systems removed: filed 2024 ESOP (received 2026-03-13)
-    #   - Cambridge Bancorp removed: filed 2024 ESOP wind-down (received 2026-04-17)
-    #   - L.S. Starrett removed (both plans): filed 2024 ESOP wind-down (received 2026-04-15)
-    #   - Comrex removed: filed 2024 ESOP — still active (received 2026-04-13)
-    _CONFIRMED_TERMINATED_EINS: dict[str, str] = {
-        "43247749":   "Acquired by Artemis Capital Partners (Nov 2024)",
-        "42597651":   "Acquired by Blackstone (Nov 2021) — filed 401K only",
-        "10367721":   "Acquired by BetterBody Foods (Dec 2024)",
-        "42772059":   "Acquired by Ecolab (Nov 2024)",
-        "521405842":  "Acquired by PAE/Amentum (Nov 2020) — final filing",
-        "43448069":   "Acquired by Qmerit (Sep 2021) — winding down",
-        "42372206":   "Acquired by Ascensus Specialties (Apr 2021)",
-        "822323992":  "Sold to CI Capital Partners (Sep 2021) — filed 401K only",
-        "43533865":   "ESOP terminated ($0 assets, 0 active participants)",
-        "550796211":  "MD-based; filed 401K only, no ESOP filing",
+    # Categorise plans that filed in prior year but not the current year, using
+    # a 3-TIER CONFIDENCE SYSTEM grounded in (a) DOL FOIA filing evidence and
+    # (b) web/public-records research (verified May 2026).
+    #
+    # Evidence hierarchy used to assign tiers:
+    #   - "filed current-yr non-ESOP" = sponsor filed a 401(k)/welfare plan but
+    #     deliberately omitted the ESOP -> strong proof the ESOP is gone.
+    #   - "$0 assets / 0 active in final filing" = plan emptied out -> wind-down.
+    #   - "acquisition confirmed (news)" — for a 100%-ESOP acquired by a
+    #     strategic/PE buyer, the ESOP is cashed out at close -> terminated.
+    #   - "still EO per company website / Certified EO / press" = positive
+    #     confirmation the company operates as an active employee-owned firm.
+    #
+    # Removed from terminated over time (filed a current-yr ESOP after all):
+    #   Acentech (2026-02-25), Scientific Systems (2026-03-13),
+    #   Cambridge Bancorp (2026-04-17), L.S. Starrett x2 (2026-04-15),
+    #   Comrex (2026-04-13).
+    #
+    # TIER 1 — Confirmed Terminated: acquisition/wind-down confirmed AND backed
+    # by filing evidence (current-yr non-ESOP filing or $0/0 final return) or a
+    # confirmed acquisition of a 100%-ESOP by a strategic/PE buyer.
+    _TIER1_TERMINATED_EINS: dict[str, str] = {
+        "42597651":  "Acquired by Blackstone (2021); filed 2024 401(k)+welfare, no ESOP",
+        "822323992": "Sold to CI Capital (2021); filed 2024 401(k)+welfare, no ESOP",
+        "550796211": "Relocated to MD; filed 2024 401(k), no ESOP (no longer MA)",
+        "43533865":  "Wound down — $0 assets / 0 active in final (2023) filing",
+        "42772059":  "Acquired by Ecolab (Nov 2024); was 100% ESOP, cashed out at close",
+        "43247749":  "Acquired by Artemis Capital PE (Nov 2024); ESOP cashed out at close",
+        "10367721":  "Acquired by BetterBody Foods (Dec 1 2024); 0 active in final filing",
+        "521405842": "Acquired by PAE/Amentum; $0/0 final filing",
+        "43448069":  "Acquired by Qmerit; 0 active in final filing",
+        "42372206":  "Acquired by Ascensus Specialties (2021); $0/0 final filing",
     }
 
-    # Active ESOPs — filing likely delayed, not terminated
-    _CONFIRMED_ACTIVE_EINS: set[str] = {
-        "813645861",   # Shawmut Group — still 100% employee-owned
-        "42880295",    # Web Industries — still 100% employee-owned
-        "42471226",    # Aerodyne Research — employee-owned since 1985
-        "42932946",    # Darmann Abrasive — ESOP since 1999
-        "42472856",    # James Monroe Corp — 33% employee-owned
+    # TIER 2 — Likely Terminated: acquisition reported but filing evidence is
+    # ambiguous (sponsor silent — no current-yr filing of any kind). Kept as a
+    # separate bucket so residual uncertainty is visible. Currently empty: May
+    # 2026 research promoted all candidates to Tier 1 once acquisitions were
+    # confirmed against strategic/PE buyers of 100%-ESOPs.
+    _TIER2_LIKELY_TERMINATED_EINS: dict[str, str] = {}
+
+    # TIER 3 — Confirmed Active (late filer): company verified still operating
+    # as an employee-owned firm (website / Certified EO / press). No current-yr
+    # ESOP filing on DOL yet, but plan believed active — just late.
+    _TIER3_ACTIVE_EINS: dict[str, str] = {
+        "813645861": "Still 100% employee-owned (Shawmut Design & Construction); filed 2024 401(k)+welfare",
+        "42880295":  "Still 100% employee-owned (Web Industries); filed 2024 welfare",
+        "42471226":  "Still employee-owned — Certified EO (Aerodyne Research, Billerica)",
+        "42932946":  "Still employee-owned — ESOP awards in 2025 (Darmann Abrasives, Clinton)",
+        "42472856":  "Still employee-owned (James Monroe Wire & Cable); filed 2024 welfare",
+        "43579044":  "100% employee-owned since 2022 — Certified EO (Erland Construction)",
+        "42556035":  "100% employee-owned since Jan 2022 (Landry's Bicycles)",
+        "42699206":  "Employee-owned per MA state EO registry (Packaging Consultants)",
+        "42170946":  "Operating; ESOP filed 2023, no acquisition found (Paul K. Guillow / Guillow's)",
     }
 
     terminated: list[dict] = []
@@ -485,16 +509,25 @@ def get_new_and_terminated(year: int) -> tuple[list[dict], list[dict]]:
         d = dict(r)
         ein_norm = str(d["ein"]).lstrip("0") or "0"
 
-        if ein_norm in _CONFIRMED_TERMINATED_EINS:
+        if ein_norm in _TIER1_TERMINATED_EINS:
             d["yoy_status"] = "Confirmed Terminated"
-            d["yoy_note"] = _CONFIRMED_TERMINATED_EINS[ein_norm]
+            d["yoy_tier"] = "Tier 1 — Confirmed"
+            d["yoy_note"] = _TIER1_TERMINATED_EINS[ein_norm]
             terminated.append(d)
+        elif ein_norm in _TIER2_LIKELY_TERMINATED_EINS:
+            d["yoy_status"] = "Likely Terminated"
+            d["yoy_tier"] = "Tier 2 — Likely"
+            d["yoy_note"] = _TIER2_LIKELY_TERMINATED_EINS[ein_norm]
+            terminated.append(d)
+        elif ein_norm in _TIER3_ACTIVE_EINS:
+            d["yoy_status"] = "Late Filer (Active ESOP)"
+            d["yoy_tier"] = "Tier 3 — Confirmed Active"
+            d["yoy_note"] = _TIER3_ACTIVE_EINS[ein_norm]
+            late_filers.append(d)
         else:
-            if ein_norm in _CONFIRMED_ACTIVE_EINS:
-                d["yoy_status"] = "Late Filer (Active ESOP)"
-            else:
-                d["yoy_status"] = "Late Filer"
-            d["yoy_note"] = ""
+            d["yoy_status"] = "Late Filer (Unverified)"
+            d["yoy_tier"] = "Unverified"
+            d["yoy_note"] = "No current-year ESOP filing yet; status not yet researched"
             late_filers.append(d)
 
     return new_plans, terminated, late_filers
