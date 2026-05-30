@@ -17,13 +17,13 @@ DB_PATH = os.path.join(os.path.dirname(__file__) or ".", "data", "form5500_dashb
 MA_ESOP_DATA = {
     "source": "DOL Form 5500 Filings",
     "as_of_year": 2024,
-    "esop_count": 115,
-    "esop_plan_count": 118,
-    "ksop_count": 4,
-    "total_participants": 20_617,
-    "active_participants": 13_452,
-    "total_assets": 2_882_215_608,
-    "note": "115 unique ESOP companies filed 118 plans (4 are KSOPs)",
+    "esop_count": 119,
+    "esop_plan_count": 122,
+    "ksop_count": 5,
+    "total_participants": 25_336,
+    "active_participants": 15_419,
+    "total_assets": 3_045_388_702,
+    "note": "119 unique ESOP companies filed 122 plans (5 are KSOPs)",
 }
 
 NATIONAL_ESOP_DATA = {
