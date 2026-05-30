@@ -833,6 +833,17 @@ if f5500_summaries:
         if ksop_count > 0:
             st.caption(f"_Note: {ksop_count} of the {latest['ma_plan_count']} total filed plans are KSOPs (combined 401(k)/ESOP plans)._")
 
+        # Winding-down note: plans counted but with 0 active participants
+        _winddown = [f for f in form5500_analysis.get_ma_filings(
+            latest_year, exclude_zombie=True) if not (f.get("active_participants") or 0)]
+        if _winddown:
+            st.caption(
+                f"_Note: {len(_winddown)} of the {_ov_plan_count} plans above reported "
+                f"**0 active participants** in their latest DOL Form 5500 and appear to be "
+                f"winding down or terminating (e.g., post-acquisition or final distribution). "
+                f"They remain counted here because they still hold plan assets and report to DOL._"
+            )
+
         # Zombie / exclusion note
         _zombie_count = len(form5500_analysis.ZOMBIE_PLAN_EINS)
         st.caption(
@@ -846,11 +857,11 @@ if f5500_summaries:
         if latest_year == 2024:
             st.info(
                 "**2024 Data Disclaimer:** The data shown reflects filings available through the "
-                "DOL EFAST2 bulk data releases and individual filing searches as of May 7, "
+                "DOL EFAST2 bulk data releases and individual filing searches as of May 29, "
                 "2026. Some plans file on fiscal-year schedules or request extensions, so their "
                 "2024 filings may not yet be published by DOL.\n\n"
-                "13 ESOPs that filed in 2023 have been confirmed as terminated (acquired, merged, "
-                "or wound down), and 10 additional plans have no 2024 ESOP filing yet on DOL "
+                "10 ESOPs that filed in 2023 have been confirmed as terminated (acquired, merged, "
+                "or wound down), and 9 additional plans have no 2024 ESOP filing yet on DOL "
                 "and are presumed late filers. See the Year-over-Year tab for details."
             )
 
@@ -1105,7 +1116,7 @@ if f5500_summaries:
 
         st.caption(f"_Plans that filed Form 5500 in {_yoy_year - 1} but are **absent** "
                    f"from the {_yoy_year} dataset are classified based on DOL EFAST2 review "
-                   f"and public records research (as of May 7, 2026). "
+                   f"and public records research (as of May 29, 2026). "
                    f"**Confirmed Terminated** = the sponsor was acquired, merged, or the ESOP "
                    f"was otherwise closed (see Reason column for details). "
                    f"**Late Filer** = no {_yoy_year} Form 5500 filing of any kind appears on DOL yet; "
@@ -1162,14 +1173,14 @@ if f5500_summaries:
             st.markdown(f"##### Confirmed Terminated ESOPs ({len(terminated)})")
             st.caption(f"These ESOPs have been confirmed as terminated — typically due to "
                        f"acquisition, merger, or plan wind-down. "
-                       f"Verified via DOL EFAST2 and public records research as of May 7, 2026. "
+                       f"Verified via DOL EFAST2 and public records research as of May 29, 2026. "
                        f"Financial data shown is from their last ESOP filing ({_yoy_year - 1}).")
             _render_yoy_table(terminated)
 
         if late_filers:
             st.markdown(f"##### Late Filers ({len(late_filers)})")
             st.caption(f"No {_yoy_year} Form 5500 ESOP filing appears on the DOL EFAST2 system yet "
-                       f"for these sponsors (as of May 7, 2026). Plans can file on extension up to "
+                       f"for these sponsors (as of May 29, 2026). Plans can file on extension up to "
                        f"9.5 months after their plan year ends, and DOL bulk data releases may lag "
                        f"further. Plans marked **Late Filer (Active ESOP)** have been confirmed "
                        f"as still employee-owned via public records. "
