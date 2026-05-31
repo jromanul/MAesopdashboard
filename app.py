@@ -1338,6 +1338,37 @@ if f5500_summaries:
                 if _c in _adf.columns:
                     _adf[_c] = pd.to_numeric(_adf[_c], errors="coerce")
 
+            # ===== 0. Median ESOP profile (typical plan) =====
+            st.markdown("##### Typical (Median) MA ESOP")
+            st.caption("Medians describe the *typical* plan better than averages, "
+                       "which are skewed upward by a few very large ESOPs. Based on "
+                       f"{len(_adf)} active MA ESOPs in {latest_year}.")
+            _m_eff = pd.to_datetime(_adf.get("plan_eff_date"), errors="coerce").dt.year
+            _m_age = (latest_year - _m_eff).dropna()
+            _med_age = _m_age.median()
+            _med_part = _adf["total_participants"].median()
+            _med_assets = _adf["total_assets"].median()
+            _mean_age = _m_age.mean()
+            _mean_part = _adf["total_participants"].mean()
+            _mean_assets = _adf["total_assets"].mean()
+            _mk1, _mk2, _mk3 = st.columns(3)
+            _mk1.metric("Median ESOP Age",
+                        f"{_med_age:.0f} yrs" if pd.notna(_med_age) else "N/A",
+                        help=f"Mean: {_mean_age:.1f} yrs. Years since the ESOP plan "
+                             "effective date.")
+            _mk2.metric("Median Participants",
+                        f"{_med_part:,.0f}" if pd.notna(_med_part) else "N/A",
+                        help=f"Mean: {_mean_part:,.0f} participants per plan.")
+            _mk3.metric("Median Plan Assets",
+                        f"${_med_assets/1e6:.1f}M" if pd.notna(_med_assets) else "N/A",
+                        help=f"Mean: ${_mean_assets/1e6:.1f}M per plan.")
+            st.caption("_Median age is years since plan effective date; median "
+                       "participants and assets are per-plan. Means shown on hover "
+                       "for comparison — the gap between median and mean reflects "
+                       "how much a few large plans pull the average up._")
+
+            st.markdown("---")
+
             # ===== 1. ESOP maturity / formation cohorts =====
             st.markdown("##### 1. ESOP Maturity — Formation Cohorts")
             st.caption("When today's active MA ESOPs first established their plans "
