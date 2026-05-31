@@ -774,6 +774,7 @@ if f5500_summaries:
         "\U0001f504 Year-over-Year",
         "\U0001f3e2 Investor-Owned",
         "\U0001f1fa\U0001f1f8 National Comparison",
+        "\U0001f4ca Additional Data Analysis",
         "\U0001f4d6 Methodology",
     ]
 
@@ -1312,6 +1313,191 @@ if f5500_summaries:
         else:
             _render_metric(sc3, "N/A", "MA Share of US ESOP Assets",
                           "Financial data requires Schedule H/I", ma=True)
+
+    # ────────────────────────────────────
+    # PAGE: Additional Data Analysis
+    # ────────────────────────────────────
+    elif _selected_page == "\U0001f4ca Additional Data Analysis":
+        st.markdown("#### Additional Data Analysis")
+        st.caption(
+            "Supplementary analyses for annual reporting — ESOP maturity, "
+            "wealth concentration, stock intensity, account balances, and plan "
+            "structure — not shown on the other tabs. All figures are derived "
+            "from DOL Form 5500 filings for the latest available year "
+            f"({latest_year}); active plans only (winding-down / 0-active plans "
+            "excluded), unless noted.")
+
+        _ada = [r for r in form5500_analysis.get_ma_filings(latest_year, exclude_zombie=True)]
+        if not _ada:
+            st.info("No data available for analysis.")
+        else:
+            _adf = pd.DataFrame(_ada)
+            for _c in ["total_assets", "total_participants", "active_participants",
+                       "employer_securities", "employer_contributions",
+                       "benefits_paid", "is_ksop"]:
+                if _c in _adf.columns:
+                    _adf[_c] = pd.to_numeric(_adf[_c], errors="coerce")
+
+            # ===== 1. ESOP maturity / formation cohorts =====
+            st.markdown("##### 1. ESOP Maturity — Formation Cohorts")
+            st.caption("When today's active MA ESOPs first established their plans "
+                       "(by ESOP plan effective date). Shows the age profile and "
+                       "succession-pipeline maturity of the sector.")
+            _adf["_eff_year"] = pd.to_datetime(
+                _adf.get("plan_eff_date"), errors="coerce").dt.year
+            _cohorts = [
+                ("Before 1990", 0, 1989),
+                ("1990–1999", 1990, 1999),
+                ("2000–2009", 2000, 2009),
+                ("2010–2019", 2010, 2019),
+                ("2020–present", 2020, 9999),
+            ]
+            _crows = []
+            for _lbl, _lo, _hi in _cohorts:
+                _m = _adf[(_adf["_eff_year"] >= _lo) & (_adf["_eff_year"] <= _hi)]
+                _crows.append({"Era": _lbl, "Plans": int(len(_m)),
+                               "Participants": int(_m["total_participants"].fillna(0).sum()),
+                               "Assets": float(_m["total_assets"].fillna(0).sum())})
+            _unknown = int(_adf["_eff_year"].isna().sum())
+            if _unknown:
+                _crows.append({"Era": "Unknown", "Plans": _unknown, "Participants": 0, "Assets": 0.0})
+            _cdf = pd.DataFrame(_crows)
+            _cc1, _cc2 = st.columns([3, 2])
+            with _cc1:
+                _fig_c = go.Figure(go.Bar(
+                    x=_cdf["Era"], y=_cdf["Plans"],
+                    marker_color=config.CHART_COLORS["navy"],
+                    text=_cdf["Plans"], textposition="outside"))
+                _fig_c.update_layout(
+                    height=config.CHART_HEIGHT_SM, margin=dict(t=10, b=10, l=10, r=10),
+                    yaxis_title="Active plans", plot_bgcolor="white",
+                    font=dict(family=config.CHART_FONT_FAMILY))
+                st.plotly_chart(_fig_c, use_container_width=True, key="ada_cohort")
+            with _cc2:
+                st.dataframe(
+                    _cdf, use_container_width=True, hide_index=True,
+                    column_config={"Assets": st.column_config.NumberColumn(format="$%d")})
+
+            st.markdown("---")
+
+            # ===== 2. Wealth concentration (top plans' share) =====
+            st.markdown("##### 2. Wealth Concentration")
+            st.caption("Share of total MA ESOP assets and participants held by the "
+                       "largest plans — indicates whether the sector is "
+                       "broad-based or dominated by a few large ESOPs.")
+            _tot_a = float(_adf["total_assets"].fillna(0).sum())
+            _tot_p = int(_adf["total_participants"].fillna(0).sum())
+            _byA = _adf.sort_values("total_assets", ascending=False)
+            _concs = []
+            for _n in [5, 10, 25]:
+                _top = _byA.head(_n)
+                _concs.append({
+                    "Cohort": f"Top {_n}",
+                    "Asset Share": (float(_top["total_assets"].fillna(0).sum()) / _tot_a * 100) if _tot_a else 0,
+                    "Participant Share": (int(_top["total_participants"].fillna(0).sum()) / _tot_p * 100) if _tot_p else 0,
+                })
+            _condf = pd.DataFrame(_concs)
+            _mc1, _mc2 = st.columns(2)
+            with _mc1:
+                st.dataframe(
+                    _condf, use_container_width=True, hide_index=True,
+                    column_config={
+                        "Asset Share": st.column_config.NumberColumn(format="%.1f%%"),
+                        "Participant Share": st.column_config.NumberColumn(format="%.1f%%")})
+            with _mc2:
+                st.caption("**Largest plans by assets**")
+                _top5 = _byA.head(5)[["sponsor_name", "total_assets"]].copy()
+                _top5.columns = ["Company", "Assets"]
+                st.dataframe(
+                    _top5, use_container_width=True, hide_index=True,
+                    column_config={"Assets": st.column_config.NumberColumn(format="$%d")})
+
+            st.markdown("---")
+
+            # ===== 3. Employer-securities (stock) intensity =====
+            st.markdown("##### 3. Employer-Securities (Company Stock) Intensity")
+            st.caption("How much of each ESOP's assets are held as employer stock. "
+                       "High ratios indicate true stock-ownership plans; low ratios "
+                       "suggest diversified or maturing plans holding more cash/other "
+                       "assets. Plans reporting employer securities only.")
+            _es = _adf[_adf["employer_securities"].fillna(0) > 0].copy()
+            if len(_es):
+                _es["_ratio"] = (_es["employer_securities"] / _es["total_assets"]).clip(upper=1.0) * 100
+                _agg_es = float(_es["employer_securities"].sum())
+                _agg_a = float(_es["total_assets"].sum())
+                _bands = [("0–25%", 0, 25), ("25–50%", 25, 50),
+                          ("50–75%", 50, 75), ("75–100%", 75, 100.01)]
+                _brows = []
+                for _lbl, _lo, _hi in _bands:
+                    _m = _es[(_es["_ratio"] >= _lo) & (_es["_ratio"] < _hi)]
+                    _brows.append({"Stock as % of Assets": _lbl, "Plans": int(len(_m))})
+                _ec1, _ec2 = st.columns([2, 3])
+                with _ec1:
+                    _m1, _m2 = st.columns(2)
+                    _m1.metric("Aggregate stock %",
+                               f"{(_agg_es/_agg_a*100):.0f}%" if _agg_a else "N/A")
+                    _m2.metric("Median plan stock %", f"{_es['_ratio'].median():.0f}%")
+                    st.caption(f"{len(_es)} of {len(_adf)} active plans report employer securities.")
+                with _ec2:
+                    _bdf = pd.DataFrame(_brows)
+                    _fig_e = go.Figure(go.Bar(
+                        x=_bdf["Stock as % of Assets"], y=_bdf["Plans"],
+                        marker_color=config.CHART_COLORS["gold"],
+                        text=_bdf["Plans"], textposition="outside"))
+                    _fig_e.update_layout(
+                        height=config.CHART_HEIGHT_SM, margin=dict(t=10, b=10, l=10, r=10),
+                        yaxis_title="Plans", plot_bgcolor="white",
+                        font=dict(family=config.CHART_FONT_FAMILY))
+                    st.plotly_chart(_fig_e, use_container_width=True, key="ada_es")
+            else:
+                st.caption("No employer-securities data reported for this year.")
+
+            st.markdown("---")
+
+            # ===== 4. Average account balance by industry =====
+            st.markdown("##### 4. Average Account Balance by Industry")
+            st.caption("Assets per participant by industry — a proxy for "
+                       "per-worker wealth accumulation. Weighted (sector assets / "
+                       "sector participants).")
+            _ind = _adf[_adf["total_participants"].fillna(0) > 0].copy()
+            _grp = _ind.groupby(_ind["industry_sector"].fillna("(Unclassified)")).agg(
+                Plans=("ein", "count"),
+                _a=("total_assets", "sum"),
+                _p=("total_participants", "sum")).reset_index()
+            _grp["Avg Account Balance"] = (_grp["_a"] / _grp["_p"]).round(0)
+            _grp = _grp.rename(columns={"industry_sector": "Industry"})
+            _grp = _grp[_grp["Plans"] >= 2].sort_values("Avg Account Balance", ascending=False)
+            _gdisp = _grp[["Industry", "Plans", "Avg Account Balance"]]
+            st.dataframe(
+                _gdisp, use_container_width=True, hide_index=True,
+                column_config={"Avg Account Balance": st.column_config.NumberColumn(format="$%d")})
+            st.caption("_Industries with at least 2 active plans shown._")
+
+            st.markdown("---")
+
+            # ===== 5. Plan structure: KSOP vs pure ESOP =====
+            st.markdown("##### 5. Plan Structure — KSOP vs Pure ESOP")
+            st.caption("KSOPs combine a 401(k) with the ESOP; pure ESOPs do not. "
+                       "Compares scale and account balances across the two structures.")
+            _struct = []
+            for _lbl, _mask in [("Pure ESOP", _adf["is_ksop"].fillna(0) == 0),
+                                ("KSOP (401k+ESOP)", _adf["is_ksop"].fillna(0) == 1)]:
+                _m = _adf[_mask]
+                _pp = int(_m["total_participants"].fillna(0).sum())
+                _aa = float(_m["total_assets"].fillna(0).sum())
+                _struct.append({
+                    "Structure": _lbl, "Plans": int(len(_m)),
+                    "Participants": _pp, "Total Assets": _aa,
+                    "Avg Account Balance": (_aa / _pp) if _pp else 0})
+            _sdf = pd.DataFrame(_struct)
+            st.dataframe(
+                _sdf, use_container_width=True, hide_index=True,
+                column_config={
+                    "Total Assets": st.column_config.NumberColumn(format="$%d"),
+                    "Avg Account Balance": st.column_config.NumberColumn(format="$%d")})
+
+            st.caption(f"_All analyses: DOL Form 5500, {latest_year} filing year, "
+                       "active MA ESOPs (excludes winding-down / 0-active plans)._")
 
     # ────────────────────────────────────
     # PAGE: Methodology
