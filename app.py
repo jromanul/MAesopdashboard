@@ -1411,6 +1411,50 @@ if f5500_summaries:
 
             st.markdown("---")
 
+            # ===== 1b. % of ESOPs started by decade =====
+            st.markdown("##### % of ESOPs Started, by Decade")
+            st.caption("Share of today's active MA ESOPs by the decade their plan "
+                       "was established. (DOL placeholder dates of 1900-01-01 are "
+                       "counted as “Unknown.”)")
+
+            def _decade_label(y):
+                if pd.isna(y) or int(y) <= 1900:
+                    return "Unknown"
+                d = int(y) // 10 * 10
+                return "Before 1970" if d < 1970 else f"{d}s"
+
+            _adf["_dec"] = _adf["_eff_year"].apply(_decade_label)
+            _dec_order = ["Before 1970", "1970s", "1980s", "1990s",
+                          "2000s", "2010s", "2020s", "Unknown"]
+            _dtot = len(_adf)
+            _drows = []
+            for _d in _dec_order:
+                _n = int((_adf["_dec"] == _d).sum())
+                if _n:
+                    _drows.append({"Decade": _d, "Plans": _n,
+                                   "% of Active ESOPs": _n / _dtot * 100})
+            _ddf = pd.DataFrame(_drows)
+            _dc1, _dc2 = st.columns([3, 2])
+            with _dc1:
+                _fig_d = go.Figure(go.Bar(
+                    x=_ddf["Decade"], y=_ddf["% of Active ESOPs"],
+                    marker_color=config.CHART_COLORS["navy"],
+                    text=[f"{v:.1f}%" for v in _ddf["% of Active ESOPs"]],
+                    textposition="outside"))
+                _fig_d.update_layout(
+                    height=config.CHART_HEIGHT_SM,
+                    margin=dict(t=10, b=10, l=10, r=10),
+                    yaxis_title="% of active ESOPs", plot_bgcolor="white",
+                    font=dict(family=config.CHART_FONT_FAMILY))
+                st.plotly_chart(_fig_d, use_container_width=True, key="ada_decade")
+            with _dc2:
+                st.dataframe(
+                    _ddf, use_container_width=True, hide_index=True,
+                    column_config={"% of Active ESOPs":
+                                   st.column_config.NumberColumn(format="%.1f%%")})
+
+            st.markdown("---")
+
             # ===== 2. Wealth concentration (top plans' share) =====
             st.markdown("##### 2. Wealth Concentration")
             st.caption("Share of total MA ESOP assets and participants held by the "
