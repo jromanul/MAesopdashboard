@@ -1496,6 +1496,58 @@ if f5500_summaries:
                     "Total Assets": st.column_config.NumberColumn(format="$%d"),
                     "Avg Account Balance": st.column_config.NumberColumn(format="$%d")})
 
+            st.markdown("---")
+
+            # ===== 6. Top industries (pie charts) =====
+            st.markdown("##### 6. Top Industries for MA ESOPs")
+            st.caption("Industry mix of active MA ESOPs three ways — by number of "
+                       "plans, by participants (people), and by assets (dollars). "
+                       "Smaller sectors are grouped into “Other” for legibility.")
+
+            _adf["_one"] = 1
+
+            def _industry_pie(metric_col, title, key, top_n=7):
+                _g = _adf.copy()
+                _g["industry_sector"] = _g["industry_sector"].fillna("(Unclassified)")
+                _agg = _g.groupby("industry_sector")[metric_col].sum().sort_values(ascending=False)
+                _agg = _agg[_agg > 0]
+                if len(_agg) > top_n:
+                    _top = _agg.head(top_n)
+                    _labels = list(_top.index) + ["Other"]
+                    _values = list(_top.values) + [float(_agg.iloc[top_n:].sum())]
+                else:
+                    _labels = list(_agg.index)
+                    _values = [float(v) for v in _agg.values]
+                _fig = go.Figure(go.Pie(
+                    labels=_labels, values=_values, hole=0.45, sort=False,
+                    marker=dict(colors=config.CHART_PALETTE,
+                                line=dict(color="white", width=1.5)),
+                    textinfo="percent", textfont_size=12,
+                    hovertemplate="%{label}<br>%{value:,.0f} (%{percent})<extra></extra>"))
+                _fig.update_layout(
+                    title=dict(text=title, x=0.5, xanchor="center",
+                               font=dict(size=14, family=config.CHART_FONT_FAMILY)),
+                    height=config.CHART_HEIGHT_MD,
+                    margin=dict(t=50, b=70, l=10, r=10),
+                    showlegend=True,
+                    legend=dict(orientation="h", y=-0.08, x=0.5, xanchor="center",
+                                font=dict(size=10)),
+                    font=dict(family=config.CHART_FONT_FAMILY))
+                st.plotly_chart(_fig, use_container_width=True, key=key)
+
+            _pc1, _pc2, _pc3 = st.columns(3)
+            with _pc1:
+                _industry_pie("_one", "By Number of Plans", "ada_pie_plans")
+            with _pc2:
+                _industry_pie("total_participants", "By Participants", "ada_pie_part")
+            with _pc3:
+                _industry_pie("total_assets", "By Assets ($)", "ada_pie_assets")
+
+            st.caption("_Percentages are shares of the active-MA-ESOP total for each "
+                       "measure. “By Assets” is dominated by a few large plans; "
+                       "“By Number of Plans” best reflects how common each "
+                       "industry is._")
+
             st.caption(f"_All analyses: DOL Form 5500, {latest_year} filing year, "
                        "active MA ESOPs (excludes winding-down / 0-active plans)._")
 
