@@ -774,7 +774,6 @@ if f5500_summaries:
         "\U0001f504 Year-over-Year",
         "\U0001f3e2 Investor-Owned",
         "\U0001f1fa\U0001f1f8 National Comparison",
-        "\U0001f4ca Additional Data Analysis",
         "\U0001f4d6 Methodology",
     ]
 
@@ -1025,6 +1024,298 @@ if f5500_summaries:
                 unsafe_allow_html=True,
             )
 
+
+        # ── Supplementary Analysis (moved from Additional Data Analysis tab) ──
+        st.markdown("---")
+        st.markdown(f"#### Supplementary Analysis ({latest_year})")
+        st.caption(
+            "Deeper cuts on the active MA ESOP population: typical-plan profile, "
+            "maturity, largest plans, stock intensity, and per-worker wealth. "
+            "Active plans only (winding-down / 0-active plans excluded).")
+
+        _ada = [r for r in form5500_analysis.get_ma_filings(latest_year, exclude_zombie=True)]
+        if _ada:
+            _adf = pd.DataFrame(_ada)
+            for _c in ["total_assets", "total_participants", "active_participants",
+                       "employer_securities", "employer_contributions",
+                       "benefits_paid", "is_ksop"]:
+                if _c in _adf.columns:
+                    _adf[_c] = pd.to_numeric(_adf[_c], errors="coerce")
+
+            # ===== Typical Plan Profile (median + mean) =====
+            st.markdown("##### Typical Plan Profile")
+            st.caption("The median describes the *typical* plan; the mean is shown "
+                       "alongside it because a few very large ESOPs (Consigli, "
+                       "Gillette, Abt) pull averages well above the typical plan. "
+                       f"Based on {len(_adf)} active MA ESOPs in {latest_year}.")
+            _m_eff = pd.to_datetime(_adf.get("plan_eff_date"), errors="coerce").dt.year
+            _m_age = (latest_year - _m_eff).dropna()
+            _ap = pd.to_numeric(_adf["active_participants"], errors="coerce")
+            _ap_pos = _ap[_ap > 0]
+            _appp = _adf[(_adf["active_participants"].fillna(0) > 0) &
+                         (_adf["total_assets"].fillna(0) > 0)].copy()
+            _appp["_per"] = _appp["total_assets"] / _appp["active_participants"]
+            _agg_assets = _adf["total_assets"].fillna(0).sum()
+            _agg_active = _adf["active_participants"].fillna(0).sum()
+            _agg_per = (_agg_assets / _agg_active) if _agg_active else 0
+
+            def _fmt_money(v):
+                return f"${v/1e6:.1f}M" if v >= 1e6 else f"${v:,.0f}"
+
+            _profile_rows = [
+                {"Metric": "ESOP age (years since plan start)",
+                 "Median": f"{_m_age.median():.0f} yrs",
+                 "Mean": f"{_m_age.mean():.1f} yrs"},
+                {"Metric": "Total participants (incl. retirees/separated)",
+                 "Median": f"{_adf['total_participants'].median():,.0f}",
+                 "Mean": f"{_adf['total_participants'].mean():,.0f}"},
+                {"Metric": "Active participants (current employees)",
+                 "Median": f"{_ap_pos.median():,.0f}",
+                 "Mean": f"{_ap_pos.mean():,.0f}"},
+                {"Metric": "Plan assets",
+                 "Median": _fmt_money(_adf['total_assets'].median()),
+                 "Mean": _fmt_money(_adf['total_assets'].mean())},
+                {"Metric": "Assets per active participant (per plan)",
+                 "Median": f"${_appp['_per'].median():,.0f}",
+                 "Mean": f"${_appp['_per'].mean():,.0f}"},
+            ]
+            _render_html_table(pd.DataFrame(_profile_rows), height=260)
+            _agg_assets_disp = _fmt_money(_agg_assets).replace("$", "\\$")
+            _agg_per_disp = ("$" + format(_agg_per, ",.0f")).replace("$", "\\$")
+            st.caption(
+                f"_Aggregate assets per active participant (total plan assets "
+                f"{_agg_assets_disp} / {_agg_active:,.0f} active "
+                f"participants across all active MA ESOPs) = "
+                f"**{_agg_per_disp}**  -  this weights "
+                "every participant equally, unlike the per-plan median/mean above. "
+                "'Active' participants are current employees still accruing shares; "
+                "'total' also includes retirees and separated participants owed a "
+                "balance._")
+
+            st.markdown("---")
+
+            # ===== ESOP maturity / formation cohorts =====
+            st.markdown("##### ESOP Maturity  -  Formation Cohorts")
+            st.caption("When today's active MA ESOPs first established their plans "
+                       "(by ESOP plan effective date). Shows the age profile and "
+                       "succession-pipeline maturity of the sector.")
+            _adf["_eff_year"] = pd.to_datetime(
+                _adf.get("plan_eff_date"), errors="coerce").dt.year
+            _cohorts = [
+                ("Before 1990", 0, 1989),
+                ("1990-1999", 1990, 1999),
+                ("2000-2009", 2000, 2009),
+                ("2010-2019", 2010, 2019),
+                ("2020-present", 2020, 9999),
+            ]
+            _crows = []
+            for _lbl, _lo, _hi in _cohorts:
+                _m = _adf[(_adf["_eff_year"] >= _lo) & (_adf["_eff_year"] <= _hi)]
+                _crows.append({"Era": _lbl, "Plans": int(len(_m)),
+                               "Participants": int(_m["total_participants"].fillna(0).sum()),
+                               "Assets": float(_m["total_assets"].fillna(0).sum())})
+            _unknown = int(_adf["_eff_year"].isna().sum())
+            if _unknown:
+                _crows.append({"Era": "Unknown", "Plans": _unknown, "Participants": 0, "Assets": 0.0})
+            _cdf = pd.DataFrame(_crows)
+            _cc1, _cc2 = st.columns([3, 2])
+            with _cc1:
+                _fig_c = go.Figure(go.Bar(
+                    x=_cdf["Era"], y=_cdf["Plans"],
+                    marker_color=config.CHART_COLORS["navy"],
+                    text=_cdf["Plans"], textposition="outside"))
+                _fig_c.update_layout(
+                    height=config.CHART_HEIGHT_SM, margin=dict(t=10, b=10, l=10, r=10),
+                    yaxis_title="Active plans", plot_bgcolor="white",
+                    font=dict(family=config.CHART_FONT_FAMILY))
+                st.plotly_chart(_fig_c, use_container_width=True, key="ov_cohort")
+            with _cc2:
+                _render_html_table(_cdf, money_cols=["Assets"],
+                                   number_cols=["Plans", "Participants"], height=260)
+
+            st.markdown("---")
+
+            # ===== % of ESOPs started by decade =====
+            st.markdown("##### % of ESOPs Started, by Decade")
+            st.caption("Share of today's active MA ESOPs by the decade their plan "
+                       "was established. (DOL placeholder dates of 1900-01-01 are "
+                       "counted as 'Unknown').")
+
+            def _decade_label(y):
+                if pd.isna(y) or int(y) <= 1900:
+                    return "Unknown"
+                d = int(y) // 10 * 10
+                return "Before 1970" if d < 1970 else f"{d}s"
+
+            _adf["_dec"] = _adf["_eff_year"].apply(_decade_label)
+            _dec_order = ["Before 1970", "1970s", "1980s", "1990s",
+                          "2000s", "2010s", "2020s", "Unknown"]
+            _dtot = len(_adf)
+            _drows = []
+            for _d in _dec_order:
+                _n = int((_adf["_dec"] == _d).sum())
+                if _n:
+                    _drows.append({"Decade": _d, "Plans": _n,
+                                   "% of Active ESOPs": _n / _dtot * 100})
+            _ddf = pd.DataFrame(_drows)
+            _dc1, _dc2 = st.columns([3, 2])
+            with _dc1:
+                _fig_d = go.Figure(go.Bar(
+                    x=_ddf["Decade"], y=_ddf["% of Active ESOPs"],
+                    marker_color=config.CHART_COLORS["navy"],
+                    text=[f"{v:.1f}%" for v in _ddf["% of Active ESOPs"]],
+                    textposition="outside"))
+                _fig_d.update_layout(
+                    height=config.CHART_HEIGHT_SM,
+                    margin=dict(t=10, b=10, l=10, r=10),
+                    yaxis_title="% of active ESOPs", plot_bgcolor="white",
+                    font=dict(family=config.CHART_FONT_FAMILY))
+                st.plotly_chart(_fig_d, use_container_width=True, key="ov_decade")
+            with _dc2:
+                _ddf_disp = _ddf.copy()
+                if "% of Active ESOPs" in _ddf_disp.columns:
+                    _ddf_disp["% of Active ESOPs"] = _ddf_disp["% of Active ESOPs"].apply(
+                        lambda x: f"{x:.1f}%" if pd.notna(x) else "")
+                _render_html_table(_ddf_disp, number_cols=["Plans"], height=320)
+
+            st.markdown("---")
+
+            # ===== Largest plans (replaces Wealth Concentration) =====
+            st.markdown("##### Largest MA ESOP Plans")
+            st.caption("The biggest active MA ESOPs two ways: by total plan assets, "
+                       "and by assets per active participant (a per-worker wealth "
+                       "measure). Different plans top each list.")
+            _lc1, _lc2 = st.columns(2)
+            with _lc1:
+                st.caption("**Top 5 by total assets**")
+                _top_assets = _adf.sort_values("total_assets", ascending=False).head(5)[
+                    ["sponsor_name", "total_assets"]].copy()
+                _top_assets.columns = ["Company", "Total Assets"]
+                _render_html_table(_top_assets, money_cols=["Total Assets"], height=240)
+            with _lc2:
+                st.caption("**Top 5 by assets per active participant**")
+                _byper = _appp.sort_values("_per", ascending=False).head(5)[
+                    ["sponsor_name", "_per", "active_participants"]].copy()
+                _byper.columns = ["Company", "Assets / Active Participant", "Active Participants"]
+                _render_html_table(_byper,
+                                   money_cols=["Assets / Active Participant"],
+                                   number_cols=["Active Participants"], height=240)
+            st.caption("_Assets-per-participant uses each plan's total assets divided "
+                       "by its active participants; smaller plans with concentrated "
+                       "stock often rank highest._")
+
+            st.markdown("---")
+
+            # ===== Employer-securities (stock) intensity =====
+            st.markdown("##### Employer-Securities (Company Stock) Intensity")
+            st.caption("How much of each ESOP's assets are held as employer stock. "
+                       "High ratios indicate true stock-ownership plans; low ratios "
+                       "suggest diversified or maturing plans holding more cash/other "
+                       "assets. Plans reporting employer securities only.")
+            _es = _adf[_adf["employer_securities"].fillna(0) > 0].copy()
+            if len(_es):
+                _es["_ratio"] = (_es["employer_securities"] / _es["total_assets"]).clip(upper=1.0) * 100
+                _agg_es = float(_es["employer_securities"].sum())
+                _agg_a = float(_es["total_assets"].sum())
+                _bands = [("0-25%", 0, 25), ("25-50%", 25, 50),
+                          ("50-75%", 50, 75), ("75-100%", 75, 100.01)]
+                _brows = []
+                for _lbl, _lo, _hi in _bands:
+                    _m = _es[(_es["_ratio"] >= _lo) & (_es["_ratio"] < _hi)]
+                    _brows.append({"Stock as % of Assets": _lbl, "Plans": int(len(_m))})
+                _ec1, _ec2 = st.columns([2, 3])
+                with _ec1:
+                    _em1, _em2 = st.columns(2)
+                    _em1.metric("Aggregate stock %",
+                               f"{(_agg_es/_agg_a*100):.0f}%" if _agg_a else "N/A")
+                    _em2.metric("Median plan stock %", f"{_es['_ratio'].median():.0f}%")
+                    st.caption(f"{len(_es)} of {len(_adf)} active plans report employer securities.")
+                with _ec2:
+                    _bdf = pd.DataFrame(_brows)
+                    _fig_e = go.Figure(go.Bar(
+                        x=_bdf["Stock as % of Assets"], y=_bdf["Plans"],
+                        marker_color=config.CHART_COLORS["gold"],
+                        text=_bdf["Plans"], textposition="outside"))
+                    _fig_e.update_layout(
+                        height=config.CHART_HEIGHT_SM, margin=dict(t=10, b=10, l=10, r=10),
+                        yaxis_title="Plans", plot_bgcolor="white",
+                        font=dict(family=config.CHART_FONT_FAMILY))
+                    st.plotly_chart(_fig_e, use_container_width=True, key="ov_es")
+            else:
+                st.caption("No employer-securities data reported for this year.")
+
+            st.markdown("---")
+
+            # ===== Average account balance by industry =====
+            st.markdown("##### Average Account Balance by Industry")
+            st.caption("Assets per participant by industry  -  a proxy for "
+                       "per-worker wealth accumulation. Weighted (sector assets / "
+                       "sector participants).")
+            _ind = _adf[_adf["total_participants"].fillna(0) > 0].copy()
+            _grp = _ind.groupby(_ind["industry_sector"].fillna("(Unclassified)")).agg(
+                Plans=("ein", "count"),
+                _a=("total_assets", "sum"),
+                _p=("total_participants", "sum")).reset_index()
+            _grp["Avg Account Balance"] = (_grp["_a"] / _grp["_p"]).round(0)
+            _grp = _grp.rename(columns={"industry_sector": "Industry"})
+            _grp = _grp[_grp["Plans"] >= 2].sort_values("Avg Account Balance", ascending=False)
+            _gdisp = _grp[["Industry", "Plans", "Avg Account Balance"]].copy()
+            _render_html_table(_gdisp, money_cols=["Avg Account Balance"],
+                               number_cols=["Plans"], height=440)
+            st.caption("_Industries with at least 2 active plans shown._")
+
+            st.markdown("---")
+
+            # ===== Top industries (pie charts) =====
+            st.markdown("##### Top Industries for MA ESOPs")
+            st.caption("Industry mix of active MA ESOPs three ways  -  by number of "
+                       "plans, by participants (people), and by assets (dollars). "
+                       "Smaller sectors are grouped into 'Other' for legibility.")
+
+            _adf["_one"] = 1
+
+            def _industry_pie(metric_col, title, key, top_n=7):
+                _g = _adf.copy()
+                _g["industry_sector"] = _g["industry_sector"].fillna("(Unclassified)")
+                _agg = _g.groupby("industry_sector")[metric_col].sum().sort_values(ascending=False)
+                _agg = _agg[_agg > 0]
+                if len(_agg) > top_n:
+                    _top = _agg.head(top_n)
+                    _labels = list(_top.index) + ["Other"]
+                    _values = list(_top.values) + [float(_agg.iloc[top_n:].sum())]
+                else:
+                    _labels = list(_agg.index)
+                    _values = [float(v) for v in _agg.values]
+                _fig = go.Figure(go.Pie(
+                    labels=_labels, values=_values, hole=0.45, sort=False,
+                    marker=dict(colors=config.CHART_PALETTE,
+                                line=dict(color="white", width=1.5)),
+                    textinfo="percent", textfont_size=12,
+                    hovertemplate="%{label}<br>%{value:,.0f} (%{percent})<extra></extra>"))
+                _fig.update_layout(
+                    title=dict(text=title, x=0.5, xanchor="center",
+                               font=dict(size=14, family=config.CHART_FONT_FAMILY)),
+                    height=config.CHART_HEIGHT_MD,
+                    margin=dict(t=50, b=70, l=10, r=10),
+                    showlegend=True,
+                    legend=dict(orientation="h", y=-0.08, x=0.5, xanchor="center",
+                                font=dict(size=10)),
+                    font=dict(family=config.CHART_FONT_FAMILY))
+                st.plotly_chart(_fig, use_container_width=True, key=key)
+
+            _pc1, _pc2, _pc3 = st.columns(3)
+            with _pc1:
+                _industry_pie("_one", "By Number of Plans", "ov_pie_plans")
+            with _pc2:
+                _industry_pie("total_participants", "By Participants", "ov_pie_part")
+            with _pc3:
+                _industry_pie("total_assets", "By Assets ($)", "ov_pie_assets")
+
+            st.caption("_Percentages are shares of the active-MA-ESOP total for each "
+                       "measure. 'By Assets' is dominated by a few large plans; "
+                       "'By Number of Plans' best reflects how common each "
+                       "industry is._")
+
     # ────────────────────────────────────
     # PAGE: Trends (5-10 year time series)
     # ────────────────────────────────────
@@ -1212,6 +1503,75 @@ if f5500_summaries:
         _fig_flow = charts.build_f5500_contributions_vs_distributions(f5500_summaries)
         st.plotly_chart(_fig_flow, use_container_width=True, config=charts.PLOTLY_CONFIG)
 
+
+        # ── Why Totals Fell 2023->2024 (moved from Additional Data Analysis) ──
+        st.markdown("---")
+        st.markdown(f"##### Why Totals Fell, {_yoy_year - 1} to {_yoy_year}")
+        st.caption(
+            f"MA ESOP totals dropped sharply from {_yoy_year - 1} to {_yoy_year}. "
+            "The decline is driven almost entirely by companies that left the "
+            "dataset (via acquisition or DOL filing lag), not by shrinkage at "
+            "continuing plans. Figures come from comparing the two years' filings.")
+
+        # Verified reconciliation (2026 analysis):
+        # 2023: 131 plans, 31,862 part, 21,658 active, $3.925B
+        # 2024: 121 plans, 25,325 part, 15,408 active, $3.045B
+        _xc1, _xc2, _xc3 = st.columns(3)
+        _xc1.metric("Plans", "131 to 121", "-10", delta_color="inverse",
+                    help="Distinct MA ESOP plans filing each year.")
+        _xc2.metric("Participants", "31.9K to 25.3K", "-6,537",
+                    delta_color="inverse",
+                    help="Total participants across all MA ESOP plans.")
+        _xc3.metric("Assets", "$3.93B to $3.05B", "-$880M",
+                    delta_color="inverse",
+                    help="Total plan assets across all MA ESOP plans.")
+
+        st.markdown(
+            "**What caused it.** 21 companies present in 2023 are absent from "
+            "2024, removing about 6,440 participants and about \\$898M in assets. "
+            "They fall into two groups:")
+        _xrows = [
+            {"Driver": "Late filers (filing lag, expected to return)",
+             "Companies": 9, "Participants Left": "2,541",
+             "Assets Left": "$437M", "Permanent": "No (likely temporary)"},
+            {"Driver": "Confirmed terminated (acquired / closed)",
+             "Companies": 12, "Participants Left": "3,899",
+             "Assets Left": "$460M", "Permanent": "Yes"},
+        ]
+        _render_html_table(pd.DataFrame(_xrows), height=160)
+
+        st.markdown(
+            "**Filing lag is a large, recoverable piece.** The 9 late filers, "
+            "led by Shawmut Group (1,196 participants, \\$274M), Web Industries "
+            "(\\$92M), and Aerodyne Research (\\$46M), are confirmed still "
+            "employee-owned and simply have not filed their 2024 Form 5500 yet "
+            "(plans can file up to about 9.5 months after year-end, and DOL bulk "
+            "data lags further). Their roughly 2,500 participants and \\$437M should "
+            "reappear as 2024 data completes.")
+        st.markdown(
+            "**Confirmed terminations** (permanent) are the slightly larger group: "
+            "ESOPs acquired by outside buyers, such as IDG (Blackstone), Barclay "
+            "Water (Ecolab, Nov 2024), Diamond Antenna (Artemis Capital), Cadmus "
+            "(CI Capital), New England Natural Bakers (BetterBody Foods), and Fred "
+            "C. Church (AssuredPartners), plus New England Biolabs (whose plan "
+            "ceased being an ESOP in 2013) and a few that wound down. These remove "
+            "about 3,900 participants permanently.")
+        st.markdown(
+            "**Continuing plans were roughly flat.** Among companies that filed "
+            "both years, the only large declines were Eastern Bank (1,904 to 557 "
+            "participants; -\\$194M, reflecting the Cambridge Bancorp merger "
+            "consolidation) and Abt Global (3,697 to 2,628; -\\$75M). Net change at "
+            "continuing plans was minor compared with the roughly \\$900M removed "
+            "by exits.")
+        st.info(
+            "**Bottom line:** about 99% of the participant drop comes from "
+            "companies leaving the dataset (exits more than account for the entire "
+            "net asset drop too, partly offset by 11 new entrants adding about "
+            "\\$68M). Of those exits, 39% of lost participants and 49% of lost "
+            "assets are temporary filing lag (expected to return), while the rest "
+            "are permanent terminations. The underlying active-ESOP sector was "
+            "substantially stable year over year.")
+
     # ────────────────────────────────────
     # PAGE: Investor-Owned Companies w/ Employee Stock Plans
     # ────────────────────────────────────
@@ -1317,386 +1677,6 @@ if f5500_summaries:
         else:
             _render_metric(sc3, "N/A", "MA Share of US ESOP Assets",
                           "Financial data requires Schedule H/I", ma=True)
-
-    # ────────────────────────────────────
-    # PAGE: Additional Data Analysis
-    # ────────────────────────────────────
-    elif _selected_page == "\U0001f4ca Additional Data Analysis":
-        st.markdown("#### Additional Data Analysis")
-        st.caption(
-            "Supplementary analyses for annual reporting  -  ESOP maturity, "
-            "wealth concentration, stock intensity, account balances, and plan "
-            "structure  -  not shown on the other tabs. All figures are derived "
-            "from DOL Form 5500 filings for the latest available year "
-            f"({latest_year}); active plans only (winding-down / 0-active plans "
-            "excluded), unless noted.")
-
-        _ada = [r for r in form5500_analysis.get_ma_filings(latest_year, exclude_zombie=True)]
-        if not _ada:
-            st.info("No data available for analysis.")
-        else:
-            _adf = pd.DataFrame(_ada)
-            for _c in ["total_assets", "total_participants", "active_participants",
-                       "employer_securities", "employer_contributions",
-                       "benefits_paid", "is_ksop"]:
-                if _c in _adf.columns:
-                    _adf[_c] = pd.to_numeric(_adf[_c], errors="coerce")
-
-            # ===== 0. Typical Plan Profile (consolidated median + mean) =====
-            st.markdown("##### Typical Plan Profile")
-            st.caption("The median describes the *typical* plan; the mean is shown "
-                       "alongside it because a few very large ESOPs (Consigli, "
-                       "Gillette, Abt) pull averages well above the typical plan. "
-                       f"Based on {len(_adf)} active MA ESOPs in {latest_year}.")
-
-            # Age (years since ESOP plan effective date)
-            _m_eff = pd.to_datetime(_adf.get("plan_eff_date"), errors="coerce").dt.year
-            _m_age = (latest_year - _m_eff).dropna()
-            # Participant counts
-            _ap = pd.to_numeric(_adf["active_participants"], errors="coerce")
-            _ap_pos = _ap[_ap > 0]
-            # Assets per active participant (per-plan ratio)
-            _appp = _adf[(_adf["active_participants"].fillna(0) > 0) &
-                         (_adf["total_assets"].fillna(0) > 0)].copy()
-            _appp["_per"] = _appp["total_assets"] / _appp["active_participants"]
-            # Aggregate per-participant
-            _agg_assets = _adf["total_assets"].fillna(0).sum()
-            _agg_active = _adf["active_participants"].fillna(0).sum()
-            _agg_per = (_agg_assets / _agg_active) if _agg_active else 0
-
-            def _fmt_money(v):
-                return f"${v/1e6:.1f}M" if v >= 1e6 else f"${v:,.0f}"
-
-            _profile_rows = [
-                {"Metric": "ESOP age (years since plan start)",
-                 "Median": f"{_m_age.median():.0f} yrs",
-                 "Mean": f"{_m_age.mean():.1f} yrs"},
-                {"Metric": "Total participants (incl. retirees/separated)",
-                 "Median": f"{_adf['total_participants'].median():,.0f}",
-                 "Mean": f"{_adf['total_participants'].mean():,.0f}"},
-                {"Metric": "Active participants (current employees)",
-                 "Median": f"{_ap_pos.median():,.0f}",
-                 "Mean": f"{_ap_pos.mean():,.0f}"},
-                {"Metric": "Plan assets",
-                 "Median": _fmt_money(_adf['total_assets'].median()),
-                 "Mean": _fmt_money(_adf['total_assets'].mean())},
-                {"Metric": "Assets per active participant (per plan)",
-                 "Median": f"${_appp['_per'].median():,.0f}",
-                 "Mean": f"${_appp['_per'].mean():,.0f}"},
-            ]
-            _render_html_table(pd.DataFrame(_profile_rows), height=260)
-            _agg_assets_disp = _fmt_money(_agg_assets).replace("$", "\\$")
-            _agg_per_disp = ("$" + format(_agg_per, ",.0f")).replace("$", "\\$")
-            st.caption(
-                f"_Aggregate assets per active participant (total plan assets "
-                f"{_agg_assets_disp} / {_agg_active:,.0f} active "
-                f"participants across all active MA ESOPs) = "
-                f"**{_agg_per_disp}**  -  this weights "
-                "every participant equally, unlike the per-plan median/mean above. "
-                "'Active' participants are current employees still accruing shares; "
-                "'total' also includes retirees and separated participants owed a "
-                "balance._")
-
-            st.markdown("---")
-
-            # ===== 1. ESOP maturity / formation cohorts =====
-            st.markdown("##### 1. ESOP Maturity  -  Formation Cohorts")
-            st.caption("When today's active MA ESOPs first established their plans "
-                       "(by ESOP plan effective date). Shows the age profile and "
-                       "succession-pipeline maturity of the sector.")
-            _adf["_eff_year"] = pd.to_datetime(
-                _adf.get("plan_eff_date"), errors="coerce").dt.year
-            _cohorts = [
-                ("Before 1990", 0, 1989),
-                ("1990-1999", 1990, 1999),
-                ("2000-2009", 2000, 2009),
-                ("2010-2019", 2010, 2019),
-                ("2020-present", 2020, 9999),
-            ]
-            _crows = []
-            for _lbl, _lo, _hi in _cohorts:
-                _m = _adf[(_adf["_eff_year"] >= _lo) & (_adf["_eff_year"] <= _hi)]
-                _crows.append({"Era": _lbl, "Plans": int(len(_m)),
-                               "Participants": int(_m["total_participants"].fillna(0).sum()),
-                               "Assets": float(_m["total_assets"].fillna(0).sum())})
-            _unknown = int(_adf["_eff_year"].isna().sum())
-            if _unknown:
-                _crows.append({"Era": "Unknown", "Plans": _unknown, "Participants": 0, "Assets": 0.0})
-            _cdf = pd.DataFrame(_crows)
-            _cc1, _cc2 = st.columns([3, 2])
-            with _cc1:
-                _fig_c = go.Figure(go.Bar(
-                    x=_cdf["Era"], y=_cdf["Plans"],
-                    marker_color=config.CHART_COLORS["navy"],
-                    text=_cdf["Plans"], textposition="outside"))
-                _fig_c.update_layout(
-                    height=config.CHART_HEIGHT_SM, margin=dict(t=10, b=10, l=10, r=10),
-                    yaxis_title="Active plans", plot_bgcolor="white",
-                    font=dict(family=config.CHART_FONT_FAMILY))
-                st.plotly_chart(_fig_c, use_container_width=True, key="ada_cohort")
-            with _cc2:
-                _render_html_table(_cdf, money_cols=["Assets"],
-                                   number_cols=["Plans", "Participants"], height=260)
-
-            st.markdown("---")
-
-            # ===== 1b. % of ESOPs started by decade =====
-            st.markdown("##### % of ESOPs Started, by Decade")
-            st.caption("Share of today's active MA ESOPs by the decade their plan "
-                       "was established. (DOL placeholder dates of 1900-01-01 are "
-                       "counted as 'Unknown').")
-
-            def _decade_label(y):
-                if pd.isna(y) or int(y) <= 1900:
-                    return "Unknown"
-                d = int(y) // 10 * 10
-                return "Before 1970" if d < 1970 else f"{d}s"
-
-            _adf["_dec"] = _adf["_eff_year"].apply(_decade_label)
-            _dec_order = ["Before 1970", "1970s", "1980s", "1990s",
-                          "2000s", "2010s", "2020s", "Unknown"]
-            _dtot = len(_adf)
-            _drows = []
-            for _d in _dec_order:
-                _n = int((_adf["_dec"] == _d).sum())
-                if _n:
-                    _drows.append({"Decade": _d, "Plans": _n,
-                                   "% of Active ESOPs": _n / _dtot * 100})
-            _ddf = pd.DataFrame(_drows)
-            _dc1, _dc2 = st.columns([3, 2])
-            with _dc1:
-                _fig_d = go.Figure(go.Bar(
-                    x=_ddf["Decade"], y=_ddf["% of Active ESOPs"],
-                    marker_color=config.CHART_COLORS["navy"],
-                    text=[f"{v:.1f}%" for v in _ddf["% of Active ESOPs"]],
-                    textposition="outside"))
-                _fig_d.update_layout(
-                    height=config.CHART_HEIGHT_SM,
-                    margin=dict(t=10, b=10, l=10, r=10),
-                    yaxis_title="% of active ESOPs", plot_bgcolor="white",
-                    font=dict(family=config.CHART_FONT_FAMILY))
-                st.plotly_chart(_fig_d, use_container_width=True, key="ada_decade")
-            with _dc2:
-                _ddf_disp = _ddf.copy()
-                if "% of Active ESOPs" in _ddf_disp.columns:
-                    _ddf_disp["% of Active ESOPs"] = _ddf_disp["% of Active ESOPs"].apply(
-                        lambda x: f"{x:.1f}%" if pd.notna(x) else "")
-                _render_html_table(_ddf_disp, number_cols=["Plans"], height=320)
-
-            st.markdown("---")
-
-            # ===== 2. Wealth concentration (top plans' share) =====
-            st.markdown("##### 2. Wealth Concentration")
-            st.caption("Share of total MA ESOP assets and participants held by the "
-                       "largest plans  -  indicates whether the sector is "
-                       "broad-based or dominated by a few large ESOPs.")
-            _tot_a = float(_adf["total_assets"].fillna(0).sum())
-            _tot_p = int(_adf["total_participants"].fillna(0).sum())
-            _byA = _adf.sort_values("total_assets", ascending=False)
-            _concs = []
-            for _n in [5, 10, 25]:
-                _top = _byA.head(_n)
-                _concs.append({
-                    "Cohort": f"Top {_n}",
-                    "Asset Share": (float(_top["total_assets"].fillna(0).sum()) / _tot_a * 100) if _tot_a else 0,
-                    "Participant Share": (int(_top["total_participants"].fillna(0).sum()) / _tot_p * 100) if _tot_p else 0,
-                })
-            _condf = pd.DataFrame(_concs)
-            _condf["Asset Share"] = _condf["Asset Share"].apply(lambda x: f"{x:.1f}%")
-            _condf["Participant Share"] = _condf["Participant Share"].apply(lambda x: f"{x:.1f}%")
-            _mc1, _mc2 = st.columns(2)
-            with _mc1:
-                _render_html_table(_condf, height=200)
-            with _mc2:
-                st.caption("**Largest plans by assets**")
-                _top5 = _byA.head(5)[["sponsor_name", "total_assets"]].copy()
-                _top5.columns = ["Company", "Assets"]
-                _render_html_table(_top5, money_cols=["Assets"], height=240)
-
-            st.markdown("---")
-
-            # ===== 3. Employer-securities (stock) intensity =====
-            st.markdown("##### 3. Employer-Securities (Company Stock) Intensity")
-            st.caption("How much of each ESOP's assets are held as employer stock. "
-                       "High ratios indicate true stock-ownership plans; low ratios "
-                       "suggest diversified or maturing plans holding more cash/other "
-                       "assets. Plans reporting employer securities only.")
-            _es = _adf[_adf["employer_securities"].fillna(0) > 0].copy()
-            if len(_es):
-                _es["_ratio"] = (_es["employer_securities"] / _es["total_assets"]).clip(upper=1.0) * 100
-                _agg_es = float(_es["employer_securities"].sum())
-                _agg_a = float(_es["total_assets"].sum())
-                _bands = [("0-25%", 0, 25), ("25-50%", 25, 50),
-                          ("50-75%", 50, 75), ("75-100%", 75, 100.01)]
-                _brows = []
-                for _lbl, _lo, _hi in _bands:
-                    _m = _es[(_es["_ratio"] >= _lo) & (_es["_ratio"] < _hi)]
-                    _brows.append({"Stock as % of Assets": _lbl, "Plans": int(len(_m))})
-                _ec1, _ec2 = st.columns([2, 3])
-                with _ec1:
-                    _m1, _m2 = st.columns(2)
-                    _m1.metric("Aggregate stock %",
-                               f"{(_agg_es/_agg_a*100):.0f}%" if _agg_a else "N/A")
-                    _m2.metric("Median plan stock %", f"{_es['_ratio'].median():.0f}%")
-                    st.caption(f"{len(_es)} of {len(_adf)} active plans report employer securities.")
-                with _ec2:
-                    _bdf = pd.DataFrame(_brows)
-                    _fig_e = go.Figure(go.Bar(
-                        x=_bdf["Stock as % of Assets"], y=_bdf["Plans"],
-                        marker_color=config.CHART_COLORS["gold"],
-                        text=_bdf["Plans"], textposition="outside"))
-                    _fig_e.update_layout(
-                        height=config.CHART_HEIGHT_SM, margin=dict(t=10, b=10, l=10, r=10),
-                        yaxis_title="Plans", plot_bgcolor="white",
-                        font=dict(family=config.CHART_FONT_FAMILY))
-                    st.plotly_chart(_fig_e, use_container_width=True, key="ada_es")
-            else:
-                st.caption("No employer-securities data reported for this year.")
-
-            st.markdown("---")
-
-            # ===== 4. Average account balance by industry =====
-            st.markdown("##### 4. Average Account Balance by Industry")
-            st.caption("Assets per participant by industry  -  a proxy for "
-                       "per-worker wealth accumulation. Weighted (sector assets / "
-                       "sector participants).")
-            _ind = _adf[_adf["total_participants"].fillna(0) > 0].copy()
-            _grp = _ind.groupby(_ind["industry_sector"].fillna("(Unclassified)")).agg(
-                Plans=("ein", "count"),
-                _a=("total_assets", "sum"),
-                _p=("total_participants", "sum")).reset_index()
-            _grp["Avg Account Balance"] = (_grp["_a"] / _grp["_p"]).round(0)
-            _grp = _grp.rename(columns={"industry_sector": "Industry"})
-            _grp = _grp[_grp["Plans"] >= 2].sort_values("Avg Account Balance", ascending=False)
-            _gdisp = _grp[["Industry", "Plans", "Avg Account Balance"]].copy()
-            _render_html_table(_gdisp, money_cols=["Avg Account Balance"],
-                               number_cols=["Plans"], height=440)
-            st.caption("_Industries with at least 2 active plans shown._")
-
-            st.markdown("---")
-
-            # ===== 5. Top industries (pie charts) =====
-            st.markdown("##### 5. Top Industries for MA ESOPs")
-            st.caption("Industry mix of active MA ESOPs three ways  -  by number of "
-                       "plans, by participants (people), and by assets (dollars). "
-                       "Smaller sectors are grouped into 'Other' for legibility.")
-
-            _adf["_one"] = 1
-
-            def _industry_pie(metric_col, title, key, top_n=7):
-                _g = _adf.copy()
-                _g["industry_sector"] = _g["industry_sector"].fillna("(Unclassified)")
-                _agg = _g.groupby("industry_sector")[metric_col].sum().sort_values(ascending=False)
-                _agg = _agg[_agg > 0]
-                if len(_agg) > top_n:
-                    _top = _agg.head(top_n)
-                    _labels = list(_top.index) + ["Other"]
-                    _values = list(_top.values) + [float(_agg.iloc[top_n:].sum())]
-                else:
-                    _labels = list(_agg.index)
-                    _values = [float(v) for v in _agg.values]
-                _fig = go.Figure(go.Pie(
-                    labels=_labels, values=_values, hole=0.45, sort=False,
-                    marker=dict(colors=config.CHART_PALETTE,
-                                line=dict(color="white", width=1.5)),
-                    textinfo="percent", textfont_size=12,
-                    hovertemplate="%{label}<br>%{value:,.0f} (%{percent})<extra></extra>"))
-                _fig.update_layout(
-                    title=dict(text=title, x=0.5, xanchor="center",
-                               font=dict(size=14, family=config.CHART_FONT_FAMILY)),
-                    height=config.CHART_HEIGHT_MD,
-                    margin=dict(t=50, b=70, l=10, r=10),
-                    showlegend=True,
-                    legend=dict(orientation="h", y=-0.08, x=0.5, xanchor="center",
-                                font=dict(size=10)),
-                    font=dict(family=config.CHART_FONT_FAMILY))
-                st.plotly_chart(_fig, use_container_width=True, key=key)
-
-            _pc1, _pc2, _pc3 = st.columns(3)
-            with _pc1:
-                _industry_pie("_one", "By Number of Plans", "ada_pie_plans")
-            with _pc2:
-                _industry_pie("total_participants", "By Participants", "ada_pie_part")
-            with _pc3:
-                _industry_pie("total_assets", "By Assets ($)", "ada_pie_assets")
-
-            st.caption("_Percentages are shares of the active-MA-ESOP total for each "
-                       "measure. 'By Assets' is dominated by a few large plans; "
-                       "'By Number of Plans' best reflects how common each "
-                       "industry is._")
-
-            st.markdown("---")
-
-            # ===== 6. What drove the 2023->2024 decline =====
-            st.markdown("##### 6. Why Totals Fell, 2023 to 2024")
-            st.caption(
-                "MA ESOP totals dropped sharply from 2023 to 2024. The decline is "
-                "driven almost entirely by companies that left the dataset (via "
-                "acquisition or DOL filing lag), not by shrinkage at continuing "
-                "plans. Figures come from comparing the 2023 and 2024 Form 5500 "
-                "filings.")
-
-            # Verified reconciliation (2026 analysis):
-            # 2023: 131 plans, 31,862 part, 21,658 active, $3.925B
-            # 2024: 121 plans, 25,325 part, 15,408 active, $3.045B
-            _xc1, _xc2, _xc3 = st.columns(3)
-            _xc1.metric("Plans", "131 to 121", "-10", delta_color="inverse",
-                        help="Distinct MA ESOP plans filing each year.")
-            _xc2.metric("Participants", "31.9K to 25.3K", "-6,537",
-                        delta_color="inverse",
-                        help="Total participants across all MA ESOP plans.")
-            _xc3.metric("Assets", "$3.93B to $3.05B", "-$880M",
-                        delta_color="inverse",
-                        help="Total plan assets across all MA ESOP plans.")
-
-            st.markdown(
-                "**What caused it.** 21 companies present in 2023 are absent from "
-                "2024, removing about 6,440 participants and about \\$898M in assets. "
-                "They fall into two groups:")
-            _xrows = [
-                {"Driver": "Late filers (filing lag, expected to return)",
-                 "Companies": 9, "Participants Left": "2,541",
-                 "Assets Left": "$437M", "Permanent": "No (likely temporary)"},
-                {"Driver": "Confirmed terminated (acquired / closed)",
-                 "Companies": 12, "Participants Left": "3,899",
-                 "Assets Left": "$460M", "Permanent": "Yes"},
-            ]
-            _render_html_table(pd.DataFrame(_xrows), height=160)
-
-            st.markdown(
-                "**Filing lag is a large, recoverable piece.** The 9 late filers, "
-                "led by Shawmut Group (1,196 participants, \\$274M), Web Industries "
-                "(\\$92M), and Aerodyne Research (\\$46M), are confirmed still "
-                "employee-owned and simply have not filed their 2024 Form 5500 yet "
-                "(plans can file up to about 9.5 months after year-end, and DOL bulk "
-                "data lags further). Their roughly 2,500 participants and \\$437M should "
-                "reappear as 2024 data completes.")
-            st.markdown(
-                "**Confirmed terminations** (permanent) are the slightly larger group: "
-                "ESOPs acquired by outside buyers, such as IDG (Blackstone), Barclay "
-                "Water (Ecolab, Nov 2024), Diamond Antenna (Artemis Capital), Cadmus "
-                "(CI Capital), New England Natural Bakers (BetterBody Foods), and Fred "
-                "C. Church (AssuredPartners), plus New England Biolabs (whose plan "
-                "ceased being an ESOP in 2013) and a few that wound down. These remove "
-                "about 3,900 participants permanently.")
-            st.markdown(
-                "**Continuing plans were roughly flat.** Among companies that filed "
-                "both years, the only large declines were Eastern Bank (1,904 to 557 "
-                "participants; -\\$194M, reflecting the Cambridge Bancorp merger "
-                "consolidation) and Abt Global (3,697 to 2,628; -\\$75M). Net change at "
-                "continuing plans was minor compared with the roughly \\$900M removed "
-                "by exits.")
-            st.info(
-                "**Bottom line:** about 99% of the participant drop comes from "
-                "companies leaving the dataset (exits more than account for the entire "
-                "net asset drop too, partly offset by 11 new entrants adding about "
-                "\\$68M). Of those exits, 39% of lost participants and 49% of lost "
-                "assets are temporary filing lag (expected to return), while the rest "
-                "are permanent terminations. The underlying active-ESOP sector was "
-                "substantially stable year over year.")
-
-            st.caption(f"_All analyses: DOL Form 5500, {latest_year} filing year, "
-                       "active MA ESOPs (excludes winding-down / 0-active plans)._")
 
     # ────────────────────────────────────
     # PAGE: Methodology
