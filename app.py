@@ -1571,28 +1571,8 @@ if f5500_summaries:
 
             st.markdown("---")
 
-            # ===== 5. Plan structure: KSOP vs pure ESOP =====
-            st.markdown("##### 5. Plan Structure  -  KSOP vs Pure ESOP")
-            st.caption("KSOPs combine a 401(k) with the ESOP; pure ESOPs do not. "
-                       "Compares scale and account balances across the two structures.")
-            _struct = []
-            for _lbl, _mask in [("Pure ESOP", _adf["is_ksop"].fillna(0) == 0),
-                                ("KSOP (401k+ESOP)", _adf["is_ksop"].fillna(0) == 1)]:
-                _m = _adf[_mask]
-                _pp = int(_m["total_participants"].fillna(0).sum())
-                _aa = float(_m["total_assets"].fillna(0).sum())
-                _struct.append({
-                    "Structure": _lbl, "Plans": int(len(_m)),
-                    "Participants": _pp, "Total Assets": _aa,
-                    "Avg Account Balance": (_aa / _pp) if _pp else 0})
-            _sdf = pd.DataFrame(_struct)
-            _render_html_table(_sdf, money_cols=["Total Assets", "Avg Account Balance"],
-                               number_cols=["Plans", "Participants"], height=160)
-
-            st.markdown("---")
-
-            # ===== 6. Top industries (pie charts) =====
-            st.markdown("##### 6. Top Industries for MA ESOPs")
+            # ===== 5. Top industries (pie charts) =====
+            st.markdown("##### 5. Top Industries for MA ESOPs")
             st.caption("Industry mix of active MA ESOPs three ways  -  by number of "
                        "plans, by participants (people), and by assets (dollars). "
                        "Smaller sectors are grouped into 'Other' for legibility.")
@@ -1643,8 +1623,8 @@ if f5500_summaries:
 
             st.markdown("---")
 
-            # ===== 7. What drove the 2023->2024 decline =====
-            st.markdown("##### 7. Why Totals Fell, 2023 to 2024")
+            # ===== 6. What drove the 2023->2024 decline =====
+            st.markdown("##### 6. Why Totals Fell, 2023 to 2024")
             st.caption(
                 "MA ESOP totals dropped sharply from 2023 to 2024. The decline is "
                 "driven almost entirely by companies that left the dataset (via "
