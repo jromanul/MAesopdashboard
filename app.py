@@ -1660,14 +1660,14 @@ if f5500_summaries:
 
             # Verified reconciliation (2026 analysis):
             # 2023: 131 plans, 31,862 part, 21,658 active, $3.925B
-            # 2024: 122 plans, 25,336 part, 15,419 active, $3.045B
+            # 2024: 121 plans, 25,325 part, 15,408 active, $3.045B
             _xc1, _xc2, _xc3 = st.columns(3)
-            _xc1.metric("Plans", "131 to 122", "-9", delta_color="inverse",
+            _xc1.metric("Plans", "131 to 121", "-10", delta_color="inverse",
                         help="Distinct MA ESOP plans filing each year.")
-            _xc2.metric("Participants", "31.9K to 25.3K", "-6,526",
+            _xc2.metric("Participants", "31.9K to 25.3K", "-6,537",
                         delta_color="inverse",
                         help="Total participants across all MA ESOP plans.")
-            _xc3.metric("Assets", "$3.93B to $3.05B", "-$879M",
+            _xc3.metric("Assets", "$3.93B to $3.05B", "-$880M",
                         delta_color="inverse",
                         help="Total plan assets across all MA ESOP plans.")
 
