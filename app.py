@@ -1338,78 +1338,58 @@ if f5500_summaries:
                 if _c in _adf.columns:
                     _adf[_c] = pd.to_numeric(_adf[_c], errors="coerce")
 
-            # ===== 0a. Active participants & assets per participant =====
-            st.markdown("##### Active Participants & Assets per Participant")
-            st.caption("Active participants are current employees actively "
-                       "accruing ESOP shares (excludes retirees/separated "
-                       "participants still owed a balance). Assets per active "
-                       f"participant is a per-worker wealth proxy. Active MA ESOPs, {latest_year}.")
-            _ap = pd.to_numeric(_adf["active_participants"], errors="coerce").dropna()
-            _ap = _ap[_ap > 0]
-            _med_ap = _ap.median()
-            _mean_ap = _ap.mean()
-            # per-plan assets / active participant
+            # ===== 0. Typical Plan Profile (consolidated median + mean) =====
+            st.markdown("##### Typical Plan Profile")
+            st.caption("The median describes the *typical* plan; the mean is shown "
+                       "alongside it because a few very large ESOPs (Consigli, "
+                       "Gillette, Abt) pull averages well above the typical plan. "
+                       f"Based on {len(_adf)} active MA ESOPs in {latest_year}.")
+
+            # Age (years since ESOP plan effective date)
+            _m_eff = pd.to_datetime(_adf.get("plan_eff_date"), errors="coerce").dt.year
+            _m_age = (latest_year - _m_eff).dropna()
+            # Participant counts
+            _ap = pd.to_numeric(_adf["active_participants"], errors="coerce")
+            _ap_pos = _ap[_ap > 0]
+            # Assets per active participant (per-plan ratio)
             _appp = _adf[(_adf["active_participants"].fillna(0) > 0) &
                          (_adf["total_assets"].fillna(0) > 0)].copy()
             _appp["_per"] = _appp["total_assets"] / _appp["active_participants"]
-            _med_per = _appp["_per"].median()
-            _mean_per = _appp["_per"].mean()
+            # Aggregate per-participant
             _agg_assets = _adf["total_assets"].fillna(0).sum()
             _agg_active = _adf["active_participants"].fillna(0).sum()
             _agg_per = (_agg_assets / _agg_active) if _agg_active else 0
 
-            _ac1, _ac2, _ac3, _ac4 = st.columns(4)
-            _ac1.metric("Median Active Participants",
-                        f"{_med_ap:,.0f}" if pd.notna(_med_ap) else "N/A",
-                        help=f"Mean: {_mean_ap:,.0f}. Current employees actively "
-                             "accruing shares, per plan.")
-            _ac2.metric("Mean Active Participants",
-                        f"{_mean_ap:,.0f}" if pd.notna(_mean_ap) else "N/A",
-                        help="Skewed upward by a few large plans (max 1,634).")
-            _ac3.metric("Median Assets / Active Participant",
-                        f"${_med_per:,.0f}" if pd.notna(_med_per) else "N/A",
-                        help=f"Mean (per plan): ${_mean_per:,.0f}. Per-plan ratio of "
-                             "total plan assets to active participants.")
-            _ac4.metric("Aggregate Assets / Active Participant",
-                        f"${_agg_per:,.0f}" if _agg_per else "N/A",
-                        help=f"Total plan assets (${_agg_assets/1e6:,.0f}M) divided by "
-                             f"total active participants ({_agg_active:,.0f}) across all "
-                             "active MA ESOPs.")
-            st.caption("_The median (~48 active, ~$123K/participant) reflects the "
-                       "typical plan; the mean is higher because a few large ESOPs "
-                       "(Consigli, Gillette, Abt) pull the average up. The aggregate "
-                       "ratio weights every participant equally across the sector._")
+            def _fmt_money(v):
+                return f"${v/1e6:.1f}M" if v >= 1e6 else f"${v:,.0f}"
 
-            st.markdown("---")
-
-            # ===== 0. Median ESOP profile (typical plan) =====
-            st.markdown("##### Typical (Median) MA ESOP")
-            st.caption("Medians describe the *typical* plan better than averages, "
-                       "which are skewed upward by a few very large ESOPs. Based on "
-                       f"{len(_adf)} active MA ESOPs in {latest_year}.")
-            _m_eff = pd.to_datetime(_adf.get("plan_eff_date"), errors="coerce").dt.year
-            _m_age = (latest_year - _m_eff).dropna()
-            _med_age = _m_age.median()
-            _med_part = _adf["total_participants"].median()
-            _med_assets = _adf["total_assets"].median()
-            _mean_age = _m_age.mean()
-            _mean_part = _adf["total_participants"].mean()
-            _mean_assets = _adf["total_assets"].mean()
-            _mk1, _mk2, _mk3 = st.columns(3)
-            _mk1.metric("Median ESOP Age",
-                        f"{_med_age:.0f} yrs" if pd.notna(_med_age) else "N/A",
-                        help=f"Mean: {_mean_age:.1f} yrs. Years since the ESOP plan "
-                             "effective date.")
-            _mk2.metric("Median Participants",
-                        f"{_med_part:,.0f}" if pd.notna(_med_part) else "N/A",
-                        help=f"Mean: {_mean_part:,.0f} participants per plan.")
-            _mk3.metric("Median Plan Assets",
-                        f"${_med_assets/1e6:.1f}M" if pd.notna(_med_assets) else "N/A",
-                        help=f"Mean: ${_mean_assets/1e6:.1f}M per plan.")
-            st.caption("_Median age is years since plan effective date; median "
-                       "participants and assets are per-plan. Means shown on hover "
-                       "for comparison — the gap between median and mean reflects "
-                       "how much a few large plans pull the average up._")
+            _profile_rows = [
+                {"Metric": "ESOP age (years since plan start)",
+                 "Median": f"{_m_age.median():.0f} yrs",
+                 "Mean": f"{_m_age.mean():.1f} yrs"},
+                {"Metric": "Total participants (incl. retirees/separated)",
+                 "Median": f"{_adf['total_participants'].median():,.0f}",
+                 "Mean": f"{_adf['total_participants'].mean():,.0f}"},
+                {"Metric": "Active participants (current employees)",
+                 "Median": f"{_ap_pos.median():,.0f}",
+                 "Mean": f"{_ap_pos.mean():,.0f}"},
+                {"Metric": "Plan assets",
+                 "Median": _fmt_money(_adf['total_assets'].median()),
+                 "Mean": _fmt_money(_adf['total_assets'].mean())},
+                {"Metric": "Assets per active participant (per plan)",
+                 "Median": f"${_appp['_per'].median():,.0f}",
+                 "Mean": f"${_appp['_per'].mean():,.0f}"},
+            ]
+            st.dataframe(pd.DataFrame(_profile_rows), use_container_width=True,
+                         hide_index=True)
+            st.caption(
+                f"_Aggregate assets per active participant (total plan assets "
+                f"{_fmt_money(_agg_assets)} ÷ {_agg_active:,.0f} active participants "
+                f"across all active MA ESOPs) = **${_agg_per:,.0f}** — this weights "
+                "every participant equally, unlike the per-plan median/mean above. "
+                "'Active' participants are current employees still accruing shares; "
+                "'total' also includes retirees and separated participants owed a "
+                "balance._")
 
             st.markdown("---")
 
