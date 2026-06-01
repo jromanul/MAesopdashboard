@@ -129,8 +129,10 @@ NATIONAL_ESOP_ESTIMATES = {
     "source": "National Center for Employee Ownership (NCEO), 2023 filings",
 }
 
-MA_WORKFORCE_SIZE = 3_740_000
-US_WORKFORCE_SIZE = 161_000_000
+# Civilian labor force (BLS, 2024). Used for "ESOPs per 100K workers".
+# Both on the same basis (labor force) for an apples-to-apples comparison.
+MA_WORKFORCE_SIZE = 3_860_000     # MA civilian labor force, BLS 2024 (~3.86M)
+US_WORKFORCE_SIZE = 168_600_000   # US civilian labor force, BLS 2024 (~168.6M)
 
 FORM5500_ASSET_BINS = [
     (0, 1_000_000, "< $1M"),

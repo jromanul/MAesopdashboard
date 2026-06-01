@@ -1264,8 +1264,12 @@ if f5500_summaries:
 
         # Determine national data source year
         _nat_data_year = config.NATIONAL_ESOP_DATA["as_of_year"]
-        st.caption(f"_National ESOP statistics are from the most recent NCEO analysis "
-                   f"({_nat_data_year} filings). MA data is from {latest_year} DOL Form 5500 filings._")
+        st.caption(f"_National figures are the NCEO's latest published totals "
+                   f"(6,609 ESOPs, 15.1M participants, $2.1T assets), based on "
+                   f"{_nat_data_year} Form 5500 filings - the most recent complete "
+                   f"national data (DOL processing lags ~2 years). MA data is from "
+                   f"{latest_year} DOL Form 5500 filings. Workforce rates use BLS "
+                   f"2024 civilian labor force._")
 
         fig_share = charts.build_f5500_ma_share_bars(f5500_summaries)
         st.plotly_chart(fig_share, use_container_width=True, config=charts.PLOTLY_CONFIG)
@@ -1284,9 +1288,9 @@ if f5500_summaries:
 
             pc1, pc2, pc3 = st.columns(3)
             _render_metric(pc1, f"{ma_per_100k:.1f}", "MA ESOPs per 100K Workers",
-                          f"DOL {latest_year} + BLS", ma=True)
+                          f"DOL {latest_year} + BLS 2024 labor force", ma=True)
             _render_metric(pc2, f"{us_per_100k:.1f}", "US ESOPs per 100K Workers",
-                          f"NCEO {_nat_data_year} + BLS")
+                          f"NCEO {_nat_data_year} + BLS 2024 labor force")
             ratio = ma_per_100k / us_per_100k if us_per_100k > 0 else 0
             _render_metric(pc3, f"{ratio:.2f}x", "MA vs National Rate",
                           f"{'Above' if ratio > 1 else 'Below'} national average")
