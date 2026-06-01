@@ -1320,9 +1320,9 @@ if f5500_summaries:
     elif _selected_page == "\U0001f4ca Additional Data Analysis":
         st.markdown("#### Additional Data Analysis")
         st.caption(
-            "Supplementary analyses for annual reporting — ESOP maturity, "
+            "Supplementary analyses for annual reporting  -  ESOP maturity, "
             "wealth concentration, stock intensity, account balances, and plan "
-            "structure — not shown on the other tabs. All figures are derived "
+            "structure  -  not shown on the other tabs. All figures are derived "
             "from DOL Form 5500 filings for the latest available year "
             f"({latest_year}); active plans only (winding-down / 0-active plans "
             "excluded), unless noted.")
@@ -1384,8 +1384,8 @@ if f5500_summaries:
                          hide_index=True)
             st.caption(
                 f"_Aggregate assets per active participant (total plan assets "
-                f"{_fmt_money(_agg_assets)} ÷ {_agg_active:,.0f} active participants "
-                f"across all active MA ESOPs) = **${_agg_per:,.0f}** — this weights "
+                f"{_fmt_money(_agg_assets)} / {_agg_active:,.0f} active participants "
+                f"across all active MA ESOPs) = **${_agg_per:,.0f}**  -  this weights "
                 "every participant equally, unlike the per-plan median/mean above. "
                 "'Active' participants are current employees still accruing shares; "
                 "'total' also includes retirees and separated participants owed a "
@@ -1394,7 +1394,7 @@ if f5500_summaries:
             st.markdown("---")
 
             # ===== 1. ESOP maturity / formation cohorts =====
-            st.markdown("##### 1. ESOP Maturity — Formation Cohorts")
+            st.markdown("##### 1. ESOP Maturity  -  Formation Cohorts")
             st.caption("When today's active MA ESOPs first established their plans "
                        "(by ESOP plan effective date). Shows the age profile and "
                        "succession-pipeline maturity of the sector.")
@@ -1402,10 +1402,10 @@ if f5500_summaries:
                 _adf.get("plan_eff_date"), errors="coerce").dt.year
             _cohorts = [
                 ("Before 1990", 0, 1989),
-                ("1990–1999", 1990, 1999),
-                ("2000–2009", 2000, 2009),
-                ("2010–2019", 2010, 2019),
-                ("2020–present", 2020, 9999),
+                ("1990-1999", 1990, 1999),
+                ("2000-2009", 2000, 2009),
+                ("2010-2019", 2010, 2019),
+                ("2020-present", 2020, 9999),
             ]
             _crows = []
             for _lbl, _lo, _hi in _cohorts:
@@ -1439,7 +1439,7 @@ if f5500_summaries:
             st.markdown("##### % of ESOPs Started, by Decade")
             st.caption("Share of today's active MA ESOPs by the decade their plan "
                        "was established. (DOL placeholder dates of 1900-01-01 are "
-                       "counted as “Unknown.”)")
+                       "counted as 'Unknown').")
 
             def _decade_label(y):
                 if pd.isna(y) or int(y) <= 1900:
@@ -1482,7 +1482,7 @@ if f5500_summaries:
             # ===== 2. Wealth concentration (top plans' share) =====
             st.markdown("##### 2. Wealth Concentration")
             st.caption("Share of total MA ESOP assets and participants held by the "
-                       "largest plans — indicates whether the sector is "
+                       "largest plans  -  indicates whether the sector is "
                        "broad-based or dominated by a few large ESOPs.")
             _tot_a = float(_adf["total_assets"].fillna(0).sum())
             _tot_p = int(_adf["total_participants"].fillna(0).sum())
@@ -1524,8 +1524,8 @@ if f5500_summaries:
                 _es["_ratio"] = (_es["employer_securities"] / _es["total_assets"]).clip(upper=1.0) * 100
                 _agg_es = float(_es["employer_securities"].sum())
                 _agg_a = float(_es["total_assets"].sum())
-                _bands = [("0–25%", 0, 25), ("25–50%", 25, 50),
-                          ("50–75%", 50, 75), ("75–100%", 75, 100.01)]
+                _bands = [("0-25%", 0, 25), ("25-50%", 25, 50),
+                          ("50-75%", 50, 75), ("75-100%", 75, 100.01)]
                 _brows = []
                 for _lbl, _lo, _hi in _bands:
                     _m = _es[(_es["_ratio"] >= _lo) & (_es["_ratio"] < _hi)]
@@ -1555,7 +1555,7 @@ if f5500_summaries:
 
             # ===== 4. Average account balance by industry =====
             st.markdown("##### 4. Average Account Balance by Industry")
-            st.caption("Assets per participant by industry — a proxy for "
+            st.caption("Assets per participant by industry  -  a proxy for "
                        "per-worker wealth accumulation. Weighted (sector assets / "
                        "sector participants).")
             _ind = _adf[_adf["total_participants"].fillna(0) > 0].copy()
@@ -1575,7 +1575,7 @@ if f5500_summaries:
             st.markdown("---")
 
             # ===== 5. Plan structure: KSOP vs pure ESOP =====
-            st.markdown("##### 5. Plan Structure — KSOP vs Pure ESOP")
+            st.markdown("##### 5. Plan Structure  -  KSOP vs Pure ESOP")
             st.caption("KSOPs combine a 401(k) with the ESOP; pure ESOPs do not. "
                        "Compares scale and account balances across the two structures.")
             _struct = []
@@ -1599,9 +1599,9 @@ if f5500_summaries:
 
             # ===== 6. Top industries (pie charts) =====
             st.markdown("##### 6. Top Industries for MA ESOPs")
-            st.caption("Industry mix of active MA ESOPs three ways — by number of "
+            st.caption("Industry mix of active MA ESOPs three ways  -  by number of "
                        "plans, by participants (people), and by assets (dollars). "
-                       "Smaller sectors are grouped into “Other” for legibility.")
+                       "Smaller sectors are grouped into 'Other' for legibility.")
 
             _adf["_one"] = 1
 
@@ -1643,8 +1643,8 @@ if f5500_summaries:
                 _industry_pie("total_assets", "By Assets ($)", "ada_pie_assets")
 
             st.caption("_Percentages are shares of the active-MA-ESOP total for each "
-                       "measure. “By Assets” is dominated by a few large plans; "
-                       "“By Number of Plans” best reflects how common each "
+                       "measure. 'By Assets' is dominated by a few large plans; "
+                       "'By Number of Plans' best reflects how common each "
                        "industry is._")
 
             st.markdown("---")
