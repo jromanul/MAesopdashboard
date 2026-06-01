@@ -478,6 +478,8 @@ def get_new_and_terminated(year: int) -> tuple[list[dict], list[dict]]:
         "521405842": "Acquired by PAE/Amentum; $0/0 final filing",
         "43448069":  "Acquired by Qmerit; 0 active in final filing",
         "42372206":  "Acquired by Ascensus Specialties (2021); $0/0 final filing",
+        "42445292":  "Acquired by AssuredPartners (Jan 2022); $0 assets in final (2023) filing",
+        "42631963":  "Stock plan ceased being an ESOP in 2013 (converted to profit-sharing); not a current ESOP",
     }
 
     # TIER 2 — Likely Terminated: acquisition reported but filing evidence is

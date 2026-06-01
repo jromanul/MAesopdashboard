@@ -1653,30 +1653,31 @@ if f5500_summaries:
                 "They fall into two groups:")
             _xrows = [
                 {"Driver": "Late filers (filing lag, expected to return)",
-                 "Companies": 11, "Participants Left": "3,506",
-                 "Assets Left": "$737M", "Permanent": "No (likely temporary)"},
+                 "Companies": 9, "Participants Left": "2,541",
+                 "Assets Left": "$437M", "Permanent": "No (likely temporary)"},
                 {"Driver": "Confirmed terminated (acquired / closed)",
-                 "Companies": 10, "Participants Left": "2,934",
-                 "Assets Left": "$161M", "Permanent": "Yes"},
+                 "Companies": 12, "Participants Left": "3,899",
+                 "Assets Left": "$460M", "Permanent": "Yes"},
             ]
             st.dataframe(pd.DataFrame(_xrows), use_container_width=True,
                          hide_index=True)
 
             st.markdown(
-                "**The single biggest factor is filing lag, not real loss.** The 11 "
-                "late filers, led by Shawmut Group (1,196 participants, $274M), New "
-                "England Biolabs ($200M), Web Industries ($92M), and Aerodyne "
-                "Research ($46M), are confirmed still employee-owned and simply have "
-                "not filed their 2024 Form 5500 yet (plans can file up to about 9.5 "
-                "months after year-end, and DOL bulk data lags further). Their roughly "
-                "3,500 participants and $737M should reappear as 2024 data completes.")
+                "**Filing lag is a large, recoverable piece.** The 9 late filers, "
+                "led by Shawmut Group (1,196 participants, $274M), Web Industries "
+                "($92M), and Aerodyne Research ($46M), are confirmed still "
+                "employee-owned and simply have not filed their 2024 Form 5500 yet "
+                "(plans can file up to about 9.5 months after year-end, and DOL bulk "
+                "data lags further). Their roughly 2,500 participants and $437M should "
+                "reappear as 2024 data completes.")
             st.markdown(
-                "**Confirmed terminations** (permanent) account for the rest: ESOPs "
-                "acquired by outside buyers, such as IDG (Blackstone), Barclay Water "
-                "(Ecolab, Nov 2024), Diamond Antenna (Artemis Capital), Cadmus (CI "
-                "Capital), and New England Natural Bakers (BetterBody Foods), plus a "
-                "few that wound down. These remove about 2,900 participants "
-                "permanently.")
+                "**Confirmed terminations** (permanent) are the slightly larger group: "
+                "ESOPs acquired by outside buyers, such as IDG (Blackstone), Barclay "
+                "Water (Ecolab, Nov 2024), Diamond Antenna (Artemis Capital), Cadmus "
+                "(CI Capital), New England Natural Bakers (BetterBody Foods), and Fred "
+                "C. Church (AssuredPartners), plus New England Biolabs (whose plan "
+                "ceased being an ESOP in 2013) and a few that wound down. These remove "
+                "about 3,900 participants permanently.")
             st.markdown(
                 "**Continuing plans were roughly flat.** Among companies that filed "
                 "both years, the only large declines were Eastern Bank (1,904 to 557 "
@@ -1688,9 +1689,10 @@ if f5500_summaries:
                 "**Bottom line:** about 99% of the participant drop comes from "
                 "companies leaving the dataset (exits more than account for the entire "
                 "net asset drop too, partly offset by 11 new entrants adding about "
-                "$68M). Of those exits, 54% of lost participants and 82% of lost "
-                "assets are temporary filing lag, not genuine decline. The underlying "
-                "active-ESOP sector was substantially stable year over year.")
+                "$68M). Of those exits, 39% of lost participants and 49% of lost "
+                "assets are temporary filing lag (expected to return), while the rest "
+                "are permanent terminations. The underlying active-ESOP sector was "
+                "substantially stable year over year.")
 
             st.caption(f"_All analyses: DOL Form 5500, {latest_year} filing year, "
                        "active MA ESOPs (excludes winding-down / 0-active plans)._")
