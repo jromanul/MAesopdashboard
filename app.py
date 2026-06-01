@@ -1369,6 +1369,77 @@ if f5500_summaries:
 
             st.markdown("---")
 
+            # ===== 0b. What drove the 2023->2024 decline =====
+            st.markdown("##### Why Totals Fell 2023 → 2024")
+            st.caption(
+                "MA ESOP totals dropped sharply from 2023 to 2024. The decline is "
+                "**driven almost entirely by companies that left the dataset** "
+                "(via acquisition or DOL filing lag), not by shrinkage at continuing "
+                "plans. Figures below come from comparing the 2023 and 2024 Form 5500 "
+                "filings.")
+
+            # Hardcoded from verified reconciliation (see analysis 2026-05/06):
+            # 2023: 131 plans, 31,862 part, 21,658 active, $3.925B
+            # 2024: 122 plans, 25,336 part, 15,419 active, $3.045B
+            _dc1, _dc2, _dc3 = st.columns(3)
+            _dc1.metric("Plans", "131 → 122", "-9",
+                        delta_color="inverse",
+                        help="Distinct MA ESOP plans filing each year.")
+            _dc2.metric("Participants", "31.9K → 25.3K", "-6,526",
+                        delta_color="inverse",
+                        help="Total participants across all MA ESOP plans.")
+            _dc3.metric("Assets", "$3.93B → $3.05B", "-$879M",
+                        delta_color="inverse",
+                        help="Total plan assets across all MA ESOP plans.")
+
+            st.markdown(
+                "**What caused it — 21 companies present in 2023 are absent from "
+                "2024, removing ~6,440 participants and ~$898M in assets. They split "
+                "into two groups:**")
+            _decline_rows = [
+                {"Driver": "Late filers (filing lag — expected to return)",
+                 "Companies": 11, "Participants left": "3,506", "Assets left": "$737M",
+                 "Permanent?": "No — likely temporary"},
+                {"Driver": "Confirmed terminated (acquired / closed)",
+                 "Companies": 10, "Participants left": "2,934", "Assets left": "$161M",
+                 "Permanent?": "Yes"},
+            ]
+            st.dataframe(pd.DataFrame(_decline_rows), use_container_width=True,
+                         hide_index=True)
+
+            st.markdown(
+                "**The single biggest factor is filing lag, not real loss.** The 11 "
+                "late filers — led by **Shawmut Group** (1,196 participants, "
+                "$274M), **New England Biolabs** ($200M), **Web Industries** ($92M), "
+                "and **Aerodyne Research** ($46M) — are confirmed still "
+                "employee-owned and simply haven't filed their 2024 Form 5500 yet "
+                "(plans can file up to ~9.5 months after year-end, and DOL bulk data "
+                "lags further). Their ~3,500 participants and ~$737M should reappear "
+                "as 2024 data completes.")
+            st.markdown(
+                "**Confirmed terminations** (permanent) account for the rest: ESOPs "
+                "acquired by outside buyers — e.g. **IDG** (Blackstone), "
+                "**Barclay Water** (Ecolab, Nov 2024), **Diamond Antenna** (Artemis "
+                "Capital), **Cadmus** (CI Capital), **New England Natural Bakers** "
+                "(BetterBody Foods) — plus a few wound down. These remove ~2,900 "
+                "participants permanently.")
+            st.markdown(
+                "**Continuing plans were roughly flat.** Among companies that filed "
+                "both years, the only large declines were **Eastern Bank** "
+                "(1,904→557 participants; −$194M — reflecting the "
+                "Cambridge Bancorp merger consolidation) and **Abt Global** "
+                "(3,697→2,628; −$75M). Net change at continuing plans was "
+                "minor compared with the ~$900M removed by exits.")
+            st.info(
+                "**Bottom line:** ~99% of the participant drop comes from companies "
+                "*leaving the dataset* (exits more than account for the entire net "
+                "asset drop too, partly offset by 11 new entrants adding ~$68M). "
+                "Of those exits, 54% of lost participants and 82% of lost assets are "
+                "temporary filing lag, not genuine decline. The underlying "
+                "active-ESOP sector was substantially stable year over year.")
+
+            st.markdown("---")
+
             # ===== 1. ESOP maturity / formation cohorts =====
             st.markdown("##### 1. ESOP Maturity — Formation Cohorts")
             st.caption("When today's active MA ESOPs first established their plans "
