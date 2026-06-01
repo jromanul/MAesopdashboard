@@ -1338,6 +1338,50 @@ if f5500_summaries:
                 if _c in _adf.columns:
                     _adf[_c] = pd.to_numeric(_adf[_c], errors="coerce")
 
+            # ===== 0a. Active participants & assets per participant =====
+            st.markdown("##### Active Participants & Assets per Participant")
+            st.caption("Active participants are current employees actively "
+                       "accruing ESOP shares (excludes retirees/separated "
+                       "participants still owed a balance). Assets per active "
+                       f"participant is a per-worker wealth proxy. Active MA ESOPs, {latest_year}.")
+            _ap = pd.to_numeric(_adf["active_participants"], errors="coerce").dropna()
+            _ap = _ap[_ap > 0]
+            _med_ap = _ap.median()
+            _mean_ap = _ap.mean()
+            # per-plan assets / active participant
+            _appp = _adf[(_adf["active_participants"].fillna(0) > 0) &
+                         (_adf["total_assets"].fillna(0) > 0)].copy()
+            _appp["_per"] = _appp["total_assets"] / _appp["active_participants"]
+            _med_per = _appp["_per"].median()
+            _mean_per = _appp["_per"].mean()
+            _agg_assets = _adf["total_assets"].fillna(0).sum()
+            _agg_active = _adf["active_participants"].fillna(0).sum()
+            _agg_per = (_agg_assets / _agg_active) if _agg_active else 0
+
+            _ac1, _ac2, _ac3, _ac4 = st.columns(4)
+            _ac1.metric("Median Active Participants",
+                        f"{_med_ap:,.0f}" if pd.notna(_med_ap) else "N/A",
+                        help=f"Mean: {_mean_ap:,.0f}. Current employees actively "
+                             "accruing shares, per plan.")
+            _ac2.metric("Mean Active Participants",
+                        f"{_mean_ap:,.0f}" if pd.notna(_mean_ap) else "N/A",
+                        help="Skewed upward by a few large plans (max 1,634).")
+            _ac3.metric("Median Assets / Active Participant",
+                        f"${_med_per:,.0f}" if pd.notna(_med_per) else "N/A",
+                        help=f"Mean (per plan): ${_mean_per:,.0f}. Per-plan ratio of "
+                             "total plan assets to active participants.")
+            _ac4.metric("Aggregate Assets / Active Participant",
+                        f"${_agg_per:,.0f}" if _agg_per else "N/A",
+                        help=f"Total plan assets (${_agg_assets/1e6:,.0f}M) divided by "
+                             f"total active participants ({_agg_active:,.0f}) across all "
+                             "active MA ESOPs.")
+            st.caption("_The median (~48 active, ~$123K/participant) reflects the "
+                       "typical plan; the mean is higher because a few large ESOPs "
+                       "(Consigli, Gillette, Abt) pull the average up. The aggregate "
+                       "ratio weights every participant equally across the sector._")
+
+            st.markdown("---")
+
             # ===== 0. Median ESOP profile (typical plan) =====
             st.markdown("##### Typical (Median) MA ESOP")
             st.caption("Medians describe the *typical* plan better than averages, "
