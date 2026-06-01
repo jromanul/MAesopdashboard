@@ -1248,7 +1248,7 @@ if f5500_summaries:
             "employee_owned": "Employee-Owned?", "note": "Notes"})
         _io_disp = _io_disp[["Company", "Status / Ticker", "EIN", "Plan Type",
                              "Employee-Owned?", "Plan", "Notes"]]
-        st.dataframe(_io_disp, use_container_width=True, hide_index=True)
+        _render_html_table(_io_disp, height=420)
 
         st.caption(
             "_Source: DOL Form 5500 filings. \u201cEmployee-Owned?\u201d = No (investor-"
@@ -1380,12 +1380,14 @@ if f5500_summaries:
                  "Median": f"${_appp['_per'].median():,.0f}",
                  "Mean": f"${_appp['_per'].mean():,.0f}"},
             ]
-            st.dataframe(pd.DataFrame(_profile_rows), use_container_width=True,
-                         hide_index=True)
+            _render_html_table(pd.DataFrame(_profile_rows), height=260)
+            _agg_assets_disp = _fmt_money(_agg_assets).replace("$", "\\$")
+            _agg_per_disp = ("$" + format(_agg_per, ",.0f")).replace("$", "\\$")
             st.caption(
                 f"_Aggregate assets per active participant (total plan assets "
-                f"{_fmt_money(_agg_assets)} / {_agg_active:,.0f} active participants "
-                f"across all active MA ESOPs) = **${_agg_per:,.0f}**  -  this weights "
+                f"{_agg_assets_disp} / {_agg_active:,.0f} active "
+                f"participants across all active MA ESOPs) = "
+                f"**{_agg_per_disp}**  -  this weights "
                 "every participant equally, unlike the per-plan median/mean above. "
                 "'Active' participants are current employees still accruing shares; "
                 "'total' also includes retirees and separated participants owed a "
@@ -1429,9 +1431,8 @@ if f5500_summaries:
                     font=dict(family=config.CHART_FONT_FAMILY))
                 st.plotly_chart(_fig_c, use_container_width=True, key="ada_cohort")
             with _cc2:
-                st.dataframe(
-                    _cdf, use_container_width=True, hide_index=True,
-                    column_config={"Assets": st.column_config.NumberColumn(format="$%d")})
+                _render_html_table(_cdf, money_cols=["Assets"],
+                                   number_cols=["Plans", "Participants"], height=260)
 
             st.markdown("---")
 
@@ -1472,10 +1473,11 @@ if f5500_summaries:
                     font=dict(family=config.CHART_FONT_FAMILY))
                 st.plotly_chart(_fig_d, use_container_width=True, key="ada_decade")
             with _dc2:
-                st.dataframe(
-                    _ddf, use_container_width=True, hide_index=True,
-                    column_config={"% of Active ESOPs":
-                                   st.column_config.NumberColumn(format="%.1f%%")})
+                _ddf_disp = _ddf.copy()
+                if "% of Active ESOPs" in _ddf_disp.columns:
+                    _ddf_disp["% of Active ESOPs"] = _ddf_disp["% of Active ESOPs"].apply(
+                        lambda x: f"{x:.1f}%" if pd.notna(x) else "")
+                _render_html_table(_ddf_disp, number_cols=["Plans"], height=320)
 
             st.markdown("---")
 
@@ -1496,20 +1498,16 @@ if f5500_summaries:
                     "Participant Share": (int(_top["total_participants"].fillna(0).sum()) / _tot_p * 100) if _tot_p else 0,
                 })
             _condf = pd.DataFrame(_concs)
+            _condf["Asset Share"] = _condf["Asset Share"].apply(lambda x: f"{x:.1f}%")
+            _condf["Participant Share"] = _condf["Participant Share"].apply(lambda x: f"{x:.1f}%")
             _mc1, _mc2 = st.columns(2)
             with _mc1:
-                st.dataframe(
-                    _condf, use_container_width=True, hide_index=True,
-                    column_config={
-                        "Asset Share": st.column_config.NumberColumn(format="%.1f%%"),
-                        "Participant Share": st.column_config.NumberColumn(format="%.1f%%")})
+                _render_html_table(_condf, height=200)
             with _mc2:
                 st.caption("**Largest plans by assets**")
                 _top5 = _byA.head(5)[["sponsor_name", "total_assets"]].copy()
                 _top5.columns = ["Company", "Assets"]
-                st.dataframe(
-                    _top5, use_container_width=True, hide_index=True,
-                    column_config={"Assets": st.column_config.NumberColumn(format="$%d")})
+                _render_html_table(_top5, money_cols=["Assets"], height=240)
 
             st.markdown("---")
 
@@ -1566,10 +1564,9 @@ if f5500_summaries:
             _grp["Avg Account Balance"] = (_grp["_a"] / _grp["_p"]).round(0)
             _grp = _grp.rename(columns={"industry_sector": "Industry"})
             _grp = _grp[_grp["Plans"] >= 2].sort_values("Avg Account Balance", ascending=False)
-            _gdisp = _grp[["Industry", "Plans", "Avg Account Balance"]]
-            st.dataframe(
-                _gdisp, use_container_width=True, hide_index=True,
-                column_config={"Avg Account Balance": st.column_config.NumberColumn(format="$%d")})
+            _gdisp = _grp[["Industry", "Plans", "Avg Account Balance"]].copy()
+            _render_html_table(_gdisp, money_cols=["Avg Account Balance"],
+                               number_cols=["Plans"], height=440)
             st.caption("_Industries with at least 2 active plans shown._")
 
             st.markdown("---")
@@ -1589,11 +1586,8 @@ if f5500_summaries:
                     "Participants": _pp, "Total Assets": _aa,
                     "Avg Account Balance": (_aa / _pp) if _pp else 0})
             _sdf = pd.DataFrame(_struct)
-            st.dataframe(
-                _sdf, use_container_width=True, hide_index=True,
-                column_config={
-                    "Total Assets": st.column_config.NumberColumn(format="$%d"),
-                    "Avg Account Balance": st.column_config.NumberColumn(format="$%d")})
+            _render_html_table(_sdf, money_cols=["Total Assets", "Avg Account Balance"],
+                               number_cols=["Plans", "Participants"], height=160)
 
             st.markdown("---")
 
@@ -1673,7 +1667,7 @@ if f5500_summaries:
 
             st.markdown(
                 "**What caused it.** 21 companies present in 2023 are absent from "
-                "2024, removing about 6,440 participants and about $898M in assets. "
+                "2024, removing about 6,440 participants and about \\$898M in assets. "
                 "They fall into two groups:")
             _xrows = [
                 {"Driver": "Late filers (filing lag, expected to return)",
@@ -1683,16 +1677,15 @@ if f5500_summaries:
                  "Companies": 12, "Participants Left": "3,899",
                  "Assets Left": "$460M", "Permanent": "Yes"},
             ]
-            st.dataframe(pd.DataFrame(_xrows), use_container_width=True,
-                         hide_index=True)
+            _render_html_table(pd.DataFrame(_xrows), height=160)
 
             st.markdown(
                 "**Filing lag is a large, recoverable piece.** The 9 late filers, "
-                "led by Shawmut Group (1,196 participants, $274M), Web Industries "
-                "($92M), and Aerodyne Research ($46M), are confirmed still "
+                "led by Shawmut Group (1,196 participants, \\$274M), Web Industries "
+                "(\\$92M), and Aerodyne Research (\\$46M), are confirmed still "
                 "employee-owned and simply have not filed their 2024 Form 5500 yet "
                 "(plans can file up to about 9.5 months after year-end, and DOL bulk "
-                "data lags further). Their roughly 2,500 participants and $437M should "
+                "data lags further). Their roughly 2,500 participants and \\$437M should "
                 "reappear as 2024 data completes.")
             st.markdown(
                 "**Confirmed terminations** (permanent) are the slightly larger group: "
@@ -1705,15 +1698,15 @@ if f5500_summaries:
             st.markdown(
                 "**Continuing plans were roughly flat.** Among companies that filed "
                 "both years, the only large declines were Eastern Bank (1,904 to 557 "
-                "participants; -$194M, reflecting the Cambridge Bancorp merger "
-                "consolidation) and Abt Global (3,697 to 2,628; -$75M). Net change at "
-                "continuing plans was minor compared with the roughly $900M removed "
+                "participants; -\\$194M, reflecting the Cambridge Bancorp merger "
+                "consolidation) and Abt Global (3,697 to 2,628; -\\$75M). Net change at "
+                "continuing plans was minor compared with the roughly \\$900M removed "
                 "by exits.")
             st.info(
                 "**Bottom line:** about 99% of the participant drop comes from "
                 "companies leaving the dataset (exits more than account for the entire "
                 "net asset drop too, partly offset by 11 new entrants adding about "
-                "$68M). Of those exits, 39% of lost participants and 49% of lost "
+                "\\$68M). Of those exits, 39% of lost participants and 49% of lost "
                 "assets are temporary filing lag (expected to return), while the rest "
                 "are permanent terminations. The underlying active-ESOP sector was "
                 "substantially stable year over year.")
