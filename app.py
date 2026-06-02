@@ -772,7 +772,6 @@ if f5500_summaries:
         "\U0001f4c8 Trends",
         "\U0001f5fa\ufe0f Geography",
         "\U0001f504 Year-over-Year",
-        "\U0001f3e2 Investor-Owned",
         "\U0001f1fa\U0001f1f8 National Comparison",
         "\U0001f4d6 Methodology",
     ]
@@ -844,17 +843,23 @@ if f5500_summaries:
             f"See the Year-over-Year tab for details._"
         )
 
-        # 2024 data disclaimer
+        # 2024 data disclaimer (counts computed live so they always match the
+        # Year-over-Year tab and never drift as the tier lists are updated)
         if latest_year == 2024:
+            _dq_new, _dq_term, _dq_late = form5500_analysis.get_new_and_terminated(latest_year)
+            _dq_t1 = sum(1 for d in _dq_term if str(d.get("yoy_tier", "")).startswith("Tier 1"))
+            _dq_tier_txt = ("all Tier 1 — confirmed" if _dq_t1 == len(_dq_term)
+                            else f"{_dq_t1} of {len(_dq_term)} Tier 1 — confirmed")
             st.info(
                 "**2024 Data Disclaimer:** The data shown reflects filings available through the "
-                "DOL EFAST2 bulk data releases and individual filing searches as of May 29, "
+                "DOL EFAST2 bulk data releases and individual filing searches as of May 31, "
                 "2026. Some plans file on fiscal-year schedules or request extensions, so their "
                 "2024 filings may not yet be published by DOL.\n\n"
-                "10 ESOPs that filed in 2023 are terminated (all Tier 1 — confirmed via "
-                "acquisition + filing evidence), and 9 additional plans have no 2024 ESOP "
-                "filing yet on DOL but are confirmed still employee-owned (Tier 3 — active "
-                "late filers). See the Year-over-Year tab for the full confidence breakdown."
+                f"{len(_dq_term)} ESOPs that filed in 2023 are terminated ({_dq_tier_txt} via "
+                "acquisition + filing evidence), and "
+                f"{len(_dq_late)} additional plans have no 2024 ESOP filing yet on DOL but are "
+                "confirmed still employee-owned (Tier 3 — active late filers). See the "
+                "Year-over-Year tab for the full confidence breakdown."
             )
 
         # Financial data: show employer securities section if available
@@ -873,10 +878,16 @@ if f5500_summaries:
                 _es_pct = _es / _fin_summary["total_assets"] * 100 if _fin_summary.get("total_assets", 0) > 0 else 0
                 _render_metric(_sec_c2, f"{_es_pct:.0f}%", "Stock as % of Total Assets",
                               "Schedule H, Part I Line 1c / Total Assets", ma=True)
-                _avg_pp = _fin_summary.get("avg_assets_per_participant", 0)
-                _avg_pp_label = f"${_avg_pp:,.0f}" if _avg_pp > 0 else "N/A"
-                _render_metric(_sec_c3, _avg_pp_label, "Avg Assets Per Participant",
-                              "Schedule H/I", ma=True)
+                # Count of active plans actually reporting employer securities
+                # (distinct from the "Avg Assets Per Participant" card above, which
+                # would otherwise be duplicated here).
+                _stock_holders = sum(
+                    1 for _f in form5500_analysis.get_ma_filings(
+                        latest_year, exclude_zombie=True)
+                    if float(_f.get("employer_securities") or 0) > 0)
+                _render_metric(_sec_c3, f"{_stock_holders} of {_ov_plan_count}",
+                              "Plans Reporting Company Stock",
+                              "Schedule H, Part I Line 1c", ma=True)
 
         elif not _has_fin:
             st.markdown(
@@ -963,12 +974,12 @@ if f5500_summaries:
                                numbered=True,
                                sortable_cols=_sortable,
                                show_totals=True)
-            _zombie_n = len(form5500_analysis.ZOMBIE_PLAN_EINS)
             _total_filed = latest['ma_plan_count']
+            _excluded_n = _total_filed - len(filings)
             st.caption(
                 f"Showing {len(show_df)} of {len(filings)} active MA ESOP filings "
-                f"for {latest_year} ({_zombie_n} defunct/winding-down plans excluded "
-                f"from {_total_filed} total filed)")
+                f"for {latest_year} ({_excluded_n} plans with $0 assets or 0 active "
+                f"participants excluded from {_total_filed} total filed)")
 
             csv_data = utils.to_csv_bytes(filings)
             st.download_button("Download Active MA ESOP Data as CSV", csv_data,
@@ -1571,50 +1582,6 @@ if f5500_summaries:
             "assets are temporary filing lag (expected to return), while the rest "
             "are permanent terminations. The underlying active-ESOP sector was "
             "substantially stable year over year.")
-
-    # ────────────────────────────────────
-    # PAGE: Investor-Owned Companies w/ Employee Stock Plans
-    # ────────────────────────────────────
-    elif _selected_page == "\U0001f3e2 Investor-Owned":
-        st.markdown("#### Investor-Owned Companies with Employee Stock Plans")
-        st.caption(
-            "These MA-connected entities appear in DOL Form 5500 data with an "
-            "ESOP-related pension benefit code (most commonly **2O** \u2014 an ESOP "
-            "component held inside a 401(k)), so a naive code-based search would "
-            "sweep them into an \u201cESOP\u201d count. They are **excluded** from the "
-            "Massachusetts ESOP inventory because they are not employee-owned "
-            "businesses. This page documents them and explains why.")
-
-        st.info(
-            "**Are they technically employee-owned?** Narrow answer: these plans "
-            "do contain a legally-recognized ESOP feature, so employees hold *some* "
-            "company stock through them. But \u201cemployee-owned\u201d in the ESOP-"
-            "inventory sense means employees own a controlling or substantial stake "
-            "in a privately-held company. None of these qualify:\n\n"
-            "- **Type A \u2014 Public corporations** (State Street, Raytheon/RTX, GE, "
-            "Cabot, Waters, Crane NXT): the company is owned by public shareholders. "
-            "The \u201cESOP\u201d is just a company-stock fund / match inside the 401(k) "
-            "(IRC \u00a7404(k)). Employees own a tiny fraction; the public owns the rest.\n"
-            "- **Type B \u2014 Bank ESOPs** (Rockland Trust, Wellesley Bank, Chicopee "
-            "Savings): these are genuine ESOP trusts created in mutual-to-stock bank "
-            "conversions, but at publicly-traded or since-acquired banks where the "
-            "ESOP holds only a minority stake \u2014 partially employee-owned, not "
-            "employee-controlled.")
-
-        _io = pd.DataFrame(config.INVESTOR_OWNED_STOCK_PLANS)
-        _io_disp = _io.rename(columns={
-            "name": "Company", "ticker": "Status / Ticker", "ein": "EIN",
-            "plan": "Plan", "type": "Plan Type",
-            "employee_owned": "Employee-Owned?", "note": "Notes"})
-        _io_disp = _io_disp[["Company", "Status / Ticker", "EIN", "Plan Type",
-                             "Employee-Owned?", "Plan", "Notes"]]
-        _render_html_table(_io_disp, height=420)
-
-        st.caption(
-            "_Source: DOL Form 5500 filings. \u201cEmployee-Owned?\u201d = No (investor-"
-            "owned) or Partial (genuine ESOP trust holding a minority stake at a "
-            "public/acquired company). Excluded from all ESOP counts on the other "
-            "tabs._")
 
     # ────────────────────────────────────
     # PAGE: National Comparison
