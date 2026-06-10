@@ -342,6 +342,14 @@ def get_latest_year() -> int | None:
     return row["yr"] if row and row["yr"] else None
 
 
+def get_prior_eins(before_year: int) -> set[str]:
+    """EINs of every plan filed before the given form year (any state/type)."""
+    rows = _get_conn().execute(
+        "SELECT DISTINCT ein FROM form5500_filings WHERE filing_year < ?",
+        (before_year,)).fetchall()
+    return {r["ein"] for r in rows if r["ein"]}
+
+
 def get_ma_filings_by_city(year: int | None = None, *,
                            exclude_zombie: bool = False) -> list[dict]:
     query = """
@@ -473,7 +481,6 @@ def get_new_and_terminated(year: int) -> tuple[list[dict], list[dict]]:
         "550796211": "Relocated to MD; filed 2024 401(k), no ESOP (no longer MA)",
         "43533865":  "Wound down — $0 assets / 0 active in final (2023) filing",
         "42772059":  "Acquired by Ecolab (Nov 2024); was 100% ESOP, cashed out at close",
-        "43247749":  "Acquired by Artemis Capital PE (Nov 2024); ESOP cashed out at close",
         "10367721":  "Acquired by BetterBody Foods (Dec 1 2024); 0 active in final filing",
         "521405842": "Acquired by PAE/Amentum; $0/0 final filing",
         "43448069":  "Acquired by Qmerit; 0 active in final filing",
@@ -494,7 +501,6 @@ def get_new_and_terminated(year: int) -> tuple[list[dict], list[dict]]:
     # ESOP filing on DOL yet, but plan believed active — just late.
     _TIER3_ACTIVE_EINS: dict[str, str] = {
         "813645861": "Still 100% employee-owned (Shawmut Design & Construction); filed 2024 401(k)+welfare",
-        "42880295":  "Still 100% employee-owned (Web Industries); filed 2024 welfare",
         "42471226":  "Still employee-owned — Certified EO (Aerodyne Research, Billerica)",
         "42932946":  "Still employee-owned — ESOP awards in 2025 (Darmann Abrasives, Clinton)",
         "42472856":  "Still employee-owned (James Monroe Wire & Cable); filed 2024 welfare",
@@ -689,22 +695,53 @@ def _get_field(row: dict, candidates: list[str]) -> str | None:
 
 
 def _extract_sponsor_from_plan_name(plan_name: str) -> str:
+    """Derive a clean company name from an ESOP plan name.
+
+    Handles the common DOL plan-name shapes:
+      - "<COMPANY> EMPLOYEE STOCK OWNERSHIP [401(K)] PLAN"  -> strip the suffix
+      - "<COMPANY> EMPLOYEE STOCK OWNERSHIP P/Pl/Plans (ESOP)" (truncated) -> strip
+      - "EMPLOYEE STOCK OWNERSHIP PLAN OF <COMPANY>"        -> take text after "OF"
+      - "(FIRST) AMENDED AND RESTATED <COMPANY> ... PLAN"   -> drop the legal prefix
+    """
     if not plan_name or plan_name == "nan":
         return ""
-    suffixes = [
-        r"\s+EMPLOYEE\s+STOCK\s+OWNERSHIP\s+PLAN\b.*",
-        r"\s+ESOP\b.*",
-        r"\s+STOCK\s+BONUS\s+PLAN\b.*",
-        r"\s+LEVERAGED\s+ESOP\b.*",
-        r"\s+KSOP\b.*",
-        r"\s+401\(K\).*ESOP\b.*",
-        r"\s+SAVINGS?\s+AND\s+ESOP\b.*",
-        r"\s+THRIFT\s+AND\s+ESOP\b.*",
-        r"\s+STOCK\s+OWNERSHIP\s+PLAN\b.*",
-    ]
     name = plan_name.strip()
-    for pattern in suffixes:
-        name = re.sub(pattern, "", name, flags=re.IGNORECASE).strip()
+
+    # "(THE) EMPLOYEE STOCK OWNERSHIP [& 401(K)] PLAN OF <COMPANY>" \u2014 name follows "OF"
+    m = re.match(
+        r"^(?:THE\s+)?EMPLOYEE\s+STOCK\s+OWNERSHIP\s+"
+        r"(?:(?:&|AND)\s+401\(?K\)?\s+)?(?:PLAN|TRUST)\s+OF\s+(.+)$",
+        name, flags=re.IGNORECASE)
+    if m:
+        name = m.group(1).strip()
+    else:
+        # Drop leading legal-boilerplate prefixes ("First Amended and Restated", etc.)
+        name = re.sub(r"^(?:THE\s+)?(?:FIRST\s+|SECOND\s+|THIRD\s+)?"
+                      r"AMENDED(?:\s+AND\s+RESTATED)?\s+", "",
+                      name, flags=re.IGNORECASE)
+        name = re.sub(r"^RESTATED\s+", "", name, flags=re.IGNORECASE)
+        # Strip everything from the plan-type phrase onward. The first pattern
+        # matches "EMPLOYEE STOCK OWNERSHIP" followed by ANYTHING (PLAN, 401(K)
+        # PLAN, a truncated "P"/"Pl", "PLANS (ESOP)", or nothing), which covers
+        # KSOPs and truncated source names alike.
+        suffixes = [
+            r"\s+EMPLOYEE\s+STOCK\s+OWNERSHIP\b.*",
+            r"\s+ESOP\b.*",
+            r"\s+STOCK\s+BONUS\s+PLAN\b.*",
+            r"\s+LEVERAGED\s+ESOP\b.*",
+            r"\s+KSOP\b.*",
+            r"\s+401\(?K\)?\b.*",
+            r"\s+SAVINGS?\s+AND\s+ESOP\b.*",
+            r"\s+THRIFT\s+AND\s+ESOP\b.*",
+            r"\s+STOCK\s+OWNERSHIP\s+PLAN\b.*",
+        ]
+        for pattern in suffixes:
+            name = re.sub(pattern, "", name, flags=re.IGNORECASE).strip()
+
+    # Drop a trailing 4-digit plan-vintage year (e.g. "...Company 2013" from a
+    # plan named "<COMPANY> 2013 EMPLOYEE STOCK OWNERSHIP PLAN") \u2014 that's a plan
+    # identifier, not part of the company name.
+    name = re.sub(r"\s+(?:19|20)\d{2}$", "", name).strip()
     name = name.rstrip(" -\u2013\u2014,;:")
     if name == name.upper() and len(name) > 3:
         name = name.title()
@@ -784,6 +821,10 @@ def import_from_csv(csv_path: str):
         }
         summary = compute_annual_summary(yr, yr_records, us_summary)
         insert_annual_summary(summary)
+
+    # Enforce the invariant that unreported employer-securities figures are NULL
+    # (not 0) so missing company-stock data renders as "—" rather than "$0".
+    nullify_unreported_employer_securities()
 
     set_meta("last_import", datetime.now(timezone.utc).isoformat())
     set_meta("source", csv_path)
@@ -1038,6 +1079,94 @@ def recompute_annual_summaries():
 
     conn.commit()
     set_meta("last_recompute", datetime.now(timezone.utc).isoformat())
+
+
+def nullify_unreported_employer_securities(schedule_dir: str = None) -> int:
+    """Store NULL (not 0) for employer-securities figures the filer never reported.
+
+    Employer securities — company stock held in the ESOP trust — is broken out
+    only on **Schedule H, Part I, line 1c**. Small ESOPs that file Schedule I /
+    Form 5500-SF do not itemize this figure, but legacy processing stored it as
+    ``0.0`` for those plans. A literal ``0`` is then rendered as a misleading
+    "$0" (e.g. a $32M-asset ESOP appearing to hold no company stock) and is
+    silently summed into column totals, understating "% of assets reporting
+    stock" denominators.
+
+    This sets ``employer_securities = NULL`` for every MA ESOP filing whose
+    stored value is ``0`` **unless** that zero was *explicitly reported* on the
+    plan's Schedule H (line 1c == 0 for a handful of diversified / wind-down
+    plans). Positive values (from Schedule H or Form 5500-SF) and genuine
+    Schedule-H reported zeros are preserved untouched. After this runs, missing
+    data renders as an em-dash ("—") and is skipped by ``pd.to_numeric(...).sum()``
+    and by ``SUM(employer_securities)``; ``COALESCE(employer_securities, 0)``
+    aggregates are unchanged in value but now correctly mean "sum across plans
+    that reported company stock."
+
+    Idempotent. Returns the number of rows set to NULL.
+    """
+    schedule_dir = schedule_dir or config.FORM5500_SCHEDULE_DIR
+    conn = _get_conn()
+
+    # Build the set of (year, ein, pn) that EXPLICITLY reported 0 on Schedule H,
+    # mirroring import_schedule_csv's field selection so the discriminator is
+    # consistent with how positive values were imported.
+    confirmed_zero: set[tuple] = set()
+    if os.path.isdir(schedule_dir):
+        for filename in sorted(os.listdir(schedule_dir)):
+            fn_lower = filename.lower()
+            if not fn_lower.endswith(".csv"):
+                continue
+            if not any(p.lower() in fn_lower for p in config.FORM5500_SCHEDULE_H_PATTERNS):
+                continue
+            year_match = re.search(r"(20\d{2})", filename)
+            if not year_match:
+                continue
+            yr = int(year_match.group(1))
+            try:
+                with open(os.path.join(schedule_dir, filename), "r",
+                          encoding="utf-8", errors="replace") as f:
+                    for row in csv.DictReader(f):
+                        val = _safe_money(_get_field(
+                            row, SCHEDULE_FINANCIAL_FIELDS["employer_securities"]))
+                        if val is not None and val == 0:
+                            ein = _get_field(row, SCHEDULE_EIN_FIELDS) or ""
+                            pn = _get_field(row, SCHEDULE_PN_FIELDS) or ""
+                            confirmed_zero.add(
+                                (yr, _normalize_ein(ein), _normalize_pn(pn)))
+            except Exception as e:  # noqa: BLE001
+                logger.error("Error scanning Schedule H %s: %s", filename, e)
+
+    rows = conn.execute(
+        "SELECT id, filing_year, ein, plan_num FROM form5500_filings "
+        "WHERE employer_securities = 0 AND sponsor_state = 'MA' AND is_esop = 1"
+    ).fetchall()
+    null_ids = [
+        (r["id"],) for r in rows
+        if (r["filing_year"], _normalize_ein(r["ein"]),
+            _normalize_pn(r["plan_num"])) not in confirmed_zero
+    ]
+    if null_ids:
+        conn.executemany(
+            "UPDATE form5500_filings SET employer_securities = NULL WHERE id = ?",
+            null_ids)
+        conn.commit()
+
+    # Integrity guard: employer securities can never exceed total plan assets.
+    # A handful of DOL filings report a stale/typo'd value > total assets (e.g.
+    # a plan being wound down in an acquisition). Such impossible figures are
+    # set to NULL ("—") rather than displayed.
+    conn.execute(
+        "UPDATE form5500_filings SET employer_securities = NULL "
+        "WHERE employer_securities IS NOT NULL AND total_assets IS NOT NULL "
+        "AND employer_securities > total_assets")
+    conn.commit()
+
+    set_meta("employer_securities_nullified",
+             datetime.now(timezone.utc).isoformat())
+    logger.info("nullify_unreported_employer_securities: set %d rows to NULL "
+                "(%d confirmed Schedule-H reported zeros preserved)",
+                len(null_ids), len(rows) - len(null_ids))
+    return len(null_ids)
 
 
 # Initialize on import

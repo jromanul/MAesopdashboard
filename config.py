@@ -10,70 +10,17 @@ APP_TITLE = "Form 5500 ESOP Dashboard"
 APP_ICON = "🔬"
 DB_PATH = os.path.join(os.path.dirname(__file__) or ".", "data", "form5500_dashboard.db")
 
+# Single source of truth for the "as of" date shown across pages (DOL EFAST2
+# bulk-data vintage + public-records research date). Use everywhere instead of
+# hardcoding the date in individual captions.
+DATA_AS_OF = "May 31, 2026"
+
 # ──────────────────────────────────────────────
 # AUTHORITATIVE DATA SOURCES
 # ──────────────────────────────────────────────
-
-MA_ESOP_DATA = {
-    "source": "DOL Form 5500 Filings",
-    "as_of_year": 2024,
-    "esop_count": 118,
-    "esop_plan_count": 121,
-    "ksop_count": 5,
-    "total_participants": 25_325,
-    "active_participants": 15_408,
-    "total_assets": 3_044_845_003,
-    "note": "118 unique ESOP companies filed 121 plans (5 are KSOPs)",
-}
-
-# ──────────────────────────────────────────────
-# INVESTOR-OWNED COMPANIES WITH EMPLOYEE STOCK PLANS
-# ──────────────────────────────────────────────
-# These MA-connected entities surface in DOL Form 5500 data with an
-# ESOP-related pension code (2O = "ESOP other than leveraged", 2P, etc.)
-# but are NOT employee-owned businesses in the ESOP sense. They are
-# DELIBERATELY EXCLUDED from the MA ESOP inventory above. Two distinct types:
-#
-#   Type A — Publicly-traded corporations whose 401(k)/savings plan holds
-#            company stock (or matches in stock). The "2O" code flags an
-#            ESOP *component* inside a 401(k); the company is controlled by
-#            public shareholders, not employees. NOT employee-owned.
-#
-#   Type B — Bank ESOPs created in mutual-to-stock conversions. These ARE
-#            genuine ESOP trusts, but at publicly-traded / acquired banks
-#            where the ESOP holds only a minority stake. Partially
-#            employee-owned (legal ESOP) but not employee-controlled.
-INVESTOR_OWNED_STOCK_PLANS = [
-    # Type A — public company 401(k)/savings plans with company stock
-    {"name": "State Street Corporation", "ticker": "NYSE: STT", "ein": "042456637",
-     "plan": "State Street Salary Savings Program", "type": "Public 401(k) w/ company stock",
-     "employee_owned": "No", "participants": 33216, "note": "Investor-owned; stock is a 401(k) option/match"},
-    {"name": "Raytheon / RTX Corporation", "ticker": "NYSE: RTX", "ein": "951778500",
-     "plan": "Raytheon Savings and Investment Plan", "type": "Public 401(k) w/ company stock",
-     "employee_owned": "No", "participants": 11936, "note": "Investor-owned defense contractor"},
-    {"name": "General Electric / GE Aerospace", "ticker": "NYSE: GE", "ein": "140689340",
-     "plan": "GE Retirement Savings Plan", "type": "Public 401(k) w/ company stock",
-     "employee_owned": "No", "participants": None, "note": "Investor-owned; MA operations (Lynn)"},
-    {"name": "Cabot Corporation", "ticker": "NYSE: CBT", "ein": "042271897",
-     "plan": "Cabot Corporation 401(k) and ESOP", "type": "Public KSOP (401k + stock match)",
-     "employee_owned": "No", "participants": None, "note": "Boston-HQ public specialty chemicals co"},
-    {"name": "Waters Corporation", "ticker": "NYSE: WAT", "ein": "043234558",
-     "plan": "Waters 401(k) Retirement Plan", "type": "Public 401(k) w/ company stock",
-     "employee_owned": "No", "participants": None, "note": "Milford-HQ public instrument maker"},
-    {"name": "Crane NXT", "ticker": "NYSE: CXT", "ein": "880706021",
-     "plan": "Crane 401(k) Plan", "type": "Public 401(k) w/ company stock",
-     "employee_owned": "No", "participants": 2050, "note": "Investor-owned"},
-    # Type B — bank ESOPs at publicly-traded / acquired banks (partial EO)
-    {"name": "Rockland Trust (Independent Bank Corp)", "ticker": "NASDAQ: INDB", "ein": "041782600",
-     "plan": "East Boston Savings Bank / Central Co-op ESOPs (absorbed)", "type": "Bank ESOP (public)",
-     "employee_owned": "Partial", "participants": None, "note": "Genuine ESOP trusts but publicly-traded bank; minority stake"},
-    {"name": "Wellesley Bank", "ticker": "Acquired", "ein": "041956610",
-     "plan": "Wellesley Bank Employees Stock Ownership Plan", "type": "Bank ESOP (acquired)",
-     "employee_owned": "Partial", "participants": None, "note": "Acquired by Brookline Bancorp 2018"},
-    {"name": "Chicopee Savings Bank", "ticker": "Acquired", "ein": "041174490",
-     "plan": "Chicopee Savings Bank Employee Stock Ownership Plan", "type": "Bank ESOP (acquired)",
-     "employee_owned": "Partial", "participants": None, "note": "Acquired by Westfield Bank 2016"},
-]
+# NOTE: MA ESOP headline figures are computed live from the database
+# (see form5500_analysis.get_financial_summary / get_annual_summaries), not
+# hardcoded here, so they can never drift from the underlying filings.
 
 NATIONAL_ESOP_DATA = {
     "source": "DOL Form 5500 Filings (via NCEO analysis)",
@@ -183,6 +130,13 @@ participants) data where available. **Employer securities** data (company stock 
 trust) is extracted from Schedule H Part I, line 1c — this is unique to ESOPs and represents
 the core ESOP asset.
 
+**Employer securities is a Schedule H-only line item.** Plans that file Schedule I or
+Form 5500-SF (small plans) do not itemize company stock, so this figure is *unavailable*
+for them rather than zero. Such values are shown as "—" (not reported), never "$0", and are
+excluded from employer-securities totals and stock-as-%-of-assets ratios — those figures
+therefore reflect only the plans that report company stock. A "$0" appears only where a plan
+explicitly reported zero employer securities on its Schedule H.
+
 Schedule H/I data can be loaded from pre-downloaded CSV files placed in `data/form5500/`.
 
 ### Years Covered
@@ -214,26 +168,30 @@ MA_REGIONS = {
         "Quincy", "Watertown", "Arlington", "Lexington", "Burlington", "Stoughton",
         "Norwell", "Norwood", "Avon", "Brockton", "Rockland", "Abington",
         "Framingham", "Natick", "Wakefield", "Woburn", "Middleton",
+        "Allston", "Everett", "Medford", "Needham", "Reading", "Stoneham",
     ],
     "Northeast MA": [
-        "Lowell", "Tewksbury", "N. Chelmsford", "Andover", "North Reading",
-        "Danvers", "Beverly", "Ipswich", "Newburyport", "Amesbury", "Lynn",
+        "Lowell", "Tewksbury", "N. Chelmsford", "North Chelmsford", "Andover",
+        "North Reading", "Danvers", "Beverly", "Ipswich", "Newburyport",
+        "Amesbury", "Lynn", "Georgetown", "Haverhill", "Salisbury",
     ],
     "MetroWest & Central MA": [
         "Worcester", "Marlborough", "Westford", "Littleton", "Devens",
         "Maynard", "Concord", "Hopkinton", "Milford", "Grafton", "Uxbridge",
         "Oxford", "S. Lancaster", "Clinton", "West Boylston",
+        "Leominster", "Millbury", "West Brookfield", "Holliston", "Shirley",
     ],
     "Western MA": [
         "Springfield", "Holyoke", "Greenfield", "Northampton", "Amherst",
         "Hadley", "Easthampton", "Chicopee", "Palmer", "Orange", "Pittsfield",
         "Haydenville", "Belchertown", "West Hatfield", "Indian Orchard", "Athol",
-        "Westfield",
+        "Westfield", "Lee", "East Otis",
     ],
     "Southeast MA & Cape": [
         "Fall River", "New Bedford", "W. Bridgewater", "Pembroke", "Plymouth",
         "Mashpee", "West Yarmouth", "Vineyard Haven", "West Tisbury",
-        "Mansfield", "Franklin",
+        "Mansfield", "Franklin", "Hyannis", "Harwich", "Foxborough",
+        "Rehoboth", "Somerset", "Marshfield",
     ],
     "North Shore & Merrimack": [
         "Billerica", "Wilmington", "Spec Process Engineering",

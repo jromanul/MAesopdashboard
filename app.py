@@ -738,6 +738,8 @@ if form5500_analysis.has_data() and not form5500_analysis.has_financial_data():
             with st.spinner(f"Importing Schedule H/I financial data from {len(_sch_csv_files)} file(s)..."):
                 _sch_results = form5500_analysis.import_all_schedule_csvs()
                 if any(r.get("updated", 0) > 0 for r in _sch_results):
+                    # Unreported employer-securities → NULL (renders "—", not "$0")
+                    form5500_analysis.nullify_unreported_employer_securities()
                     form5500_analysis.recompute_annual_summaries()
                     st.rerun()
 
@@ -773,6 +775,7 @@ if f5500_summaries:
         "\U0001f5fa\ufe0f Geography",
         "\U0001f504 Year-over-Year",
         "\U0001f1fa\U0001f1f8 National Comparison",
+        "\U0001f195 2025 Filers",
         "\U0001f4d6 Methodology",
     ]
 
@@ -837,9 +840,10 @@ if f5500_summaries:
         _all_filed = latest.get("ma_plan_count") or 0
         _excluded_count = _all_filed - _ov_plan_count
         st.caption(
-            f"_Note: {_excluded_count} plans with $0 assets or 0 active participants "
-            f"(defunct, terminating, or in final distribution) are excluded from this "
-            f"page's active counts. All {_all_filed} filed plans are included in other tabs. "
+            f"_Note: {_excluded_count} plans with 0 active participants "
+            f"(terminating or in final distribution), plus a short list of known "
+            f"defunct/wind-down plans, are excluded from this page's active counts. "
+            f"All {_all_filed} filed plans are included in other tabs. "
             f"See the Year-over-Year tab for details._"
         )
 
@@ -848,18 +852,22 @@ if f5500_summaries:
         if latest_year == 2024:
             _dq_new, _dq_term, _dq_late = form5500_analysis.get_new_and_terminated(latest_year)
             _dq_t1 = sum(1 for d in _dq_term if str(d.get("yoy_tier", "")).startswith("Tier 1"))
+            _dq_t3 = sum(1 for d in _dq_late if str(d.get("yoy_tier", "")).startswith("Tier 3"))
+            _dq_unv = len(_dq_late) - _dq_t3
             _dq_tier_txt = ("all Tier 1 — confirmed" if _dq_t1 == len(_dq_term)
                             else f"{_dq_t1} of {len(_dq_term)} Tier 1 — confirmed")
+            _dq_late_txt = f"{_dq_t3} confirmed still employee-owned (Tier 3)"
+            if _dq_unv:
+                _dq_late_txt += f", {_dq_unv} unverified"
             st.info(
                 "**2024 Data Disclaimer:** The data shown reflects filings available through the "
-                "DOL EFAST2 bulk data releases and individual filing searches as of May 31, "
-                "2026. Some plans file on fiscal-year schedules or request extensions, so their "
+                f"DOL EFAST2 bulk data releases and individual filing searches as of {config.DATA_AS_OF}. "
+                "Some plans file on fiscal-year schedules or request extensions, so their "
                 "2024 filings may not yet be published by DOL.\n\n"
-                f"{len(_dq_term)} ESOPs that filed in 2023 are terminated ({_dq_tier_txt} via "
+                f"{len(_dq_term)} ESOP filings from 2023 are terminated ({_dq_tier_txt} via "
                 "acquisition + filing evidence), and "
-                f"{len(_dq_late)} additional plans have no 2024 ESOP filing yet on DOL but are "
-                "confirmed still employee-owned (Tier 3 — active late filers). See the "
-                "Year-over-Year tab for the full confidence breakdown."
+                f"{len(_dq_late)} additional plans have no 2024 ESOP filing yet on DOL "
+                f"({_dq_late_txt}). See the Year-over-Year tab for the full confidence breakdown."
             )
 
         # Financial data: show employer securities section if available
@@ -877,7 +885,8 @@ if f5500_summaries:
                               "Schedule H, Part I Line 1c", ma=True)
                 _es_pct = _es / _fin_summary["total_assets"] * 100 if _fin_summary.get("total_assets", 0) > 0 else 0
                 _render_metric(_sec_c2, f"{_es_pct:.0f}%", "Stock as % of Total Assets",
-                              "Schedule H, Part I Line 1c / Total Assets", ma=True)
+                              "Line 1c ÷ all active-plan assets (see below for "
+                              "the ratio among only stock-reporting plans)", ma=True)
                 # Count of active plans actually reporting employer securities
                 # (distinct from the "Avg Assets Per Participant" card above, which
                 # would otherwise be duplicated here).
@@ -978,8 +987,8 @@ if f5500_summaries:
             _excluded_n = _total_filed - len(filings)
             st.caption(
                 f"Showing {len(show_df)} of {len(filings)} active MA ESOP filings "
-                f"for {latest_year} ({_excluded_n} plans with $0 assets or 0 active "
-                f"participants excluded from {_total_filed} total filed)")
+                f"for {latest_year} ({_excluded_n} plans with 0 active participants or "
+                f"on the known wind-down list excluded from {_total_filed} total filed)")
 
             csv_data = utils.to_csv_bytes(filings)
             st.download_button("Download Active MA ESOP Data as CSV", csv_data,
@@ -1237,8 +1246,12 @@ if f5500_summaries:
                 _ec1, _ec2 = st.columns([2, 3])
                 with _ec1:
                     _em1, _em2 = st.columns(2)
-                    _em1.metric("Aggregate stock %",
-                               f"{(_agg_es/_agg_a*100):.0f}%" if _agg_a else "N/A")
+                    _em1.metric("Aggregate stock % (reporting plans)",
+                               f"{(_agg_es/_agg_a*100):.0f}%" if _agg_a else "N/A",
+                               help="Employer securities ÷ total assets, counting only "
+                                    "plans that report company stock. This runs higher "
+                                    "than the Overview's 'Stock as % of Total Assets', "
+                                    "which divides by ALL active-plan assets.")
                     _em2.metric("Median plan stock %", f"{_es['_ratio'].median():.0f}%")
                     st.caption(f"{len(_es)} of {len(_adf)} active plans report employer securities.")
                 with _ec2:
@@ -1360,6 +1373,10 @@ if f5500_summaries:
     # ────────────────────────────────────
     elif _selected_page == "\U0001f5fa\ufe0f Geography":
         st.markdown(f"#### Geographic Distribution of MA ESOPs ({latest_year})")
+        st.caption(f"_Shows all filed {latest_year} plans by sponsor city (not the "
+                   f"zombie-excluded 'active' subset on the Overview). Villages and "
+                   f"neighborhoods are rolled into their parent municipality on the map "
+                   f"(e.g. Hyannis \u2192 Barnstable, Allston \u2192 Boston)._")
 
         city_data = form5500_analysis.get_ma_filings_by_city(latest_year)
         if city_data:
@@ -1403,22 +1420,37 @@ if f5500_summaries:
         _t3 = [d for d in late_filers if d.get("yoy_tier", "").startswith("Tier 3")]
         _tU = [d for d in late_filers if d.get("yoy_tier", "") == "Unverified"]
 
-        _no_file_total = len(terminated) + len(late_filers)
-        net_change = len(new_plans) - _no_file_total
+        # Count distinct companies (EINs) \u2014 a company can file more than one ESOP
+        # plan (e.g. New England Biolabs files two), so plan-row counts and
+        # company counts differ. Headline metrics use companies; plan-row counts
+        # are noted in the sub-labels where they differ.
+        def _co_count(rows):
+            return len({str(d["ein"]).lstrip("0") for d in rows})
+        _new_cos, _term_cos, _late_cos = (
+            _co_count(new_plans), _co_count(terminated), _co_count(late_filers))
+
+        def _plans_note(cos, rows):
+            return f" ({rows} plans)" if rows != cos else ""
+
+        _no_file_total = _term_cos + _late_cos
+        net_change = _new_cos - _no_file_total
         yoy_c1, yoy_c2, yoy_c3, yoy_c4 = st.columns(4)
-        _render_metric(yoy_c1, str(len(new_plans)), "New ESOPs", f"New in {_yoy_year}")
-        _render_metric(yoy_c2, str(len(terminated)), "Terminated",
+        _render_metric(yoy_c1, str(_new_cos),
+                      "New ESOPs", f"New in {_yoy_year}{_plans_note(_new_cos, len(new_plans))}")
+        _render_metric(yoy_c2, str(_term_cos),
+                      "Terminated" + _plans_note(_term_cos, len(terminated)),
                       f"Tier 1: {len(_t1)} confirmed, Tier 2: {len(_t2)} likely")
-        _render_metric(yoy_c3, str(len(late_filers)), "Late Filers",
+        _render_metric(yoy_c3, str(_late_cos),
+                      "Late Filers" + _plans_note(_late_cos, len(late_filers)),
                       f"Tier 3: {len(_t3)} active-confirmed, {len(_tU)} unverified")
         net_label = f"+{net_change}" if net_change > 0 else str(net_change)
         _render_metric(yoy_c4, net_label, "Net Change",
-                      f"{_yoy_year - 1} \u2192 {_yoy_year}")
+                      f"{_yoy_year - 1} \u2192 {_yoy_year} (companies)")
 
         st.caption(
             f"_Plans that filed Form 5500 in {_yoy_year - 1} but are **absent** from the "
             f"{_yoy_year} dataset, classified by a 3-tier confidence system grounded in DOL "
-            f"filing evidence + public-records research (as of May 29, 2026):_\n\n"
+            f"filing evidence + public-records research (as of {config.DATA_AS_OF}):_\n\n"
             f"- **Tier 1 \u2014 Confirmed Terminated:** acquisition/wind-down confirmed AND backed "
             f"by filing evidence (sponsor filed a {_yoy_year} 401(k)/welfare plan but no ESOP, "
             f"or the final ESOP return showed $0 assets / 0 active participants).\n"
@@ -1478,22 +1510,24 @@ if f5500_summaries:
             _render_yoy_table(new_plans)
 
         if terminated:
-            st.markdown(f"##### Terminated ESOPs ({len(terminated)}) "
+            _term_n = f", {len(terminated)} plans" if len(terminated) != _term_cos else ""
+            st.markdown(f"##### Terminated ESOPs ({_term_cos} companies{_term_n}) "
                         f"— Tier 1: {len(_t1)} confirmed, Tier 2: {len(_t2)} likely")
             st.caption(f"ESOPs no longer filing, due to acquisition, merger, or plan wind-down. "
                        f"**Tier 1 (Confirmed)** = backed by filing evidence (a {_yoy_year} "
                        f"non-ESOP filing replacing the ESOP, or a $0/0 final return). "
                        f"**Tier 2 (Likely)** = acquisition reported but sponsor is silent on DOL, "
                        f"so termination is inferred, not proven. "
-                       f"Verified via DOL EFAST2 + public records as of May 29, 2026. "
+                       f"Verified via DOL EFAST2 + public records as of {config.DATA_AS_OF}. "
                        f"Financial data is from each plan's last ESOP filing ({_yoy_year - 1}).")
             _render_yoy_table(terminated)
 
         if late_filers:
-            st.markdown(f"##### Late Filers ({len(late_filers)}) "
+            _late_n = f", {len(late_filers)} plans" if len(late_filers) != _late_cos else ""
+            st.markdown(f"##### Late Filers ({_late_cos} companies{_late_n}) "
                         f"— Tier 3: {len(_t3)} active-confirmed, {len(_tU)} unverified")
             st.caption(f"No {_yoy_year} Form 5500 ESOP filing appears on DOL yet "
-                       f"(as of May 29, 2026). Plans can file on extension up to 9.5 months "
+                       f"(as of {config.DATA_AS_OF}). Plans can file on extension up to 9.5 months "
                        f"after their plan year ends, and DOL bulk releases may lag further. "
                        f"**Tier 3 (Confirmed Active)** = company verified still employee-owned "
                        f"via company website / Certified EO / press — just late. "
@@ -1515,73 +1549,100 @@ if f5500_summaries:
         st.plotly_chart(_fig_flow, use_container_width=True, config=charts.PLOTLY_CONFIG)
 
 
-        # ── Why Totals Fell 2023->2024 (moved from Additional Data Analysis) ──
+        # ── Why Totals Fell (dynamic reconciliation, recomputed from filings) ──
         st.markdown("---")
         st.markdown(f"##### Why Totals Fell, {_yoy_year - 1} to {_yoy_year}")
         st.caption(
-            f"MA ESOP totals dropped sharply from {_yoy_year - 1} to {_yoy_year}. "
-            "The decline is driven almost entirely by companies that left the "
-            "dataset (via acquisition or DOL filing lag), not by shrinkage at "
-            "continuing plans. Figures come from comparing the two years' filings.")
+            f"MA ESOP totals dropped from {_yoy_year - 1} to {_yoy_year}. The decline is "
+            "driven almost entirely by companies that left the dataset (via acquisition or "
+            "DOL filing lag), not by shrinkage at continuing plans. Every figure below is "
+            "computed live from the two years' filings.")
 
-        # Verified reconciliation (2026 analysis):
-        # 2023: 131 plans, 31,862 part, 21,658 active, $3.925B
-        # 2024: 121 plans, 25,325 part, 15,408 active, $3.045B
-        _xc1, _xc2, _xc3 = st.columns(3)
-        _xc1.metric("Plans", "131 to 121", "-10", delta_color="inverse",
-                    help="Distinct MA ESOP plans filing each year.")
-        _xc2.metric("Participants", "31.9K to 25.3K", "-6,537",
-                    delta_color="inverse",
-                    help="Total participants across all MA ESOP plans.")
-        _xc3.metric("Assets", "$3.93B to $3.05B", "-$880M",
-                    delta_color="inverse",
-                    help="Total plan assets across all MA ESOP plans.")
+        _s_prev = next((s for s in f5500_summaries if s["filing_year"] == _yoy_year - 1), None)
+        _s_cur = next((s for s in f5500_summaries if s["filing_year"] == _yoy_year), None)
+        if _s_prev and _s_cur:
+            def _md_money(v):
+                """$-formatted, escaped for Streamlit markdown (\\$ avoids LaTeX)."""
+                s = f"${abs(v)/1e9:.2f}B" if abs(v) >= 1e9 else f"${abs(v)/1e6:,.0f}M"
+                return ("-" if v < 0 else "") + "\\" + s
 
-        st.markdown(
-            "**What caused it.** 21 companies present in 2023 are absent from "
-            "2024, removing about 6,440 participants and about \\$898M in assets. "
-            "They fall into two groups:")
-        _xrows = [
-            {"Driver": "Late filers (filing lag, expected to return)",
-             "Companies": 9, "Participants Left": "2,541",
-             "Assets Left": "$437M", "Permanent": "No (likely temporary)"},
-            {"Driver": "Confirmed terminated (acquired / closed)",
-             "Companies": 12, "Participants Left": "3,899",
-             "Assets Left": "$460M", "Permanent": "Yes"},
-        ]
-        _render_html_table(pd.DataFrame(_xrows), height=160)
+            def _plain_money(v):
+                return (f"${v/1e9:.2f}B" if abs(v) >= 1e9 else f"${v/1e6:,.0f}M")
 
-        st.markdown(
-            "**Filing lag is a large, recoverable piece.** The 9 late filers, "
-            "led by Shawmut Group (1,196 participants, \\$274M), Web Industries "
-            "(\\$92M), and Aerodyne Research (\\$46M), are confirmed still "
-            "employee-owned and simply have not filed their 2024 Form 5500 yet "
-            "(plans can file up to about 9.5 months after year-end, and DOL bulk "
-            "data lags further). Their roughly 2,500 participants and \\$437M should "
-            "reappear as 2024 data completes.")
-        st.markdown(
-            "**Confirmed terminations** (permanent) are the slightly larger group: "
-            "ESOPs acquired by outside buyers, such as IDG (Blackstone), Barclay "
-            "Water (Ecolab, Nov 2024), Diamond Antenna (Artemis Capital), Cadmus "
-            "(CI Capital), New England Natural Bakers (BetterBody Foods), and Fred "
-            "C. Church (AssuredPartners), plus New England Biolabs (whose plan "
-            "ceased being an ESOP in 2013) and a few that wound down. These remove "
-            "about 3,900 participants permanently.")
-        st.markdown(
-            "**Continuing plans were roughly flat.** Among companies that filed "
-            "both years, the only large declines were Eastern Bank (1,904 to 557 "
-            "participants; -\\$194M, reflecting the Cambridge Bancorp merger "
-            "consolidation) and Abt Global (3,697 to 2,628; -\\$75M). Net change at "
-            "continuing plans was minor compared with the roughly \\$900M removed "
-            "by exits.")
-        st.info(
-            "**Bottom line:** about 99% of the participant drop comes from "
-            "companies leaving the dataset (exits more than account for the entire "
-            "net asset drop too, partly offset by 11 new entrants adding about "
-            "\\$68M). Of those exits, 39% of lost participants and 49% of lost "
-            "assets are temporary filing lag (expected to return), while the rest "
-            "are permanent terminations. The underlying active-ESOP sector was "
-            "substantially stable year over year.")
+            def _sum_part(rows):
+                return sum(d.get("total_participants") or 0 for d in rows)
+
+            def _sum_assets(rows):
+                return sum(d.get("total_assets") or 0 for d in rows)
+
+            _pl0, _pl1 = _s_prev["ma_plan_count"], _s_cur["ma_plan_count"]
+            _pt0, _pt1 = _s_prev["ma_total_participants"], _s_cur["ma_total_participants"]
+            _as0, _as1 = _s_prev["ma_total_assets"], _s_cur["ma_total_assets"]
+
+            _term_p, _term_a = _sum_part(terminated), _sum_assets(terminated)
+            _late_p, _late_a = _sum_part(late_filers), _sum_assets(late_filers)
+            _exit_p, _exit_a = _term_p + _late_p, _term_a + _late_a
+            _exit_cos = _term_cos + _late_cos
+            _new_a = _sum_assets(new_plans)
+            _cont_a = (_as1 - _as0) + _exit_a - _new_a  # continuing-plan net change (identity)
+
+            _xc1, _xc2, _xc3 = st.columns(3)
+            _xc1.metric("Plans", f"{_pl0} to {_pl1}", str(_pl1 - _pl0),
+                        delta_color="inverse", help="MA ESOP plan filings each year.")
+            _xc2.metric("Participants", f"{_pt0/1000:.1f}K to {_pt1/1000:.1f}K",
+                        f"{_pt1 - _pt0:,}", delta_color="inverse",
+                        help="Total participants across all MA ESOP plans.")
+            _xc3.metric("Assets", f"{_plain_money(_as0)} to {_plain_money(_as1)}",
+                        f"-{_plain_money(abs(_as1 - _as0))}", delta_color="inverse",
+                        help="Total plan assets across all MA ESOP plans.")
+
+            st.markdown(
+                f"**What caused it.** {_exit_cos} companies present in {_yoy_year - 1} are "
+                f"absent from {_yoy_year}, removing about {_exit_p:,} participants and about "
+                f"{_md_money(_exit_a)} in assets. They fall into two groups:")
+            _xrows = [
+                {"Driver": "Late filers (filing lag / not yet refiled)",
+                 "Companies": _late_cos, "Participants Left": f"{_late_p:,}",
+                 "Assets Left": _plain_money(_late_a), "Permanent": "Mostly no"},
+                {"Driver": "Confirmed terminated (acquired / closed)",
+                 "Companies": _term_cos, "Participants Left": f"{_term_p:,}",
+                 "Assets Left": _plain_money(_term_a), "Permanent": "Yes"},
+            ]
+            _render_html_table(pd.DataFrame(_xrows), height=160)
+
+            # Dynamically name the largest late filers so the prose never drifts.
+            _top_late = sorted(late_filers, key=lambda d: -(d.get("total_assets") or 0))[:3]
+            _late_lead = ", ".join(
+                f"{d['sponsor_name']} ({_md_money(d.get('total_assets') or 0)})"
+                for d in _top_late)
+            st.markdown(
+                f"**Filing lag is the largest, mostly recoverable piece.** The {_late_cos} late "
+                f"filers ({_md_money(_late_a)}), led by {_late_lead}, have no {_yoy_year} Form 5500 "
+                f"on DOL yet. Most are confirmed still employee-owned (Tier 3) and should reappear "
+                f"as {_yoy_year} data completes; a few are unverified (e.g. a plan that may have "
+                f"ended in an acquisition without a final filing).")
+            st.markdown(
+                "**Confirmed terminations** (permanent) are ESOPs acquired by outside buyers — "
+                "e.g. IDG (Blackstone), Barclay Water (Ecolab, Nov 2024), Diamond Antenna "
+                "(Artemis Capital), Cadmus (CI Capital), New England Natural Bakers (BetterBody "
+                "Foods), and Fred C. Church (AssuredPartners) — plus New England Biolabs (whose "
+                f"plan ceased being an ESOP in 2013) and a few that wound down. These remove "
+                f"about {_term_p:,} participants ({_md_money(_term_a)}) permanently.")
+            _cont_word = "grew" if _cont_a >= 0 else "declined"
+            st.markdown(
+                f"**Continuing plans were roughly flat** ({_cont_word} about "
+                f"{_md_money(abs(_cont_a))} net, mostly market movement). Among companies that "
+                f"filed both years, the largest single decline was Abt Global "
+                f"(3,697 to 2,628 participants; -\\$75M). That is small next to the "
+                f"{_md_money(_exit_a)} removed by exits.")
+            st.info(
+                f"**Bottom line:** essentially the entire {_md_money(abs(_as1 - _as0))} asset drop "
+                f"comes from the {_exit_cos} companies leaving the dataset ({_md_money(_exit_a)}), "
+                f"partly offset by continuing-plan growth (~{_md_money(abs(_cont_a))}) and "
+                f"{_new_cos} new filings (~{_md_money(_new_a)}). Of the exits, the late filers "
+                f"({_md_money(_late_a)}) are largely temporary filing lag expected to return, while "
+                f"the terminations ({_md_money(_term_a)}) are permanent. The underlying "
+                "active-ESOP sector was substantially stable year over year.")
 
     # ────────────────────────────────────
     # PAGE: National Comparison
@@ -1597,6 +1658,10 @@ if f5500_summaries:
                    f"national data (DOL processing lags ~2 years). MA data is from "
                    f"{latest_year} DOL Form 5500 filings. Workforce rates use BLS "
                    f"2024 civilian labor force._")
+        st.caption(f"_For an apples-to-apples comparison with the NCEO national count "
+                   f"(all ESOPs that filed), MA figures on this page use **all filed** "
+                   f"{latest_year} plans, not the zombie-excluded 'active' count shown on "
+                   f"the Overview tab._")
 
         fig_share = charts.build_f5500_ma_share_bars(f5500_summaries)
         st.plotly_chart(fig_share, use_container_width=True, config=charts.PLOTLY_CONFIG)
@@ -1637,13 +1702,114 @@ if f5500_summaries:
                       f"{ma_part:,} of {us_part:,} (NCEO {_nat_data_year})", ma=True)
         ma_assets = latest.get("ma_total_assets", 0) or 0
         us_assets = latest.get("us_total_assets", 0) or us_est["total_assets"]
+
+        def _natfmt(v):
+            if v >= 1e12:
+                return f"${v / 1e12:.1f}T"
+            if v >= 1e9:
+                return f"${v / 1e9:.1f}B"
+            return f"${v / 1e6:.0f}M"
+
         if ma_assets > 0 and us_assets > 0:
             ma_assets_pct = ma_assets / us_assets * 100
             _render_metric(sc3, f"{ma_assets_pct:.1f}%", "MA Share of US ESOP Assets",
-                          f"${ma_assets / 1e9:.1f}B of ${us_assets / 1e9:.1f}B (NCEO {_nat_data_year})", ma=True)
+                          f"{_natfmt(ma_assets)} of {_natfmt(us_assets)} (NCEO {_nat_data_year})", ma=True)
         else:
             _render_metric(sc3, "N/A", "MA Share of US ESOP Assets",
                           "Financial data requires Schedule H/I", ma=True)
+
+    # ────────────────────────────────────
+    # PAGE: 2025 Filers (early tracking — form year still open)
+    # ────────────────────────────────────
+    elif _selected_page == "\U0001f195 2025 Filers":
+        st.markdown("#### 2025 Filers — Early Tracking")
+        _f25 = form5500_analysis.get_ma_filings(2025)
+        st.markdown(
+            '<div class="callout-eo">'
+            '<p><b>Form year 2025 is still open.</b> Most calendar-year 2025 plans '
+            'file between July and October 2026, so this page shows <b>early filers '
+            'only</b> — typically fiscal-year plans whose 2025 plan year has already '
+            'ended, short plan years, and final (termination) filings. Counts and '
+            'totals here will grow all year and are <b>not comparable</b> to the '
+            'complete 2014&ndash;2024 years.</p>'
+            '<p>These filings are kept out of the Overview, Trends, and Year-over-Year '
+            'pages until the filing year is substantially complete.</p>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+        if _f25:
+            _prior_eins = form5500_analysis.get_prior_eins(2025)
+            _n_new = sum(1 for _f in _f25 if _f.get("ein") not in _prior_eins)
+            _tot_p = sum(_f.get("total_participants") or 0 for _f in _f25)
+            _assets_known = [_f["total_assets"] for _f in _f25 if _f.get("total_assets")]
+
+            def _fmt25(v):
+                if v >= 1e9:
+                    return f"${v / 1e9:.2f}B"
+                if v >= 1e6:
+                    return f"${v / 1e6:.1f}M"
+                return f"${v:,.0f}"
+
+            mcol1, mcol2, mcol3, mcol4 = st.columns(4)
+            _render_metric(mcol1, f"{len(_f25):,}", "2025 Filings Received So Far")
+            _render_metric(mcol2, f"{_n_new:,}", "First-Time Filers (new EIN)")
+            _render_metric(mcol3, f"{_tot_p:,}", "Participants (filed so far)")
+            _render_metric(mcol4,
+                           _fmt25(sum(_assets_known)) if _assets_known else "N/A",
+                           f"Assets ({len(_assets_known)} plans reporting)")
+
+            f25_search = st.text_input("Search by plan name, sponsor, or city",
+                                       key="f5500_2025_search")
+            f25_df = pd.DataFrame(_f25)
+            f25_df["new_to_dataset"] = f25_df["ein"].apply(
+                lambda e: "Yes" if e not in _prior_eins else "No")
+            if f25_search:
+                _sl = f25_search.lower()
+                _mask = f25_df.apply(lambda r: _sl in (
+                    str(r.get("plan_name", "")) + str(r.get("sponsor_name", "")) +
+                    str(r.get("sponsor_city", ""))
+                ).lower(), axis=1)
+                f25_df = f25_df[_mask]
+
+            _f25_cols = {
+                "sponsor_name": "Sponsor",
+                "plan_name": "Plan Name",
+                "sponsor_city": "City",
+                "industry_sector": "Industry",
+                "new_to_dataset": "New to Dataset?",
+                "is_ksop": "KSOP?",
+                "total_participants": "Participants",
+                "active_participants": "Active Participants",
+                "total_assets": "Total Assets",
+                "employer_contributions": "Employer Contributions",
+                "benefits_paid": "Benefits Paid",
+            }
+            _avail25 = [c for c in _f25_cols if c in f25_df.columns]
+            _show25 = f25_df[_avail25].copy()
+            _show25.columns = [_f25_cols[c] for c in _avail25]
+            if "KSOP?" in _show25.columns:
+                _show25["KSOP?"] = _show25["KSOP?"].apply(lambda x: "Yes" if x else "No")
+            _render_html_table(_show25,
+                               money_cols=["Total Assets", "Employer Contributions",
+                                           "Benefits Paid"],
+                               number_cols=["Participants", "Active Participants"],
+                               height=500,
+                               numbered=True,
+                               sortable_cols=["Participants", "Active Participants",
+                                              "Total Assets", "Employer Contributions",
+                                              "Benefits Paid"],
+                               show_totals=True)
+            st.caption(
+                f"Showing {len(_show25)} of {len(_f25)} MA ESOP filings received for "
+                f"form year 2025. Financial fields appear once the plan's "
+                f"Schedule H/I or 5500-SF data is published by DOL.")
+            st.download_button("Download 2025 Early Filers as CSV",
+                               utils.to_csv_bytes(_f25),
+                               "ma_esops_form5500_2025_early.csv", "text/csv")
+        else:
+            st.info("No 2025 filings imported yet. Run "
+                    "`python3 scan_dol_filers.py --year 2025 --import-new` "
+                    "to scan DOL bulk data and import early 2025 filers.")
 
     # ────────────────────────────────────
     # PAGE: Methodology

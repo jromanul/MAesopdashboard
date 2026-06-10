@@ -46,13 +46,39 @@ _NAME_OVERRIDES = {
     "Manchester": "MANCHESTER-BY-THE-SEA",
 }
 
+# Villages, neighborhoods, abbreviations, and common misspellings that are NOT
+# MassGIS towns, mapped to their parent municipality (keyed by UPPER-cased input).
+# Without this, these filings silently drop off the choropleth (e.g. Hyannis —
+# the 6th-largest ESOP city — and every Boston neighborhood). Values are matched
+# against GeoJSON properties.TOWN (all confirmed present in data/geo/ma_towns.geojson).
+_VILLAGE_TO_TOWN = {
+    # Boston neighborhoods
+    "ALLSTON": "BOSTON", "BRIGHTON": "BOSTON", "CHARLESTOWN": "BOSTON",
+    "DORCHESTER": "BOSTON", "HYDE PARK": "BOSTON", "JAMAICA PLAIN": "BOSTON",
+    "MATTAPAN": "BOSTON", "ROSLINDALE": "BOSTON", "ROXBURY": "BOSTON",
+    "WEST ROXBURY": "BOSTON", "EAST BOSTON": "BOSTON",
+    # Villages → parent town
+    "HYANNIS": "BARNSTABLE", "WEST YARMOUTH": "YARMOUTH", "SOUTH YARMOUTH": "YARMOUTH",
+    "EAST OTIS": "OTIS", "NORTH CHELMSFORD": "CHELMSFORD", "N. CHELMSFORD": "CHELMSFORD",
+    "DEVENS": "AYER", "SOUTH DEERFIELD": "DEERFIELD",
+    "SOUTH LANCASTER": "LANCASTER", "SO. LANCASTER": "LANCASTER",
+    "INDIAN ORCHARD": "SPRINGFIELD", "HAYDENVILLE": "WILLIAMSBURG",
+    "WEST HATFIELD": "HATFIELD",
+    # Abbreviations / misspellings → correct town
+    "MARLBORO": "MARLBOROUGH", "MIDDLEBORO": "MIDDLEBOROUGH",
+    "SOUTHBORO": "SOUTHBOROUGH", "WESTBORO": "WESTBOROUGH",
+    "W. SPRINGFIELD": "WEST SPRINGFIELD", "RANDDOLPH": "RANDOLPH",
+    "WODBURN": "WOBURN",
+}
+
 
 def _normalize_town_name(name: str) -> str:
     if not name:
         return ""
     if name in _NAME_OVERRIDES:
         return _NAME_OVERRIDES[name]
-    return name.strip().upper()
+    key = name.strip().upper()
+    return _VILLAGE_TO_TOWN.get(key, key)
 
 
 def has_geojson() -> bool:
@@ -98,6 +124,17 @@ def create_choropleth_map(
 
     plot_df = df.copy()
     plot_df["_town_match"] = plot_df[municipality_col].apply(_normalize_town_name)
+
+    # Roll villages/neighborhoods up into their parent town: sum all numeric
+    # columns per town so a town's shade reflects every filing within it (e.g.
+    # Boston = Boston + Allston + Dorchester) and duplicate town rows merge into
+    # one polygon rather than overwriting each other.
+    _num_cols = [c for c in plot_df.select_dtypes(include="number").columns]
+    if _num_cols:
+        plot_df = plot_df.groupby("_town_match", as_index=False)[_num_cols].sum()
+    else:
+        plot_df = plot_df.drop_duplicates(subset="_town_match")
+    plot_df[municipality_col] = plot_df["_town_match"].str.title()
 
     if color_scale is None:
         color_scale = _DEFAULT_SCALE

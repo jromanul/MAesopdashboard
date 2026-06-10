@@ -28,3 +28,7 @@ data/pdfs/
 
 # Streamlit secrets (if any)
 .streamlit/secrets.toml
+
+# DB backups from data-maintenance runs (kept local only)
+data/*.bak
+data/*.bak-*
