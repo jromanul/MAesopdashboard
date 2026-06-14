@@ -131,35 +131,47 @@ st.markdown("""
         background-color: #1A6BB5 !important;
     }
 
-    /* ── Sidebar: always visible, not collapsible ── */
+    /* ── Sidebar background (all viewports) ── */
     [data-testid="stSidebar"] {
         background-color: #14558F;
-        min-width: 280px !important;
-        max-width: 280px !important;
-        transform: none !important;
-        position: relative !important;
-        transition: none !important;
     }
-    [data-testid="stSidebar"][aria-expanded="false"] {
-        min-width: 280px !important;
-        max-width: 280px !important;
-        margin-left: 0 !important;
-        transform: none !important;
-        display: block !important;
-    }
-    /* Hide the collapse/close button */
-    [data-testid="stSidebar"] button[kind="header"],
-    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"],
-    [data-testid="collapsedControl"],
-    [data-testid="stSidebarCollapsedControl"],
-    button[data-testid="stSidebarCollapseButton"] {
+    /* Streamlit's auto-generated multipage nav is unused (custom radio nav instead) */
+    [data-testid="stSidebarNav"] {
         display: none !important;
-        visibility: hidden !important;
     }
-    /* Hide the expand arrow when collapsed */
-    [data-testid="stSidebarNav"],
-    [data-testid="collapsedControl"] {
-        display: none !important;
+
+    /* ── Desktop (≥769px): lock the sidebar open, hide the collapse control ── */
+    @media (min-width: 769px) {
+        [data-testid="stSidebar"] {
+            min-width: 280px !important;
+            max-width: 280px !important;
+            transform: none !important;
+            position: relative !important;
+            transition: none !important;
+        }
+        [data-testid="stSidebar"][aria-expanded="false"] {
+            min-width: 280px !important;
+            max-width: 280px !important;
+            margin-left: 0 !important;
+            transform: none !important;
+            display: block !important;
+        }
+        [data-testid="stSidebar"] button[kind="header"],
+        [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"],
+        [data-testid="collapsedControl"],
+        [data-testid="stSidebarCollapsedControl"],
+        [data-testid="stExpandSidebarButton"],
+        button[data-testid="stSidebarCollapseButton"] {
+            display: none !important;
+            visibility: hidden !important;
+        }
+    }
+
+    /* ── Mobile (<769px): let the sidebar collapse so content is reachable ── */
+    @media (max-width: 768px) {
+        [data-testid="stSidebar"] {
+            max-width: 85vw !important;
+        }
     }
     [data-testid="stSidebar"] *,
     [data-testid="stSidebar"] p,
@@ -259,9 +271,15 @@ st.markdown("""
         display: none;
     }
     div[data-testid="stRadio"] > div {
-        gap: 2px !important;
+        gap: 3px !important;
+        width: 100% !important;
     }
+    /* Each option renders as a full-width, uniform nav pill */
     div[data-testid="stRadio"] > div > label {
+        display: flex !important;
+        align-items: center !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
         background-color: #EDF4FB !important;
         border-radius: 6px !important;
         padding: 0.55rem 0.9rem !important;
@@ -269,6 +287,11 @@ st.markdown("""
         cursor: pointer !important;
         transition: all 0.15s ease !important;
         border-left: 3px solid transparent !important;
+        overflow: hidden !important;
+    }
+    /* Hide the leftover baseweb radio dot so only the icon + label show */
+    div[data-testid="stRadio"] > div > label > div:first-child {
+        display: none !important;
     }
     div[data-testid="stRadio"] > div > label:hover {
         background-color: #D9E8F7 !important;
@@ -308,7 +331,7 @@ st.markdown("""
     .main-header p,
     [data-testid="stAppViewContainer"] .main-header p { color: #F6C51B !important; margin: 0.3rem 0 0 0; font-size: 1rem; }
     .main-header .header-date,
-    [data-testid="stAppViewContainer"] .main-header .header-date { color: rgba(255,255,255,0.8) !important; font-size: 0.85rem; text-align: right; }
+    [data-testid="stAppViewContainer"] .main-header .header-date { color: rgba(255,255,255,0.8) !important; font-size: 0.85rem; text-align: right; white-space: nowrap; padding-left: 1.5rem; }
 
     .section-header {
         border-bottom: 3px solid #F6C51B;
@@ -408,6 +431,37 @@ st.markdown("""
         min-width: 35px;
     }
 
+    /* ── Frozen leading column(s): keep row labels visible during horizontal scroll ── */
+    .data-table th:first-child,
+    .data-table td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 1;
+    }
+    .data-table thead th:first-child { z-index: 4 !important; }
+    .data-table tfoot td:first-child { z-index: 3 !important; }
+    /* Non-numbered tables: subtle divider on the single frozen label column */
+    .data-table:not(.numbered) th:first-child,
+    .data-table:not(.numbered) td:first-child {
+        box-shadow: 1px 0 0 #E0E0E0;
+    }
+    /* Numbered tables: fix the # width, then also freeze the following label column */
+    .data-table.numbered th:first-child,
+    .data-table.numbered td:first-child {
+        width: 40px !important;
+        min-width: 40px !important;
+        max-width: 40px !important;
+    }
+    .data-table.numbered th:nth-child(2),
+    .data-table.numbered td:nth-child(2) {
+        position: sticky;
+        left: 40px;
+        z-index: 1;
+        box-shadow: 1px 0 0 #E0E0E0;
+    }
+    .data-table.numbered thead th:nth-child(2) { z-index: 4 !important; }
+    .data-table.numbered tfoot td:nth-child(2) { z-index: 3 !important; }
+
     /* ── Totals footer row ── */
     .data-table tfoot {
         position: sticky;
@@ -456,6 +510,36 @@ st.markdown("""
         opacity: 1;
     }
 
+    /* \u2500\u2500 Section banding: give #### section headers the intended gold underline \u2500\u2500 */
+    [data-testid="stMain"] h4,
+    section.main h4 {
+        border-bottom: 2px solid #F6C51B;
+        padding-bottom: 0.3rem;
+        margin-bottom: 0.85rem;
+    }
+    /* Callout headings keep their own styling \u2014 no section underline */
+    [data-testid="stMain"] .callout-eo h4,
+    [data-testid="stMain"] .callout-warning h4,
+    section.main .callout-eo h4,
+    section.main .callout-warning h4 {
+        border-bottom: none !important;
+        padding-bottom: 0 !important;
+    }
+    /* Subsection headers (##### ...) get a lighter left accent */
+    [data-testid="stMain"] h5,
+    section.main h5 {
+        border-left: 3px solid #D9E2EC;
+        padding-left: 0.55rem;
+        margin-bottom: 0.5rem;
+    }
+    /* \u2500\u2500 Soften the heavy full-width dividers between sections \u2500\u2500 */
+    [data-testid="stMain"] hr,
+    section.main hr {
+        margin: 1.1rem 0 1.3rem 0;
+        border: none;
+        border-top: 1px solid #E8EDF2;
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -480,8 +564,9 @@ def _render_html_table(df, money_cols=None, number_cols=None, height=600,
 
     table_id = "tbl_" + hashlib.md5(str(df.columns.tolist()).encode()).hexdigest()[:8]
 
+    _table_cls = "data-table numbered" if numbered else "data-table"
     html = f'<div class="data-table-wrapper" style="max-height:{height}px;">'
-    html += f'<table class="data-table" id="{table_id}"><thead><tr>'
+    html += f'<table class="{_table_cls}" id="{table_id}"><thead><tr>'
     if numbered:
         html += '<th style="text-align:center;min-width:35px;">#</th>'
     for col_idx, col in enumerate(df.columns):
@@ -1384,7 +1469,8 @@ if f5500_summaries:
             _esop_choropleth = map_utils.create_choropleth_map(
                 _city_df, value_col="plan_count",
                 title=f"MA ESOPs by Municipality ({latest_year})",
-                color_scale=[[0, "#E8F0FE"], [0.5, "#1B3A5C"], [1, "#0A1628"]],
+                color_scale=[[0, "#9DC3E6"], [0.25, "#5B9BD5"], [0.5, "#2E75B6"],
+                             [0.75, "#1A5490"], [1, "#0A2E52"]],
                 legend_title="ESOP Count",
                 source="DOL Form 5500 Filings",
             )

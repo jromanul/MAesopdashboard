@@ -34,12 +34,14 @@ _FONT = config.CHART_FONT_FAMILY
 _MA_CENTER = {"lat": 42.10, "lon": -71.80}
 _DEFAULT_ZOOM = 7.3
 
+# Light-but-visible blue at the low end so towns with only 1–2 ESOPs are not
+# washed out against the basemap, deepening to navy at the high end.
 _DEFAULT_SCALE = [
-    [0.0, "#EDF4FB"],
-    [0.25, "#1A6BB5"],
-    [0.5, "#14558F"],
-    [0.75, "#F6C51B"],
-    [1.0, "#B8930E"],
+    [0.0, "#9DC3E6"],
+    [0.25, "#5B9BD5"],
+    [0.5, "#2E75B6"],
+    [0.75, "#1A5490"],
+    [1.0, "#0A2E52"],
 ]
 
 _NAME_OVERRIDES = {

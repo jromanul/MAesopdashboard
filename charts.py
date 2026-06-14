@@ -13,7 +13,8 @@ import config
 # ── Shared Helpers ──────────────────────────────
 
 PLOTLY_CONFIG = {
-    "displayModeBar": True,
+    # Show the toolbar only on hover so it never overlaps in-plot chart titles
+    "displayModeBar": "hover",
     "modeBarButtonsToRemove": ["lasso2d", "select2d"],
     "toImageButtonOptions": {"format": "png", "filename": "form5500_chart"},
     "displaylogo": False,
@@ -39,8 +40,8 @@ def _apply_layout(fig: go.Figure, title: str = "", height: int | None = None,
         plot_bgcolor="white",
         paper_bgcolor="white",
         height=height or config.CHART_HEIGHT_MD,
-        margin=dict(l=60, r=30, t=50, b=70 if source else 40),
-        legend=dict(orientation="h", yanchor="bottom", y=-0.22, xanchor="center", x=0.5,
+        margin=dict(l=60, r=30, t=50, b=95 if source else 40),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.20, xanchor="center", x=0.5,
                     font=dict(size=11, color=_TEXT_BLACK)),
         hovermode="x unified",
     )
@@ -57,7 +58,7 @@ def _apply_layout(fig: go.Figure, title: str = "", height: int | None = None,
     if source:
         fig.add_annotation(
             text=f"Source: {source}", xref="paper", yref="paper",
-            x=0, y=-0.18, showarrow=False,
+            x=0, y=-0.32, showarrow=False,
             font=dict(size=9, color=_TEXT_DARK),
         )
     return fig
@@ -320,6 +321,8 @@ def build_f5500_asset_histogram(asset_values: list[float]) -> go.Figure:
                   y_title="Number of Plans", source="DOL Form 5500 (Schedule H/I)",
                   height=config.CHART_HEIGHT_MD)
     fig.update_xaxes(tickangle=-45)
+    if counts:
+        fig.update_yaxes(range=[0, max(counts) * 1.18])  # headroom for outside labels
     fig.update_layout(bargap=0.25)
     return fig
 
@@ -349,6 +352,8 @@ def build_f5500_participant_histogram(partcp_values: list[int]) -> go.Figure:
                   y_title="Number of Plans", source="DOL Form 5500 Bulk Data",
                   height=config.CHART_HEIGHT_MD)
     fig.update_xaxes(tickangle=-45)
+    if counts:
+        fig.update_yaxes(range=[0, max(counts) * 1.18])  # headroom for outside labels
     fig.update_layout(bargap=0.25)
     return fig
 
@@ -426,19 +431,23 @@ def build_f5500_regional_breakdown(city_data: list[dict]) -> go.Figure:
     colors = [_NAVY, _GOLD, _GREEN, _PURPLE, _RED, _GRAY, "#D4A827"][:len(labels)]
 
     fig = go.Figure(go.Pie(
-        labels=labels, values=values, hole=0.55,
-        marker=dict(colors=colors),
-        textinfo="label+percent",
-        textfont=dict(size=11, family=_FONT, color=_TEXT_BLACK),
+        labels=labels, values=values, hole=0.55, sort=False,
+        marker=dict(colors=colors, line=dict(color="white", width=1.5)),
+        textinfo="percent",
+        textposition="inside",
+        insidetextorientation="horizontal",
+        textfont=dict(size=12, family=_FONT),
         hovertemplate="%{label}: %{value} ESOPs<br>(%{percent})<extra></extra>",
     ))
     fig.update_layout(
-        showlegend=False,
-        height=config.CHART_HEIGHT_SM + 40,
-        margin=dict(l=10, r=10, t=30, b=20),
+        showlegend=True,
+        legend=dict(orientation="h", y=-0.05, x=0.5, xanchor="center",
+                    font=dict(size=10, color=_TEXT_BLACK)),
+        height=config.CHART_HEIGHT_SM + 80,
+        margin=dict(l=10, r=10, t=40, b=70),
         paper_bgcolor="white",
         font=dict(family=_FONT, color=_TEXT_BLACK, size=12),
-        title=dict(text="MA ESOPs by Region (Form 5500)",
+        title=dict(text="MA ESOPs by Region (Form 5500)", x=0.5, xanchor="center",
                   font=dict(size=14, color=_TEXT_BLACK, family=_FONT)),
     )
     return fig
