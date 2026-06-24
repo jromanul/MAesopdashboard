@@ -140,7 +140,11 @@ explicitly reported zero employer securities on its Schedule H.
 Schedule H/I data can be loaded from pre-downloaded CSV files placed in `data/form5500/`.
 
 ### Years Covered
-Data covers filing years **2014–2024** (11 filing years available as bulk downloads from DOL).
+Complete filing years **2014–2024** (11 years of DOL bulk data) drive the Overview, Trends,
+and Year-over-Year pages. Early **2025** filers — fiscal-year, short, and final filings already
+published by DOL — are tracked separately on the **2025 Filers** page; form year 2025 stays out
+of the complete-year analyses until it is substantially filed (most calendar-year plans file
+July–October of the following year).
 
 ### Caveats
 - Some plans may be missed if they don't use standard ESOP type codes
@@ -151,7 +155,11 @@ Data covers filing years **2014–2024** (11 filing years available as bulk down
 - Late filers from recent years may not be captured in the current dataset
 
 ### Reproduction
-To rebuild this dataset, run: `python3 process_form5500.py --import-to-db`
+The dataset is built from DOL EFAST2 bulk filings by the refresh scripts in the project root.
+To pull a filing year's MA ESOP filers and import any new ones, run
+`python3 scan_dol_filers.py --year <YEAR> --import-new`, then re-derive financials from the
+authoritative Schedule H/I data with `python3 refetch_dol_financials.py`. An empty database is
+also auto-seeded from `form5500_ma_esops.csv` if that file is present in the project root.
 """
 
 DOL_FORM_5500_URL = "https://www.efast.dol.gov/5500Search/"

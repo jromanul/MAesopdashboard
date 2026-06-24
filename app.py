@@ -832,9 +832,10 @@ if form5500_analysis.has_data() and not form5500_analysis.has_financial_data():
 f5500_c1, f5500_c2, f5500_c3 = st.columns([2, 2, 6])
 with f5500_c1:
     if st.button("Rebuild Form 5500 Data", type="secondary"):
-        st.warning("This downloads ~2-5 GB of DOL bulk data and takes 15-45 minutes. "
-                  "For best results, run the standalone script instead:\n\n"
-                  "```\npython3 process_form5500.py --import-to-db\n```")
+        st.warning("Data is refreshed from DOL bulk filings via the standalone scripts, "
+                  "not from this button. In a terminal in the dashboard directory, run:\n\n"
+                  "```\npython3 scan_dol_filers.py --year 2025 --import-new\n"
+                  "python3 refetch_dol_financials.py\n```")
 with f5500_c2:
     _f5500_meta_import = form5500_analysis.get_meta("last_import")
     if _f5500_meta_import:
@@ -1913,8 +1914,8 @@ else:
         '<p><b>To load the data:</b></p>'
         '<ol>'
         '<li>Open a terminal in the dashboard directory</li>'
-        '<li>Run: <code>python3 process_form5500.py --import-to-db</code></li>'
-        '<li>This downloads DOL bulk data (~2-5 GB) and processes it (15-45 min)</li>'
+        '<li>Run <code>python3 scan_dol_filers.py --year 2024 --import-new</code> (repeat per filing year)</li>'
+        '<li>Re-derive financials: <code>python3 refetch_dol_financials.py</code></li>'
         '<li>Refresh this page when complete</li>'
         '</ol>'
         '<p>Alternatively, place pre-processed CSV files (<code>form5500_ma_esops.csv</code> and/or '
