@@ -79,6 +79,10 @@ from datetime import datetime, timezone
 
 import form5500_analysis as fa
 
+import safe_console
+
+safe_console.enable_utf8_stdout()
+
 DB = os.path.join(os.path.dirname(__file__) or ".", "data", "form5500_dashboard.db")
 CACHE = "C:/tmp/dol"
 

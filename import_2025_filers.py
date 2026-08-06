@@ -26,6 +26,10 @@ from datetime import datetime, timezone
 import form5500_analysis as fa
 from scan_dol_filers import SCH_I_FIELDS, norm_key, pick_col, to_num
 
+import safe_console
+
+safe_console.enable_utf8_stdout()
+
 DB = os.path.join(os.path.dirname(__file__) or ".", "data", "form5500_dashboard.db")
 CACHE = "/tmp/dol"
 

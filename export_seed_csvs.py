@@ -29,6 +29,10 @@ import sqlite3
 
 import config
 
+import safe_console
+
+safe_console.enable_utf8_stdout()
+
 DB_PATH = config.DB_PATH
 OPEN_YEAR = config.FORM5500_OPEN_FORM_YEAR
 

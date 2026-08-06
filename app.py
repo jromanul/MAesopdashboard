@@ -318,11 +318,51 @@ if form5500_analysis.has_data() and not form5500_analysis.has_financial_data():
 # Controls
 f5500_c1, f5500_c2, f5500_c3 = st.columns([2, 2, 6])
 with f5500_c1:
-    if st.button("Rebuild Form 5500 Data", type="secondary"):
-        st.warning("Data is refreshed from DOL bulk filings via the standalone scripts, "
-                  "not from this button. In a terminal in the dashboard directory, run:\n\n"
-                  "```\npython3 scan_dol_filers.py --year 2025 --import-new\n"
-                  "python3 refetch_dol_financials.py\n```")
+    if st.button("How to refresh this data", type="secondary"):
+        _open_yr = config.FORM5500_OPEN_FORM_YEAR          # still receiving filings
+        _done_yr = _open_yr - 1                            # newest complete year
+        st.warning(
+            "This button does not refresh anything — the data is rebuilt from DOL "
+            "bulk filings by scripts you run yourself, on a machine with this "
+            "repository checked out. (It cannot run here: the hosted app has a "
+            "read-only filesystem.)\n\n"
+            f"**Stop the app first** (Ctrl+C in its terminal) so the database is not "
+            "locked, then run these from the dashboard folder. On Windows use the "
+            "project's virtual environment — plain `python3` is not a Windows "
+            "command, and system `python` does not have this project's packages:\n\n"
+            "```\n"
+            "REM 1. See what DOL has that we do not (writes a report, changes nothing)\n"
+            f"venv\\Scripts\\python scan_dol_filers.py --year {_done_yr}\n"
+            f"venv\\Scripts\\python scan_dol_filers.py --year {_open_yr}\n"
+            "\n"
+            f"REM 2. Review dol_scan_{_done_yr}_report.csv BEFORE importing.\n"
+            "REM     Only the NEW / RETURNING buckets are safe to import.\n"
+            "REM     POSSIBLE_DUPE and amended re-filings must be handled by hand.\n"
+            f"venv\\Scripts\\python scan_dol_filers.py --year {_open_yr} --import-new\n"
+            "\n"
+            f"REM 3. Re-derive {min(config.FORM5500_YEARS)}-{_done_yr} financials from Schedule H/I\n"
+            "venv\\Scripts\\python refetch_dol_financials.py\n"
+            "\n"
+            "REM 4. Refresh the CSV seed copies of the database\n"
+            "venv\\Scripts\\python export_seed_csvs.py\n"
+            "\n"
+            "REM 5. Publish — the live site only changes when this is pushed\n"
+            "git add -A\n"
+            'git commit -m "Refresh DOL Form 5500 data"\n'
+            "git push\n"
+            "```\n\n"
+            "**Which years each step covers.** Step 1/2 works one form year at a "
+            f"time — `--year {_done_yr}` finds plans that filed late for "
+            f"{_done_yr} (fiscal-year filers arrive up to ~18 months after the "
+            f"year starts), while `--year {_open_yr}` picks up early {_open_yr} "
+            f"filers. Step 3 re-derives financials for "
+            f"{min(config.FORM5500_YEARS)}–{_done_yr} only, and never touches "
+            "participant counts — those come from the main form and are already "
+            "correct.\n\n"
+            f"**Do not blind-import {_done_yr}.** Adding `--import-new` to a "
+            "completed year also imports the RETURNING bucket, which currently "
+            "holds superseded and cross-EIN duplicate filings that would create "
+            "double-counted plans. Read the report first.")
 with f5500_c2:
     _f5500_meta_import = form5500_analysis.get_meta("last_import")
     if _f5500_meta_import:

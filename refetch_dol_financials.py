@@ -45,6 +45,10 @@ import zipfile
 import config
 import form5500_analysis as fa
 
+import safe_console
+
+safe_console.enable_utf8_stdout()
+
 CACHE_DIR = os.path.join("/tmp", "dol")
 SCHEDULE_DIR = config.FORM5500_SCHEDULE_DIR
 YEARS = list(range(2014, 2025))

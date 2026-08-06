@@ -34,8 +34,11 @@ import zipfile
 from datetime import datetime, timezone
 
 import form5500_analysis as fa
+import safe_console
 from scan_dol_filers import (CACHE_DIR, SCH_VARIANTS, SCH_I_FIELDS, fetch_zip_rows,
                              index_schedule, norm_key)
+
+safe_console.enable_utf8_stdout()
 
 DB = os.path.join(os.path.dirname(__file__) or ".", "data", "form5500_dashboard.db")
 

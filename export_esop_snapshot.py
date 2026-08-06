@@ -32,6 +32,10 @@ import os
 import sqlite3
 from datetime import datetime, timezone
 
+import safe_console
+
+safe_console.enable_utf8_stdout()
+
 DB_PATH = os.path.join(os.path.dirname(__file__) or ".", "data", "form5500_dashboard.db")
 
 # Default destination: the Business Tracking & Outreach folder, alongside the

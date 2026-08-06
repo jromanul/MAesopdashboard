@@ -24,6 +24,10 @@ import sys
 import urllib.request
 import zipfile
 
+import safe_console
+
+safe_console.enable_utf8_stdout()
+
 DB_PATH = os.path.join(os.path.dirname(__file__) or ".", "data", "form5500_dashboard.db")
 
 # ── Schedule H financial field mappings ──
