@@ -373,7 +373,6 @@ if f5500_summaries:
         "\U0001f4c8 Trends",
         "\U0001f3ed Industry",
         "\U0001f5fa\ufe0f Geography",
-        "\U0001f504 Year-over-Year",
         "\U0001f195 2025 Filers",
     ]
 
@@ -670,6 +669,14 @@ if f5500_summaries:
             fig_contrib = charts.build_f5500_contributions_bar(f5500_summaries)
             st.plotly_chart(fig_contrib, use_container_width=True, config=charts.PLOTLY_CONFIG)
 
+        st.markdown("---")
+        st.markdown("##### Contributions vs Distributions Over Time")
+        st.caption("Money flowing into ESOPs (employer contributions) vs money flowing "
+                   "out (benefits paid to departing participants).")
+
+        _fig_flow = charts.build_f5500_contributions_vs_distributions(f5500_summaries)
+        st.plotly_chart(_fig_flow, use_container_width=True, config=charts.PLOTLY_CONFIG)
+
         # ── Plan-profile and maturity views (moved here from the Overview) ──
         st.markdown("---")
         _ada = form5500_analysis.get_ma_filings(latest_year, exclude_zombie=True)
@@ -860,7 +867,11 @@ if f5500_summaries:
                 _p=("total_participants", "sum")).reset_index()
             _grp["Avg Account Balance"] = (_grp["_a"] / _grp["_p"]).round(0)
             _grp = _grp.rename(columns={"industry_sector": "Industry"})
-            _grp = _grp[_grp["Plans"] >= 2].sort_values("Avg Account Balance", ascending=False)
+            # Ordered by plan count so the rows line up with the sector chart above,
+            # which is what a reader compares this against. Balance is broken out per
+            # row, so it does not also need to drive the ordering.
+            _grp = _grp[_grp["Plans"] >= 2].sort_values(
+                ["Plans", "Avg Account Balance"], ascending=[False, False])
             _gdisp = _grp[["Industry", "Plans", "Avg Account Balance"]].copy()
             _render_html_table(_gdisp, money_cols=["Avg Account Balance"],
                                number_cols=["Plans"], height=440)
@@ -948,211 +959,6 @@ if f5500_summaries:
             st.info("No geographic data available. Run the Form 5500 processor to load filing data.")
 
     # ────────────────────────────────────
-    # PAGE: Year-over-Year Changes
-    # ────────────────────────────────────
-    elif _selected_page == "\U0001f504 Year-over-Year":
-        _yoy_year = latest_year
-        st.markdown(f"#### Year-over-Year Changes ({_yoy_year - 1} \u2192 {_yoy_year})")
-
-        new_plans, terminated, late_filers = \
-            form5500_analysis.get_new_and_terminated(_yoy_year)
-
-        # Tier breakdown for confidence-graded display
-        _t1 = [d for d in terminated if d.get("yoy_tier", "").startswith("Tier 1")]
-        _t2 = [d for d in terminated if d.get("yoy_tier", "").startswith("Tier 2")]
-        _t3 = [d for d in late_filers if d.get("yoy_tier", "").startswith("Tier 3")]
-        _tU = [d for d in late_filers if d.get("yoy_tier", "") == "Unverified"]
-
-        # Count distinct companies (EINs) \u2014 a company can file more than one ESOP
-        # plan (e.g. New England Biolabs files two), so plan-row counts and
-        # company counts differ. Headline metrics use companies; plan-row counts
-        # are noted in the sub-labels where they differ.
-        def _co_count(rows):
-            return len({str(d["ein"]).lstrip("0") for d in rows})
-        _new_cos, _term_cos, _late_cos = (
-            _co_count(new_plans), _co_count(terminated), _co_count(late_filers))
-
-        def _plans_note(cos, rows):
-            return f" ({rows} plans)" if rows != cos else ""
-
-        _no_file_total = _term_cos + _late_cos
-        net_change = _new_cos - _no_file_total
-        yoy_c1, yoy_c2, yoy_c3, yoy_c4 = st.columns(4)
-        _render_metric(yoy_c1, str(_new_cos),
-                      "New ESOPs", f"New in {_yoy_year}{_plans_note(_new_cos, len(new_plans))}")
-        _render_metric(yoy_c2, str(_term_cos),
-                      "Terminated" + _plans_note(_term_cos, len(terminated)),
-                      f"Tier 1: {len(_t1)} confirmed, Tier 2: {len(_t2)} likely")
-        _render_metric(yoy_c3, str(_late_cos),
-                      "Late Filers" + _plans_note(_late_cos, len(late_filers)),
-                      f"Tier 3: {len(_t3)} active-confirmed, {len(_tU)} unverified")
-        net_label = f"+{net_change}" if net_change > 0 else str(net_change)
-        _render_metric(yoy_c4, net_label, "Net Change",
-                      f"{_yoy_year - 1} \u2192 {_yoy_year} (companies)")
-
-        st.caption(
-            f"_Plans that filed Form 5500 in {_yoy_year - 1} but are **absent** from the "
-            f"{_yoy_year} dataset, classified by a 3-tier confidence system grounded in DOL "
-            f"filing evidence + public-records research (as of {config.DATA_AS_OF}):_\n\n"
-            f"- **Tier 1 \u2014 Confirmed Terminated:** acquisition/wind-down confirmed AND backed "
-            f"by filing evidence (sponsor filed a {_yoy_year} 401(k)/welfare plan but no ESOP, "
-            f"or the final ESOP return showed $0 assets / 0 active participants).\n"
-            f"- **Tier 2 \u2014 Likely Terminated:** acquisition reported but filing evidence is "
-            f"ambiguous (sponsor silent \u2014 no {_yoy_year} filing of any kind).\n"
-            f"- **Tier 3 \u2014 Confirmed Active (late filer):** company verified still operating as "
-            f"an employee-owned firm; no {_yoy_year} ESOP filing on DOL yet, but plan believed "
-            f"active \u2014 just late.\n"
-            f"- **Unverified:** no {_yoy_year} ESOP filing and status not yet researched.\n\n"
-            f"_Financial data shown is from each plan's last filing ({_yoy_year - 1})._"
-        )
-
-        _yoy_all_cols = ["yoy_tier", "yoy_status", "yoy_note", "plan_name", "sponsor_name",
-                         "sponsor_city",
-                         "industry_sector", "plan_eff_date", "total_participants",
-                         "active_participants", "total_assets", "total_liabilities",
-                         "employer_securities", "employer_contributions",
-                         "benefits_paid", "net_income"]
-        _yoy_col_map = {"yoy_tier": "Confidence", "yoy_status": "Status", "yoy_note": "Reason",
-                         "plan_name": "Plan Name", "sponsor_name": "Sponsor",
-                         "sponsor_city": "City", "industry_sector": "Industry",
-                         "plan_eff_date": "Plan Year Started",
-                         "total_participants": "Participants",
-                         "active_participants": "Active Participants",
-                         "total_assets": "Total Assets",
-                         "total_liabilities": "Total Liabilities",
-                         "employer_securities": "Employer Securities",
-                         "employer_contributions": "Employer Contributions",
-                         "benefits_paid": "Benefits Paid",
-                         "net_income": "Net Income"}
-        _yoy_money_cols = ["Total Assets", "Total Liabilities", "Employer Securities",
-                           "Employer Contributions", "Benefits Paid", "Net Income"]
-
-        def _render_yoy_table(plans, height=400):
-            """Helper to render a YoY category table."""
-            df = pd.DataFrame(plans)
-            cols = [c for c in _yoy_all_cols if c in df.columns]
-            if not cols:
-                return
-            disp = df[cols].copy()
-            disp.columns = [_yoy_col_map.get(c, c.replace("_", " ").title()) for c in cols]
-            if "Plan Year Started" in disp.columns:
-                disp["Plan Year Started"] = disp["Plan Year Started"].apply(
-                    lambda x: str(x)[:4] if pd.notna(x) and x else "N/A")
-            _render_html_table(disp,
-                               money_cols=_yoy_money_cols,
-                               number_cols=["Participants", "Active Participants"],
-                               height=height)
-
-        if new_plans:
-            st.markdown(f"##### New ESOP Filings in {_yoy_year}")
-            st.caption(f"Plans that filed in {_yoy_year} but did **not** file in {_yoy_year - 1}. "
-                       f"**New ESOP (Started {_yoy_year})** = plan established in {_yoy_year}. "
-                       f"**New ESOP (Started {_yoy_year - 1})** = plan established in {_yoy_year - 1}, first full-year filing in {_yoy_year}. "
-                       f"**New Filing** = first appearance in DOL data but plan started earlier. "
-                       f"**Returning** = previously filed, skipped {_yoy_year - 1}, reappeared in {_yoy_year}.")
-            _render_yoy_table(new_plans)
-
-        if terminated:
-            _term_n = f", {len(terminated)} plans" if len(terminated) != _term_cos else ""
-            st.markdown(f"##### Terminated ESOPs ({_term_cos} companies{_term_n}) "
-                        f"— Tier 1: {len(_t1)} confirmed, Tier 2: {len(_t2)} likely")
-            st.caption(f"ESOPs no longer filing, due to acquisition, merger, or plan wind-down. "
-                       f"**Tier 1 (Confirmed)** = backed by filing evidence (a {_yoy_year} "
-                       f"non-ESOP filing replacing the ESOP, or a $0/0 final return). "
-                       f"**Tier 2 (Likely)** = acquisition reported but sponsor is silent on DOL, "
-                       f"so termination is inferred, not proven. "
-                       f"Verified via DOL EFAST2 + public records as of {config.DATA_AS_OF}. "
-                       f"Financial data is from each plan's last ESOP filing ({_yoy_year - 1}).")
-            _render_yoy_table(terminated)
-
-        if late_filers:
-            _late_n = f", {len(late_filers)} plans" if len(late_filers) != _late_cos else ""
-            st.markdown(f"##### Late Filers ({_late_cos} companies{_late_n}) "
-                        f"— Tier 3: {len(_t3)} active-confirmed, {len(_tU)} unverified")
-            st.caption(f"No {_yoy_year} Form 5500 ESOP filing appears on DOL yet "
-                       f"(as of {config.DATA_AS_OF}). Plans can file on extension up to 9.5 months "
-                       f"after their plan year ends, and DOL bulk releases may lag further. "
-                       f"**Tier 3 (Confirmed Active)** = company verified still employee-owned "
-                       f"via company website / Certified EO / press — just late. "
-                       f"**Unverified** = status not yet researched. "
-                       f"Financial data is from each plan's last filing ({_yoy_year - 1}).")
-            _render_yoy_table(late_filers)
-
-        if not new_plans and not terminated and not late_filers:
-            st.info("Year-over-year comparison requires filing-level data for two consecutive years. "
-                   "Run the Form 5500 processor with `--import-to-db` to enable this analysis.")
-
-        # Contributions vs Distributions chart (moved from Financial Analysis)
-        st.markdown("---")
-        st.markdown("##### Contributions vs Distributions Over Time")
-        st.caption("Money flowing into ESOPs (employer contributions) vs money flowing "
-                   "out (benefits paid to departing participants).")
-
-        _fig_flow = charts.build_f5500_contributions_vs_distributions(f5500_summaries)
-        st.plotly_chart(_fig_flow, use_container_width=True, config=charts.PLOTLY_CONFIG)
-
-
-        # ── Why Totals Fell (dynamic reconciliation, recomputed from filings) ──
-        st.markdown("---")
-        st.markdown(f"##### Why Totals Fell, {_yoy_year - 1} to {_yoy_year}")
-        st.caption(
-            f"MA ESOP totals dropped from {_yoy_year - 1} to {_yoy_year}. The decline is "
-            "driven almost entirely by companies that left the dataset (via acquisition or "
-            "DOL filing lag), not by shrinkage at continuing plans. Every figure below is "
-            "computed live from the two years' filings.")
-
-        _s_prev = next((s for s in f5500_summaries if s["filing_year"] == _yoy_year - 1), None)
-        _s_cur = next((s for s in f5500_summaries if s["filing_year"] == _yoy_year), None)
-        if _s_prev and _s_cur:
-            def _md_money(v):
-                """$-formatted, escaped for Streamlit markdown (\\$ avoids LaTeX)."""
-                s = f"${abs(v)/1e9:.2f}B" if abs(v) >= 1e9 else f"${abs(v)/1e6:,.0f}M"
-                return ("-" if v < 0 else "") + "\\" + s
-
-            def _plain_money(v):
-                return (f"${v/1e9:.2f}B" if abs(v) >= 1e9 else f"${v/1e6:,.0f}M")
-
-            def _sum_part(rows):
-                return sum(d.get("total_participants") or 0 for d in rows)
-
-            def _sum_assets(rows):
-                return sum(d.get("total_assets") or 0 for d in rows)
-
-            _pl0, _pl1 = _s_prev["ma_plan_count"], _s_cur["ma_plan_count"]
-            _pt0, _pt1 = _s_prev["ma_total_participants"], _s_cur["ma_total_participants"]
-            _as0, _as1 = _s_prev["ma_total_assets"], _s_cur["ma_total_assets"]
-
-            _term_p, _term_a = _sum_part(terminated), _sum_assets(terminated)
-            _late_p, _late_a = _sum_part(late_filers), _sum_assets(late_filers)
-            _exit_p, _exit_a = _term_p + _late_p, _term_a + _late_a
-            _exit_cos = _term_cos + _late_cos
-
-            _xc1, _xc2, _xc3 = st.columns(3)
-            _xc1.metric("Plans", f"{_pl0} to {_pl1}", str(_pl1 - _pl0),
-                        delta_color="inverse", help="MA ESOP plan filings each year.")
-            _xc2.metric("Participants", f"{_pt0/1000:.1f}K to {_pt1/1000:.1f}K",
-                        f"{_pt1 - _pt0:,}", delta_color="inverse",
-                        help="Total participants across all MA ESOP plans.")
-            _xc3.metric("Assets", f"{_plain_money(_as0)} to {_plain_money(_as1)}",
-                        f"-{_plain_money(abs(_as1 - _as0))}", delta_color="inverse",
-                        help="Total plan assets across all MA ESOP plans.")
-
-            st.markdown(
-                f"**What caused it.** {_exit_cos} companies present in {_yoy_year - 1} are "
-                f"absent from {_yoy_year}, removing about {_exit_p:,} participants and about "
-                f"{_md_money(_exit_a)} in assets. They fall into two groups:")
-            _xrows = [
-                {"Driver": "Late filers (filing lag / not yet refiled)",
-                 "Companies": _late_cos, "Participants Left": f"{_late_p:,}",
-                 "Assets Left": _plain_money(_late_a), "Permanent": "Mostly no"},
-                {"Driver": "Confirmed terminated (acquired / closed)",
-                 "Companies": _term_cos, "Participants Left": f"{_term_p:,}",
-                 "Assets Left": _plain_money(_term_a), "Permanent": "Yes"},
-            ]
-            _render_html_table(pd.DataFrame(_xrows), height=160)
-
-
-    # ────────────────────────────────────
     # PAGE: 2025 Filers (early tracking — form year still open)
     # ────────────────────────────────────
     elif _selected_page == "\U0001f195 2025 Filers":
@@ -1166,8 +972,8 @@ if f5500_summaries:
             'ended, short plan years, and final (termination) filings. Counts and '
             'totals here will grow all year and are <b>not comparable</b> to the '
             'complete 2014&ndash;2024 years.</p>'
-            '<p>These filings are kept out of the Overview, Trends, and Year-over-Year '
-            'pages until the filing year is substantially complete.</p>'
+            '<p>These filings are kept out of the Overview, Trends, Industry and '
+            'Geography pages until the filing year is substantially complete.</p>'
             '</div>',
             unsafe_allow_html=True,
         )
