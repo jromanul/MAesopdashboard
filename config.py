@@ -184,11 +184,25 @@ July–October of the following year).
 - Late filers from recent years may not be captured in the current dataset
 
 ### Reproduction
-The dataset is built from DOL EFAST2 bulk filings by the refresh scripts in the project root.
-To pull a filing year's MA ESOP filers and import any new ones, run
-`python3 scan_dol_filers.py --year <YEAR> --import-new`, then re-derive financials from the
-authoritative Schedule H/I data with `python3 refetch_dol_financials.py`. An empty database is
-also auto-seeded from `form5500_ma_esops.csv` if that file is present in the project root.
+The dataset is rebuilt from DOL EFAST2 bulk filings by the scripts in the project root,
+run from a checkout of the repository. Stop the app first so the SQLite database is not
+locked. On Windows use the project's virtual environment — `python3` is not a Windows
+command, and the system `python` does not carry this project's packages:
+
+1. `venv\\Scripts\\python scan_dol_filers.py --year <YEAR>` — reports what DOL holds that
+   the database does not, and writes `dol_scan_<YEAR>_report.csv`. Changes nothing.
+2. Review that report. Adding `--import-new` imports the RETURNING bucket as well as the
+   NEW one, and that bucket can contain superseded re-filings and the same plan filed
+   under two EINs, which would double-count plans. Those are resolved by hand.
+3. `venv\\Scripts\\python refetch_dol_financials.py` — re-derives financials for the
+   complete years from the authoritative Schedule H/I data. Participant counts are never
+   touched here; they come from the main form.
+4. `venv\\Scripts\\python export_seed_csvs.py` — refreshes the CSV copies of the database.
+
+A form year keeps growing for roughly 18 months after it opens, because plans may file up
+to 9.5 months after a plan year ends and many run on a fiscal year, so a completed year
+should be re-scanned periodically rather than assumed final. An empty database is
+auto-seeded from `form5500_ma_esops.csv` if that file is present in the project root.
 """
 
 DOL_FORM_5500_URL = "https://www.efast.dol.gov/5500Search/"

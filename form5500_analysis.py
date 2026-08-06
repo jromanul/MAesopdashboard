@@ -32,13 +32,25 @@ logger = logging.getLogger(__name__)
 # $0 (or near-$0) total assets and/or 0 active participants with minimal assets.
 # These are excluded from Overview metrics but still appear in the full dataset
 # and Year-over-Year analysis.
+# Plans excluded from "active" figures on top of the 0-active-participants rule.
+# Every entry below also reports zero active participants, so _zombie_clause()
+# would exclude them anyway; the list is kept as a documented safety net in case
+# a wind-down plan reports stray actives.
+#
+# Removed 2026-08-06: Process Cooling Systems (EIN 42760904), which had been
+# listed as "$0 assets, 59 active". Its 2024 return reports 67 participants, 59
+# active and $10,174,947 in assets — up from $1.3M — and is not a final filing;
+# it filed again for 2025 with 53 active and $8.9M. The "$0" predates
+# refetch_dol_financials.py correcting small-plan Schedule I assets (which that
+# script records as having left ~640 plan-years understated), and this list was
+# never revisited afterwards. Since exclusion is by EIN across all years, a live
+# ESOP was being dropped from every "active" count.
 ZOMBIE_PLAN_EINS: set[str] = {
-    "42175284",   # Green International Affiliates ($0 assets, 0 active)
-    "42348065",   # Janis Research ($0 assets, 0 active)
-    "42760904",   # Process Cooling Systems ($0 assets, 59 active)
-    "42942412",   # Washburn-Garfield Corporation ($0 assets, 0 active)
+    "42175284",   # Green International Affiliates (0 active)
+    "42348065",   # Janis Research (0 active, final filing)
+    "42942412",   # Washburn-Garfield Corporation (0 active)
     "43484613",   # Tri-Wire ($62 assets, 0 active, 539 total participants)
-    "42501424",   # B&B Engineering Corporation ($39K assets, 0 active)
+    "42501424",   # B&B Engineering Corporation (0 active)
 }
 
 FIELD_MAPPINGS = {
@@ -523,6 +535,11 @@ def get_new_and_terminated(year: int) -> tuple[list[dict], list[dict]]:
         "42556035":  "100% employee-owned since Jan 2022 (Landry's Bicycles)",
         "42699206":  "Employee-owned per MA state EO registry (Packaging Consultants)",
         "42170946":  "Operating; ESOP filed 2023, no acquisition found (Paul K. Guillow / Guillow's)",
+        # Its own ESOP filed 2020-2023 and again for 2025 (2,202 participants,
+        # $273.2M). The 2024 gap is real but not a termination: for that year the
+        # only ESOP return under this EIN was the acquired Cambridge Bancorp plan,
+        # excluded here as a cross-EIN duplicate of Cambridge's own filing.
+        "43067724":  "Still active — filed its own 2025 ESOP return (Eastern Bank)",
     }
 
     terminated: list[dict] = []
