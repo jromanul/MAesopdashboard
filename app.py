@@ -31,6 +31,25 @@ st.markdown(theme.FONT_LINKS, unsafe_allow_html=True)
 st.markdown(theme.CSS, unsafe_allow_html=True)
 
 
+# ── Helper: shareable data package ──────────────
+
+@st.cache_data(show_spinner=False)
+def _build_share_package(year: int) -> bytes:
+    """ZIP of a form year's MA ESOP data, built in memory and cached.
+
+    Cached on `year` so the archive is assembled once per session rather than on
+    every rerun; it is rebuilt whenever the app restarts, which is also when the
+    underlying database can have changed.
+    """
+    return utils.build_share_package(
+        year=year,
+        all_rows=form5500_analysis.get_ma_filings(year),
+        active_rows=form5500_analysis.get_ma_filings(year, exclude_zombie=True),
+        summaries=form5500_analysis.get_annual_summaries(),
+        data_as_of=config.DATA_AS_OF,
+    )
+
+
 # ── Helper: Render DataFrame as HTML table ──────
 
 def _render_html_table(df, money_cols=None, number_cols=None, height=600,
@@ -611,9 +630,23 @@ if f5500_summaries:
                 "therefore show more active participants than the beginning-of-year "
                 "total. Both are reproduced exactly as filed.")
 
-            csv_data = utils.to_csv_bytes(filings)
-            st.download_button("Download Active MA ESOP Data as CSV", csv_data,
-                              f"ma_esops_form5500_{latest_year}.csv", "text/csv")
+            _dl1, _dl2, _dl3 = st.columns([3, 3, 4])
+            with _dl1:
+                st.download_button(
+                    f"⬇  Download {latest_year} dataset (ZIP)",
+                    _build_share_package(latest_year),
+                    f"MA_ESOP_Form5500_{latest_year}.zip", "application/zip",
+                    help=("Shareable package: every filed plan and the active "
+                          "subset as CSVs, the year-by-year summary, and a README "
+                          "documenting sources, definitions and caveats."))
+            with _dl2:
+                st.download_button("Active plans only (CSV)",
+                                   utils.to_csv_bytes(filings),
+                                   f"ma_esops_form5500_{latest_year}.csv", "text/csv")
+            st.caption(
+                f"The ZIP is the one to send on — it explains what the numbers mean "
+                f"and includes both the complete {latest_year} filing set and the "
+                f"active subset shown above.")
         else:
             st.info("No filing-level data available. Run the Form 5500 processor with "
                    "`--import-to-db` to load individual filing records.")
