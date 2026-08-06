@@ -981,7 +981,11 @@ if f5500_summaries:
             _prior_eins = form5500_analysis.get_prior_eins(2025)
             _n_new = sum(1 for _f in _f25 if _f.get("ein") not in _prior_eins)
             _tot_p = sum(_f.get("total_participants") or 0 for _f in _f25)
-            _assets_known = [_f["total_assets"] for _f in _f25 if _f.get("total_assets")]
+            # `is not None`, not truthiness: a plan that reported exactly $0 did
+            # report. Four of the 2025 filings are final/wind-up returns showing
+            # $0, and treating them as "not reported" understated the count.
+            _assets_known = [_f["total_assets"] for _f in _f25
+                             if _f.get("total_assets") is not None]
 
             def _fmt25(v):
                 if v >= 1e9:

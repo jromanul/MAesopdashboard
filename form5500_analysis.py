@@ -575,10 +575,18 @@ def get_new_and_terminated(year: int) -> tuple[list[dict], list[dict]]:
 
 def get_asset_distribution(year: int | None = None, *,
                            exclude_zombie: bool = False) -> list[float]:
+    """Plan asset values for the size histogram.
+
+    Includes plans that reported exactly $0 — they belong in the lowest bucket,
+    and dropping them silently made this histogram cover a different population
+    than the participant histogram displayed beside it (114 plans against 115 for
+    2024, because Savogran reports $0 assets while still having active
+    participants). NULL is still excluded: unreported is not the same as zero.
+    """
     query = """
         SELECT total_assets FROM form5500_filings
         WHERE sponsor_state = 'MA' AND is_esop = 1
-              AND total_assets IS NOT NULL AND total_assets > 0
+              AND total_assets IS NOT NULL
     """
     params: list = []
     if year:
