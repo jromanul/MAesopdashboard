@@ -28,32 +28,48 @@ _GRAY = config.CHART_COLORS["gray"]
 _PURPLE = config.CHART_COLORS["purple"]
 _CRANBERRY = config.CHART_COLORS["cranberry"]
 _FONT = config.CHART_FONT_FAMILY
-_TEXT_BLACK = "#111111"  # Black for all chart labels / axis text
-_TEXT_DARK = "#333333"   # Slightly lighter for secondary labels (source annotations)
+_TEXT_BLACK = "#0F1E2E"  # Primary ink for titles / axis labels
+_TEXT_DARK = "#64758A"   # Muted ink for secondary labels (source annotations)
+_GRID = "#EEF2F7"        # Hairline gridlines — present but never competing with the data
+_AXIS = "#E4EAF1"
 
 
 def _apply_layout(fig: go.Figure, title: str = "", height: int | None = None,
                   source: str = "", y_title: str = "", x_title: str = "") -> go.Figure:
+    """Shared chart chrome.
+
+    Presentation only. Gridlines are hairline-weight and horizontal-only so the
+    marks carry the chart; the plot area is transparent because each chart sits
+    on its own white card (see theme.CSS), which avoids a white-on-white seam.
+    """
     fig.update_layout(
-        title=dict(text=title, font=dict(family=_FONT, size=16, color=_TEXT_BLACK), x=0, y=0.98),
-        font=dict(family=_FONT, color=_TEXT_BLACK, size=12),
-        plot_bgcolor="white",
-        paper_bgcolor="white",
+        title=dict(text=title,
+                   font=dict(family=_FONT, size=14, color=_TEXT_BLACK, weight=700),
+                   x=0, y=0.97, xanchor="left"),
+        font=dict(family=_FONT, color=_TEXT_BLACK, size=11.5),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
         height=height or config.CHART_HEIGHT_MD,
-        margin=dict(l=60, r=30, t=50, b=95 if source else 40),
+        margin=dict(l=58, r=26, t=46, b=92 if source else 38),
         legend=dict(orientation="h", yanchor="bottom", y=-0.20, xanchor="center", x=0.5,
-                    font=dict(size=11, color=_TEXT_BLACK)),
+                    font=dict(size=10.5, color=_TEXT_DARK),
+                    bgcolor="rgba(0,0,0,0)", borderwidth=0),
         hovermode="x unified",
+        hoverlabel=dict(bgcolor="#0A2E52", bordercolor="#0A2E52",
+                        font=dict(family=_FONT, color="#FFFFFF", size=11.5)),
+        separators=".,",
     )
     fig.update_xaxes(
-        showgrid=False, linecolor="#E0E0E0", linewidth=1,
-        title=dict(text=x_title, font=dict(size=11, color=_TEXT_BLACK)),
-        tickfont=dict(color=_TEXT_BLACK),
+        showgrid=False, showline=True, linecolor=_AXIS, linewidth=1, ticks="",
+        title=dict(text=x_title, font=dict(size=10.5, color=_TEXT_DARK)),
+        tickfont=dict(color=_TEXT_DARK, size=10.5),
+        zeroline=False,
     )
     fig.update_yaxes(
-        showgrid=True, gridcolor="#F0F0F0", gridwidth=1, linecolor="#E0E0E0", linewidth=1,
-        title=dict(text=y_title, font=dict(size=11, color=_TEXT_BLACK)),
-        tickfont=dict(color=_TEXT_BLACK),
+        showgrid=True, gridcolor=_GRID, gridwidth=1, showline=False, ticks="",
+        title=dict(text=y_title, font=dict(size=10.5, color=_TEXT_DARK)),
+        tickfont=dict(color=_TEXT_DARK, size=10.5),
+        zeroline=True, zerolinecolor=_AXIS, zerolinewidth=1,
     )
     if source:
         fig.add_annotation(

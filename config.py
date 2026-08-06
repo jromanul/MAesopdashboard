@@ -49,8 +49,8 @@ CHART_COLORS = {
     "cranberry": "#680A1D",
 }
 
-CHART_PALETTE = ["#14558F", "#F6C51B", "#27AE60", "#E74C3C", "#8E44AD", "#95A5A6", "#1A6BB5", "#F9D44E"]
-CHART_FONT_FAMILY = "Source Sans Pro, sans-serif"
+CHART_PALETTE = ["#14558F", "#F6C51B", "#12805C", "#C0392B", "#6C3483", "#7C8DA1", "#4A8FD4", "#E0A93A"]
+CHART_FONT_FAMILY = "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
 CHART_HEIGHT_SM = 300
 CHART_HEIGHT_MD = 400
 CHART_HEIGHT_LG = 500
