@@ -371,6 +371,7 @@ if f5500_summaries:
     _nav_options = [
         "\U0001f4ca Overview",
         "\U0001f4c8 Trends",
+        "\U0001f3ed Industry",
         "\U0001f5fa\ufe0f Geography",
         "\U0001f504 Year-over-Year",
         "\U0001f195 2025 Filers",
@@ -569,8 +570,62 @@ if f5500_summaries:
             st.info("No filing-level data available. Run the Form 5500 processor with "
                    "`--import-to-db` to load individual filing records.")
 
-        # ── Plan Size Distribution (moved from Distribution tab) ──
+
+
+
+        # ── Supplementary Analysis (moved from Additional Data Analysis tab) ──
         st.markdown("---")
+        _ada = [r for r in form5500_analysis.get_ma_filings(latest_year, exclude_zombie=True)]
+        if _ada:
+            _adf = pd.DataFrame(_ada)
+            for _c in ["total_assets", "total_participants", "active_participants",
+                       "employer_securities", "employer_contributions",
+                       "benefits_paid", "is_ksop"]:
+                if _c in _adf.columns:
+                    _adf[_c] = pd.to_numeric(_adf[_c], errors="coerce")
+
+            # Per-plan assets per active participant, used by the largest-plans
+            # table below. The typical-plan profile that also derived this moved
+            # to the Trends page, so it is computed here independently.
+            _appp = _adf[(_adf["active_participants"].fillna(0) > 0) &
+                         (_adf["total_assets"].fillna(0) > 0)].copy()
+            _appp["_per"] = _appp["total_assets"] / _appp["active_participants"]
+
+
+            # ===== Largest plans (replaces Wealth Concentration) =====
+            st.markdown("##### Largest MA ESOP Plans")
+            st.caption("The biggest active MA ESOPs two ways: by total plan assets, "
+                       "and by assets per active participant (a per-worker wealth "
+                       "measure). Different plans top each list.")
+            _lc1, _lc2 = st.columns(2)
+            with _lc1:
+                st.caption("**Top 5 by total assets**")
+                _top_assets = _adf.sort_values("total_assets", ascending=False).head(5)[
+                    ["sponsor_name", "total_assets"]].copy()
+                _top_assets.columns = ["Company", "Total Assets"]
+                _render_html_table(_top_assets, money_cols=["Total Assets"], height=240)
+            with _lc2:
+                st.caption("**Top 5 by assets per active participant**")
+                _byper = _appp.sort_values("_per", ascending=False).head(5)[
+                    ["sponsor_name", "_per", "active_participants"]].copy()
+                _byper.columns = ["Company", "Assets / Active Participant", "Active Participants"]
+                _render_html_table(_byper,
+                                   money_cols=["Assets / Active Participant"],
+                                   number_cols=["Active Participants"], height=240)
+            st.caption("_Assets-per-participant uses each plan's total assets divided "
+                       "by its active participants; smaller plans with concentrated "
+                       "stock often rank highest._")
+
+
+    # ────────────────────────────────────
+    # PAGE: Trends (5-10 year time series)
+    # ────────────────────────────────────
+    elif _selected_page == "\U0001f4c8 Trends":
+        st.markdown("#### MA ESOP Trends Over Time")
+        st.caption("The most recent filing year may show incomplete data due to DOL filing lag. "
+                   "Form 5500 filings are due 7 months after plan year end (extensions allow up to 9.5 months), "
+                   "so some plans may not yet appear in the most recent year's data.")
+
         st.markdown(f"#### Plan Size Distribution ({latest_year})")
 
         dcol1, dcol2 = st.columns(2)
@@ -594,32 +649,30 @@ if f5500_summaries:
                 '</div>',
                 unsafe_allow_html=True,
             )
-
-        # ── Industry Breakdown (moved from Industry tab) ──
         st.markdown("---")
-        st.markdown(f"#### MA ESOPs by Industry ({latest_year})")
 
-        industry_data = form5500_analysis.get_ma_filings_by_industry(
-            latest_year, exclude_zombie=True)
-        if industry_data:
-            fig_ind = charts.build_f5500_industry_bar(industry_data)
-            st.plotly_chart(fig_ind, use_container_width=True, config=charts.PLOTLY_CONFIG)
-        else:
-            st.markdown(
-                '<div class="callout-eo" style="border-left-color: #C5960C; border-color: #C5960C;">'
-                '<h4>Industry Classification Not Available</h4>'
-                '<p>NAICS (industry) codes are not included in the main Form 5500 filing. '
-                'Industry classification requires cross-referencing with Schedule C data, '
-                'the IRS Business Master File, or external business registries (e.g., D&B, SBA). '
-                'This analysis is planned for a future update.</p>'
-                '</div>',
-                unsafe_allow_html=True,
-            )
+        fig_count = charts.build_f5500_plan_count_trend(f5500_summaries)
+        st.plotly_chart(fig_count, use_container_width=True, config=charts.PLOTLY_CONFIG)
 
+        tcol1, tcol2 = st.columns(2)
+        with tcol1:
+            fig_partcp = charts.build_f5500_participants_trend(f5500_summaries)
+            st.plotly_chart(fig_partcp, use_container_width=True, config=charts.PLOTLY_CONFIG)
+        with tcol2:
+            fig_assets = charts.build_f5500_assets_trend(f5500_summaries)
+            st.plotly_chart(fig_assets, use_container_width=True, config=charts.PLOTLY_CONFIG)
 
-        # ── Supplementary Analysis (moved from Additional Data Analysis tab) ──
+        tcol3, tcol4 = st.columns(2)
+        with tcol3:
+            fig_avg = charts.build_f5500_avg_plan_assets_trend(f5500_summaries)
+            st.plotly_chart(fig_avg, use_container_width=True, config=charts.PLOTLY_CONFIG)
+        with tcol4:
+            fig_contrib = charts.build_f5500_contributions_bar(f5500_summaries)
+            st.plotly_chart(fig_contrib, use_container_width=True, config=charts.PLOTLY_CONFIG)
+
+        # ── Plan-profile and maturity views (moved here from the Overview) ──
         st.markdown("---")
-        _ada = [r for r in form5500_analysis.get_ma_filings(latest_year, exclude_zombie=True)]
+        _ada = form5500_analysis.get_ma_filings(latest_year, exclude_zombie=True)
         if _ada:
             _adf = pd.DataFrame(_ada)
             for _c in ["total_assets", "total_participants", "active_participants",
@@ -627,7 +680,6 @@ if f5500_summaries:
                        "benefits_paid", "is_ksop"]:
                 if _c in _adf.columns:
                     _adf[_c] = pd.to_numeric(_adf[_c], errors="coerce")
-
             # ===== Typical Plan Profile (median + mean) =====
             st.markdown("##### Typical Plan Profile")
             st.caption("The median describes the *typical* plan; the mean is shown "
@@ -764,77 +816,37 @@ if f5500_summaries:
                         lambda x: f"{x:.1f}%" if pd.notna(x) else "")
                 _render_html_table(_ddf_disp, number_cols=["Plans"], height=320)
 
-            st.markdown("---")
+    # ────────────────────────────────────
+    # PAGE: Industry
+    # ────────────────────────────────────
+    elif _selected_page == "🏭 Industry":
+        st.markdown(f"#### MA ESOPs by Industry ({latest_year})")
 
-            # ===== Largest plans (replaces Wealth Concentration) =====
-            st.markdown("##### Largest MA ESOP Plans")
-            st.caption("The biggest active MA ESOPs two ways: by total plan assets, "
-                       "and by assets per active participant (a per-worker wealth "
-                       "measure). Different plans top each list.")
-            _lc1, _lc2 = st.columns(2)
-            with _lc1:
-                st.caption("**Top 5 by total assets**")
-                _top_assets = _adf.sort_values("total_assets", ascending=False).head(5)[
-                    ["sponsor_name", "total_assets"]].copy()
-                _top_assets.columns = ["Company", "Total Assets"]
-                _render_html_table(_top_assets, money_cols=["Total Assets"], height=240)
-            with _lc2:
-                st.caption("**Top 5 by assets per active participant**")
-                _byper = _appp.sort_values("_per", ascending=False).head(5)[
-                    ["sponsor_name", "_per", "active_participants"]].copy()
-                _byper.columns = ["Company", "Assets / Active Participant", "Active Participants"]
-                _render_html_table(_byper,
-                                   money_cols=["Assets / Active Participant"],
-                                   number_cols=["Active Participants"], height=240)
-            st.caption("_Assets-per-participant uses each plan's total assets divided "
-                       "by its active participants; smaller plans with concentrated "
-                       "stock often rank highest._")
-
-            st.markdown("---")
-
-            # ===== Employer-securities (stock) intensity =====
-            st.markdown("##### Employer-Securities (Company Stock) Intensity")
-            st.caption("How much of each ESOP's assets are held as employer stock. "
-                       "High ratios indicate true stock-ownership plans; low ratios "
-                       "suggest diversified or maturing plans holding more cash/other "
-                       "assets. Plans reporting employer securities only.")
-            _es = _adf[_adf["employer_securities"].fillna(0) > 0].copy()
-            if len(_es):
-                _es["_ratio"] = (_es["employer_securities"] / _es["total_assets"]).clip(upper=1.0) * 100
-                _agg_es = float(_es["employer_securities"].sum())
-                _agg_a = float(_es["total_assets"].sum())
-                _bands = [("0-25%", 0, 25), ("25-50%", 25, 50),
-                          ("50-75%", 50, 75), ("75-100%", 75, 100.01)]
-                _brows = []
-                for _lbl, _lo, _hi in _bands:
-                    _m = _es[(_es["_ratio"] >= _lo) & (_es["_ratio"] < _hi)]
-                    _brows.append({"Stock as % of Assets": _lbl, "Plans": int(len(_m))})
-                _ec1, _ec2 = st.columns([2, 3])
-                with _ec1:
-                    _em1, _em2 = st.columns(2)
-                    _em1.metric("Aggregate stock % (reporting plans)",
-                               f"{(_agg_es/_agg_a*100):.0f}%" if _agg_a else "N/A",
-                               help="Employer securities ÷ total assets, counting only "
-                                    "plans that report company stock. This runs higher "
-                                    "than the Overview's 'Stock as % of Total Assets', "
-                                    "which divides by ALL active-plan assets.")
-                    _em2.metric("Median plan stock %", f"{_es['_ratio'].median():.0f}%")
-                    st.caption(f"{len(_es)} of {len(_adf)} active plans report employer securities.")
-                with _ec2:
-                    _bdf = pd.DataFrame(_brows)
-                    _fig_e = go.Figure(go.Bar(
-                        x=_bdf["Stock as % of Assets"], y=_bdf["Plans"],
-                        marker_color=config.CHART_COLORS["gold"],
-                        text=_bdf["Plans"], textposition="outside"))
-                    _fig_e.update_layout(
-                        height=config.CHART_HEIGHT_SM, margin=dict(t=10, b=10, l=10, r=10),
-                        yaxis_title="Plans", plot_bgcolor="white",
-                        font=dict(family=config.CHART_FONT_FAMILY))
-                    st.plotly_chart(_fig_e, use_container_width=True, key="ov_es")
-            else:
-                st.caption("No employer-securities data reported for this year.")
-
-            st.markdown("---")
+        industry_data = form5500_analysis.get_ma_filings_by_industry(
+            latest_year, exclude_zombie=True)
+        if industry_data:
+            fig_ind = charts.build_f5500_industry_bar(industry_data)
+            st.plotly_chart(fig_ind, use_container_width=True, config=charts.PLOTLY_CONFIG)
+        else:
+            st.markdown(
+                '<div class="callout-eo" style="border-left-color: #C5960C; border-color: #C5960C;">'
+                '<h4>Industry Classification Not Available</h4>'
+                '<p>NAICS (industry) codes are not included in the main Form 5500 filing. '
+                'Industry classification requires cross-referencing with Schedule C data, '
+                'the IRS Business Master File, or external business registries (e.g., D&B, SBA). '
+                'This analysis is planned for a future update.</p>'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+        st.markdown("---")
+        _ada = form5500_analysis.get_ma_filings(latest_year, exclude_zombie=True)
+        if _ada:
+            _adf = pd.DataFrame(_ada)
+            for _c in ["total_assets", "total_participants", "active_participants",
+                       "employer_securities", "employer_contributions",
+                       "benefits_paid", "is_ksop"]:
+                if _c in _adf.columns:
+                    _adf[_c] = pd.to_numeric(_adf[_c], errors="coerce")
 
             # ===== Average account balance by industry =====
             st.markdown("##### Average Account Balance by Industry")
@@ -905,34 +917,6 @@ if f5500_summaries:
                        "measure. 'By Assets' is dominated by a few large plans; "
                        "'By Number of Plans' best reflects how common each "
                        "industry is._")
-
-    # ────────────────────────────────────
-    # PAGE: Trends (5-10 year time series)
-    # ────────────────────────────────────
-    elif _selected_page == "\U0001f4c8 Trends":
-        st.markdown("#### MA ESOP Trends Over Time")
-        st.caption("The most recent filing year may show incomplete data due to DOL filing lag. "
-                   "Form 5500 filings are due 7 months after plan year end (extensions allow up to 9.5 months), "
-                   "so some plans may not yet appear in the most recent year's data.")
-
-        fig_count = charts.build_f5500_plan_count_trend(f5500_summaries)
-        st.plotly_chart(fig_count, use_container_width=True, config=charts.PLOTLY_CONFIG)
-
-        tcol1, tcol2 = st.columns(2)
-        with tcol1:
-            fig_partcp = charts.build_f5500_participants_trend(f5500_summaries)
-            st.plotly_chart(fig_partcp, use_container_width=True, config=charts.PLOTLY_CONFIG)
-        with tcol2:
-            fig_assets = charts.build_f5500_assets_trend(f5500_summaries)
-            st.plotly_chart(fig_assets, use_container_width=True, config=charts.PLOTLY_CONFIG)
-
-        tcol3, tcol4 = st.columns(2)
-        with tcol3:
-            fig_avg = charts.build_f5500_avg_plan_assets_trend(f5500_summaries)
-            st.plotly_chart(fig_avg, use_container_width=True, config=charts.PLOTLY_CONFIG)
-        with tcol4:
-            fig_contrib = charts.build_f5500_contributions_bar(f5500_summaries)
-            st.plotly_chart(fig_contrib, use_container_width=True, config=charts.PLOTLY_CONFIG)
 
     # ────────────────────────────────────
     # PAGE: Geography
