@@ -192,7 +192,13 @@ def extract_ma_esops(reader, source: str) -> dict:
         if str(row.get(col["state"], "")).strip().upper() != "MA":
             continue
         codes = str(row.get(col["codes"], "") or "").upper()
-        if "2O" not in codes and "2P" not in codes:
+        # 2O (ESOP) / 2P (leveraged ESOP) are the primary markers. 2Q is also
+        # ESOP-specific: it normally accompanies 2P on leveraged plans, but a
+        # plan winding down or restating can file carrying 2Q alone (2024 MA:
+        # Janis Research "2Q", OEM Connect "2Q3D" — both unambiguously ESOPs by
+        # plan name and filing history). Matching 2Q keeps those visible to the
+        # scan instead of silently dropping them from coverage checks.
+        if not any(c in codes for c in ("2O", "2P", "2Q")):
             continue
         key = norm_key(row.get(col["ein"]), row.get(col["pn"]) if col["pn"] else "1")
         rec = {

@@ -122,13 +122,20 @@ A filing is treated as a Massachusetts ESOP when **both** of the following hold 
 DOL bulk data:
 
 1. **Sponsor state** (SPONS_DFE_MAIL_US_STATE) = "MA" — see Geographic Filtering below.
-2. **Type of Pension Benefit code** (TYPE_PENSION_BNFT_CODE) contains **2O** (ESOP) or
-   **2P** (leveraged ESOP — company stock acquired with borrowed funds).
+2. **Type of Pension Benefit code** (TYPE_PENSION_BNFT_CODE) contains **2O** (ESOP),
+   **2P** (leveraged ESOP — company stock acquired with borrowed funds), or **2Q**.
+   2Q normally accompanies 2P on leveraged plans, but a plan winding down or restating
+   can file carrying 2Q alone, so it is matched to avoid dropping those from coverage.
 
-These two codes are the operative test; no plan-name or keyword matching is used, so a
-plan is counted on what its sponsor formally certified to DOL rather than on how it is
-named. Most tracked plans also carry **2I** (stock bonus), which accompanies but does not
-by itself establish ESOP status.
+These codes are the operative test; no plan-name or keyword matching is used, so a plan
+is counted on what its sponsor formally certified to DOL rather than on how it is named.
+Most tracked plans also carry **2I** (stock bonus), which accompanies but does not by
+itself establish ESOP status.
+
+Coverage is verified each refresh by an independent check that searches every
+Massachusetts filing by **plan name** (ESOP / "employee stock" / "stock ownership" /
+"stock bonus") and reconciles the result against the code-based set, so a plan cannot go
+missing merely because its codes changed between years.
 
 Plans carrying both **2J** (401(k)) and **2K** (401(m)) alongside an ESOP code are flagged
 as **KSOPs** (included in ESOP counts but separately identified).
