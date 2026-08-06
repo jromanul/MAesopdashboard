@@ -178,6 +178,10 @@ def build():
         e["assets"] = round(e["assets"])
         e["avg_account_balance"] = (round(e["assets"] / e["participants"])
                                     if e["participants"] else None)
+        # A one-plan sector's "average" is just that plan, which reads as a
+        # sector characteristic when it is not. The flag is carried per row so a
+        # consumer cannot publish one by forgetting to apply the threshold.
+        e["include_in_balance_table"] = e["plans"] >= 2
 
     industry = {
         "basis": "active",

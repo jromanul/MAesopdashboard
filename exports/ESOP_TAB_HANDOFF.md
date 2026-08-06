@@ -92,12 +92,14 @@ instead.
 ### 6. Industry — from `industry.sectors`
 
 Already sorted by plan count descending, which is the order to render. Each entry
-has `sector`, `plans`, `participants`, `assets`, `avg_account_balance`.
+has `sector`, `plans`, `participants`, `assets`, `avg_account_balance` and
+`include_in_balance_table`.
 
-- Sector bar chart — `plans` (13 sectors, sums to 115)
-- Average account balance table — `avg_account_balance`, but **only show sectors
-  with `plans >= 2`** (`industry.avg_account_balance_min_plans`). A one-plan
-  sector's "average" is just that plan and is misleading.
+- Sector bar chart — `plans` (all 13 sectors, sums to 115)
+- Average account balance table — `avg_account_balance`, filtered to rows where
+  `include_in_balance_table` is true (8 of the 13 sectors). A one-plan sector's
+  "average" is just that plan and reads as a sector characteristic when it is
+  not, so the flag is precomputed rather than left to you to remember.
 - Share charts by plans / participants / assets — group the small sectors into an
   "Other" bucket yourself; `industry.totals` gives the denominators.
 
