@@ -562,6 +562,14 @@ if f5500_summaries:
                 f"Showing {len(show_df)} of {len(filings)} active MA ESOP filings "
                 f"for {latest_year} ({_excluded_n} plans with 0 active participants or "
                 f"on the known wind-down list excluded from {_total_filed} total filed)")
+            st.caption(
+                "**Participants** is the plan's total at the *beginning* of the plan "
+                "year (Form 5500 line 5); **Active Participants** is the count of "
+                "currently employed participants at the *end* of the year (line 6a). "
+                "DOL publishes no end-of-year total in this dataset, so the two "
+                "figures sit on different dates — a plan that grew during the year can "
+                "therefore show more active participants than the beginning-of-year "
+                "total. Both are reproduced exactly as filed.")
 
             csv_data = utils.to_csv_bytes(filings)
             st.download_button("Download Active MA ESOP Data as CSV", csv_data,
