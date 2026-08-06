@@ -73,7 +73,7 @@ def main():
         srdr = rows_from_zip(path)
         headers = srdr.fieldnames or []
         ein_c = pick_col(headers, ["SCH_H_EIN", "SCH_I_EIN", "EIN"])
-        pn_c = pick_col(headers, ["SCH_H_PN", "SCH_I_PN", "PN"])
+        pn_c = pick_col(headers, ["SCH_H_PN", "SCH_I_PLAN_NUM", "SCH_I_PN", "PN"])
         fmap = {db: pick_col(headers, cands) for db, cands in fields.items()}
         for row in srdr:
             key = norm_key(row.get(ein_c), row.get(pn_c) if pn_c else "1")

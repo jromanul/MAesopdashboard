@@ -56,7 +56,7 @@ FINANCIAL_FIELDS = {
 # EIN and Plan Number fields — includes SF_ prefixed from 5500-SF
 EIN_FIELDS = ["SF_SPONS_EIN", "SPONS_DFE_EIN", "SPONSOR_DFE_EIN", "EIN",
               "SCH_I_EIN", "SF_LAST_RPT_SPONS_EIN"]
-PN_FIELDS = ["SF_PLAN_NUM", "PLAN_NUM", "PN", "SCH_I_PN", "SF_LAST_RPT_PLAN_NUM"]
+PN_FIELDS = ["SF_PLAN_NUM", "PLAN_NUM", "PN", "SCH_I_PLAN_NUM", "SCH_I_PN", "SF_LAST_RPT_PLAN_NUM"]
 
 
 def normalize_ein(ein_raw):

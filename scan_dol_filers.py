@@ -71,6 +71,21 @@ SCH_I_FIELDS = {
 }
 
 
+# EINs whose ESOP-coded filings are deliberately NOT tracked, keyed by normalized
+# (leading-zero-stripped) EIN. These are large publicly traded employers whose
+# ordinary 401(k)/savings plan carries an ESOP code (2O) purely because company
+# stock is one investment option alongside 2J/2K — confirmed by reading the raw
+# F_5500 PLAN_NAME. They are not closely held employee-owned companies, and each
+# would add 1,900-4,400 participants, materially overstating MA employee
+# ownership. Reviewed and excluded 2026-08-06; listed here so a later
+# `--import-new` run cannot silently re-add them. See FORM5500_METHODOLOGY.
+EXCLUDED_EINS: dict[str, str] = {
+    "42271897": "Cabot Corporation (NYSE: CBT) - 'CABOT 401(K) PLAN', 2O alongside 2J/2K",
+    "43234558": "Waters Technologies (NYSE: WAT) - 'THE WATERS EMPLOYEE INVESTMENT PLAN'",
+    "880706021": "Crane NXT, Co. (NYSE: CXT) - 'CRANE NXT, CO. SAVINGS AND INVESTMENT PLAN'",
+}
+
+
 def norm_key(ein, pn) -> tuple[str, str]:
     e = re.sub(r"\D", "", str(ein or "")).lstrip("0")
     p = re.sub(r"\D", "", str(pn or "")).lstrip("0") or "1"
@@ -213,7 +228,7 @@ def index_schedule(reader, fields: dict, keep_keys=None) -> dict:
     """Index a Schedule H/I reader by (ein, pn) -> {db_field: value}."""
     headers = reader.fieldnames or []
     ein_c = pick_col(headers, ["SCH_H_EIN", "SCH_I_EIN", "SPONS_DFE_EIN", "EIN"])
-    pn_c = pick_col(headers, ["SCH_H_PN", "SCH_I_PN", "PLAN_NUM", "PN"])
+    pn_c = pick_col(headers, ["SCH_H_PN", "SCH_I_PLAN_NUM", "SCH_I_PN", "PLAN_NUM", "PN"])
     if not ein_c:
         return {}
     fmap = {db: pick_col(headers, cands) for db, cands in fields.items()}
@@ -281,9 +296,12 @@ def main():
         "SELECT DISTINCT ein FROM form5500_filings")}
     db_names_year = {norm_name(r["sponsor_name"]): r["ein"] for r in db_year.values()}
 
-    new_rows, returning, dupes = [], [], []
+    new_rows, returning, dupes, excluded = [], [], [], []
     for key, rec in bulk.items():
         if key in db_year:
+            continue
+        if key[0] in EXCLUDED_EINS:
+            excluded.append((key, rec, EXCLUDED_EINS[key[0]]))
             continue
         nm = norm_name(rec["sponsor_name"])
         same_name = db_names_year.get(nm)
@@ -301,7 +319,10 @@ def main():
     print(f"  NEW (EIN never in DB)  : {len(new_rows)}")
     print(f"  RETURNING (known EIN, no {y} row): {len(returning)}")
     print(f"  possible cross-EIN dupes (NOT importable): {len(dupes)}")
+    print(f"  deliberately excluded (see EXCLUDED_EINS): {len(excluded)}")
     print(f"  in DB but not in bulk  : {len(gone)}")
+    for key, rec, why in excluded:
+        print(f"    EXCLUDED: {rec['sponsor_name']} EIN={rec['ein_raw']} - {why}")
     for key, rec in new_rows:
         print(f"    NEW: {rec['sponsor_name']} ({rec['sponsor_city']}) EIN={rec['ein_raw']} "
               f"PN={rec['pn_raw']} partcp={rec['total_participants']} src={rec['source']}")
@@ -366,6 +387,10 @@ def main():
             w.writerow(["POSSIBLE_DUPE", rec["sponsor_name"], rec["sponsor_city"],
                         rec["ein_raw"], rec["pn_raw"], rec["source"],
                         rec["total_participants"], f"name-matches existing EIN {other}"])
+        for key, rec, why in excluded:
+            w.writerow(["EXCLUDED", rec["sponsor_name"], rec["sponsor_city"],
+                        rec["ein_raw"], rec["pn_raw"], rec["source"],
+                        rec["total_participants"], why])
         for k in gone:
             r = db_year[k]
             w.writerow(["DB_ONLY", r["sponsor_name"], r["sponsor_city"], r["ein"],

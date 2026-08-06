@@ -130,7 +130,7 @@ EIN_COLS = {
 PN_COLS = {
     "sch_h": ["SCH_H_PN", "PLAN_NUM", "PN"],
     "sf":    ["SF_PLAN_NUM", "SF_LAST_RPT_PLAN_NUM", "PLAN_NUM", "PN"],
-    "sch_i": ["SCH_I_PN", "PLAN_NUM", "PN"],
+    "sch_i": ["SCH_I_PLAN_NUM", "SCH_I_PN", "PLAN_NUM", "PN"],
 }
 
 

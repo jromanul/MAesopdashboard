@@ -62,7 +62,7 @@ def main():
         rdr = rows_from_zip(path)
         headers = rdr.fieldnames or []
         ein_c = pick_col(headers, ["SCH_H_EIN", "SCH_I_EIN", "EIN"])
-        pn_c = pick_col(headers, ["SCH_H_PN", "SCH_I_PN", "PN"])
+        pn_c = pick_col(headers, ["SCH_H_PN", "SCH_I_PLAN_NUM", "SCH_I_PN", "PN"])
         fmap = {db: pick_col(headers, cands) for db, cands in fields.items()}
         for row in rdr:
             if str(row.get(datecol) or "") < "2025":

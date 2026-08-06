@@ -13,7 +13,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__) or ".", "data", "form5500_dashb
 # Single source of truth for the "as of" date shown across pages (DOL EFAST2
 # bulk-data vintage + public-records research date). Use everywhere instead of
 # hardcoding the date in individual captions.
-DATA_AS_OF = "May 31, 2026"
+DATA_AS_OF = "August 6, 2026"
 
 # ──────────────────────────────────────────────
 # AUTHORITATIVE DATA SOURCES
@@ -60,6 +60,15 @@ CHART_HEIGHT_LG = 500
 # ──────────────────────────────────────────────
 
 FORM5500_YEARS = list(range(2014, 2026))
+
+# The form year DOL is still receiving filings for. Plans file 7 months after
+# their plan year ends (9.5 with an extension), so a year keeps trickling in for
+# roughly 18 months — see the "2025 Filers" page, which tracks this year on its
+# own. It is deliberately EXCLUDED from form5500_annual_summary, which drives the
+# complete-year Overview / Trends / Year-over-Year analyses; see
+# form5500_analysis.recompute_annual_summaries(). Bump once a year is
+# substantially filed (and the corresponding page/labels are updated).
+FORM5500_OPEN_FORM_YEAR = 2025
 
 FORM5500_RECORDS_CSV = "form5500_ma_esops.csv"
 FORM5500_SUMMARY_CSV = "form5500_annual_summary.csv"
@@ -109,16 +118,29 @@ All data in this section is derived from **DOL Form 5500 Annual Return/Report** 
 downloaded as bulk datasets from the U.S. Department of Labor.
 
 ### ESOP Identification Methodology
-Plans are identified as ESOPs using multiple criteria applied in order:
-1. **Pension Benefit Type Code** (TYPE_PENSION_BNFT_CD): Codes 2Q (leveraged ESOP),
-   2R, 2S, 2T, 3H (stock bonus)
-2. **ESOP Indicator Field** (p_ESOP_IND = "Y")
-3. **Plan Characteristic Codes**: Matching ESOP-related codes in the plan features list
-4. **Plan Name Search**: Pattern matching for "ESOP", "Employee Stock Ownership",
-   "Stock Bonus Plan", and "Leveraged ESOP"
+A filing is treated as a Massachusetts ESOP when **both** of the following hold in the
+DOL bulk data:
 
-Plans containing both ESOP and 401(k) elements are flagged as **KSOPs** (included in
-ESOP counts but separately identified).
+1. **Sponsor state** (SPONS_DFE_MAIL_US_STATE) = "MA" — see Geographic Filtering below.
+2. **Type of Pension Benefit code** (TYPE_PENSION_BNFT_CODE) contains **2O** (ESOP) or
+   **2P** (leveraged ESOP — company stock acquired with borrowed funds).
+
+These two codes are the operative test; no plan-name or keyword matching is used, so a
+plan is counted on what its sponsor formally certified to DOL rather than on how it is
+named. Most tracked plans also carry **2I** (stock bonus), which accompanies but does not
+by itself establish ESOP status.
+
+Plans carrying both **2J** (401(k)) and **2K** (401(m)) alongside an ESOP code are flagged
+as **KSOPs** (included in ESOP counts but separately identified).
+
+**Deliberate exclusion — employer stock inside a conventional 401(k).** Some large,
+publicly traded employers attach an ESOP code to an ordinary savings plan that merely
+offers company stock as one investment option among many (e.g. a "401(K) PLAN" or
+"SAVINGS AND INVESTMENT PLAN" carrying 2O alongside 2J/2K). These are not closely held,
+employee-owned companies in the sense this dashboard tracks, and counting them would
+overstate Massachusetts employee ownership by thousands of participants apiece. Such
+filings are reviewed and excluded by hand; the exclusions are recorded in
+`scan_dol_filers.py` so they are not silently re-imported on a later refresh.
 
 ### Geographic Filtering
 Massachusetts plans are identified by the sponsor's mailing state (SPONS_DFE_MAIL_US_STATE = "MA").

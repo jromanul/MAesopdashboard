@@ -133,7 +133,7 @@ SCHEDULE_FINANCIAL_FIELDS = {
 }
 
 SCHEDULE_EIN_FIELDS = ["SCH_H_EIN", "SCH_I_EIN", "SPONS_DFE_EIN", "SPONSOR_DFE_EIN", "EIN"]
-SCHEDULE_PN_FIELDS = ["SCH_H_PN", "SCH_I_PN", "PLAN_NUM", "PN"]
+SCHEDULE_PN_FIELDS = ["SCH_H_PN", "SCH_I_PLAN_NUM", "SCH_I_PN", "PLAN_NUM", "PN"]
 
 
 # ── Database Layer ────────────────────────────────
@@ -470,23 +470,38 @@ def get_new_and_terminated(year: int) -> tuple[list[dict], list[dict]]:
     # Removed from terminated over time (filed a current-yr ESOP after all):
     #   Acentech (2026-02-25), Scientific Systems (2026-03-13),
     #   Cambridge Bancorp (2026-04-17), L.S. Starrett x2 (2026-04-15),
-    #   Comrex (2026-04-13).
+    #   Comrex (2026-04-13), International Data Group (2026-08-06 — its FY2024
+    #   fiscal-year ESOP filing (PN=001) arrived 2026-07-15, several months
+    #   after the May 2026 vintage this note was researched against; the "no
+    #   ESOP filed" evidence for the Blackstone-acquisition conclusion was a
+    #   filing-lag false negative, not proof of termination — Schedule H shows
+    #   $3.17M -> $3.00M assets and 530 active participants, not a final
+    #   return), Barclay Water Treatment (2026-08-06 — its FY2024 filing also
+    #   arrived late (received 2026-07-19); the underlying "acquired by
+    #   Ecolab, cashed out" story is corroborated by the numbers themselves
+    #   ($121.0M -> $37.3M assets, $227.3M in benefits paid, 0 active
+    #   participants left) so the note is kept as context on the imported
+    #   row, but the plan is not fully wound down (FINAL_FILING_IND=0,
+    #   $37.3M still held) so it no longer belongs in the terminated table),
+    #   New England Biolabs (2026-08-06 — the EIN-level note "ceased being an
+    #   ESOP in 2013" was simply wrong: both its Non-Voting (PN=003) and
+    #   Voting (PN=005) Stock Ownership Plans have filed substantial,
+    #   continuous ESOP returns every year through 2023 ($100M-$900M range);
+    #   they were fiscal-year late filers like the others above, now imported
+    #   with FY2024 Schedule H figures).
     #
     # TIER 1 — Confirmed Terminated: acquisition/wind-down confirmed AND backed
     # by filing evidence (current-yr non-ESOP filing or $0/0 final return) or a
     # confirmed acquisition of a 100%-ESOP by a strategic/PE buyer.
     _TIER1_TERMINATED_EINS: dict[str, str] = {
-        "42597651":  "Acquired by Blackstone (2021); filed 2024 401(k)+welfare, no ESOP",
         "822323992": "Sold to CI Capital (2021); filed 2024 401(k)+welfare, no ESOP",
         "550796211": "Relocated to MD; filed 2024 401(k), no ESOP (no longer MA)",
         "43533865":  "Wound down — $0 assets / 0 active in final (2023) filing",
-        "42772059":  "Acquired by Ecolab (Nov 2024); was 100% ESOP, cashed out at close",
         "10367721":  "Acquired by BetterBody Foods (Dec 1 2024); 0 active in final filing",
         "521405842": "Acquired by PAE/Amentum; $0/0 final filing",
         "43448069":  "Acquired by Qmerit; 0 active in final filing",
         "42372206":  "Acquired by Ascensus Specialties (2021); $0/0 final filing",
         "42445292":  "Acquired by AssuredPartners (Jan 2022); $0 assets in final (2023) filing",
-        "42631963":  "Stock plan ceased being an ESOP in 2013 (converted to profit-sharing); not a current ESOP",
     }
 
     # TIER 2 — Likely Terminated: acquisition reported but filing evidence is
@@ -1014,11 +1029,28 @@ def import_all_schedule_csvs(schedule_dir: str = None) -> list:
 
 
 def recompute_annual_summaries():
+    """Rebuild form5500_annual_summary from form5500_filings.
+
+    Deliberately skips ``config.FORM5500_OPEN_FORM_YEAR`` — the form year DOL
+    has only partially received. That year lives on its own "Filers" page and
+    must NOT get a summary row: the Overview/Trends pages pick their headline
+    year with MAX(filing_year) over this table, so a row holding the handful of
+    early fiscal-year filers would hijack the dashboard's "most recent filing
+    year" and report a ~99% collapse in plan count. Any stale row for the open
+    year is removed, so a single run repairs a DB where this already happened.
+    """
     conn = _get_conn()
+    open_year = getattr(config, "FORM5500_OPEN_FORM_YEAR", None)
     years = [r[0] for r in conn.execute(
         "SELECT DISTINCT filing_year FROM form5500_filings "
         "WHERE sponsor_state = 'MA' AND is_esop = 1 ORDER BY filing_year"
     ).fetchall()]
+
+    if open_year is not None:
+        years = [y for y in years if y < open_year]
+        conn.execute("DELETE FROM form5500_annual_summary WHERE filing_year >= ?",
+                     (open_year,))
+        conn.commit()
 
     for yr in years:
         row = conn.execute("""
