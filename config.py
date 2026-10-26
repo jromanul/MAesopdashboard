@@ -195,8 +195,8 @@ with a Massachusetts ZIP code (010–027) where one is given, so a state typo on
 DOL publishes each form year twice: a **Latest** file with one accepted return per EIN, plan
 number and plan year, and an **All** file with every version it holds. Latest can drop an
 ESOP's return — when the sponsor later files a different plan under the same plan number, or
-when the newest version of the return is flagged FILING_ERROR — so both are read for the
-recent form years, and an accepted version is preferred to one flagged with errors.
+when the newest version of the return is flagged FILING_ERROR — so both are read for every
+form year, and an accepted version is preferred to one flagged with errors.
 
 A plan catching up on missed years (for example through DOL's Delinquent Filer Voluntary
 Compliance program) files each overdue year on the form current when it files. Each form year

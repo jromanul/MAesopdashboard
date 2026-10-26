@@ -245,10 +245,14 @@ def sf_esop_returns(year: int) -> dict:
 
 
 def _prior_row(conn, ein: str, year: int):
-    return conn.execute(
-        "SELECT sponsor_name, sponsor_city, naics_code, industry_sector "
-        "FROM form5500_filings WHERE ltrim(ein,'0')=? AND filing_year<? "
-        "ORDER BY filing_year DESC LIMIT 1", (ein, year)).fetchone()
+    """The EIN's most recent earlier row; failing that, its nearest later one, so
+    a year recovered before a plan's first tracked year (a late or dropped
+    return) still reads like the plan's other years."""
+    cols = "SELECT sponsor_name, sponsor_city, naics_code, industry_sector FROM form5500_filings "
+    return (conn.execute(cols + "WHERE ltrim(ein,'0')=? AND filing_year<? "
+                         "ORDER BY filing_year DESC LIMIT 1", (ein, year)).fetchone()
+            or conn.execute(cols + "WHERE ltrim(ein,'0')=? AND filing_year>? "
+                            "ORDER BY filing_year LIMIT 1", (ein, year)).fetchone())
 
 
 def inherit_city(prior_city: str | None, filed_city: str) -> str:
