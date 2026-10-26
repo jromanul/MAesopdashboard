@@ -210,6 +210,7 @@ def build():
             "title": "Massachusetts ESOPs — Form 5500",
             "form_year": year,
             "data_as_of": config.DATA_AS_OF,
+            "dol_release": config.DOL_RELEASE_DATE,
             "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "source": "U.S. Department of Labor, EFAST2 Form 5500 bulk datasets",
             "source_url": "https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/public-disclosure/foia/form-5500-datasets",
@@ -225,13 +226,14 @@ def build():
             "caveats": [
                 ("total_participants is the plan total at the BEGINNING of the plan year "
                  "(Form 5500 line 5); active_participants is current employees at the END "
-                 "of the year (line 6a). DOL publishes no end-of-year total, so the two sit "
-                 "on different dates and a growing plan can show more active than total. "
-                 "Reproduced exactly as filed."),
-                ("employer_securities (company stock) is reported only on Schedule H, which "
-                 "large plans file. It is null for plans filing Schedule I or 5500-SF — null "
-                 "means not reported, which is not the same as zero. Do not divide it by "
-                 "total assets across all plans; the denominators differ."),
+                 "of the year (line 6a). The two sit on different dates, so a growing plan "
+                 "can show more active than total. Line 5 is used in every year so the "
+                 "series stays comparable."),
+                ("employer_securities (company stock) is Schedule H line 1d(1) for large "
+                 "plans and Schedule I line 3d for small plans. null means the plan left "
+                 "the line blank, which is not the same as zero."),
+                ("Every dollar figure is the end-of-plan-year value from the plan's own "
+                 "Schedule H or I, as filed."),
                 ("A form year keeps growing for roughly 18 months as fiscal-year and extended "
                  "filers arrive, so the most recent year is not final."),
                 ("Ordinary 401(k)/savings plans at large public companies that merely offer "

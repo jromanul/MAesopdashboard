@@ -27,14 +27,14 @@ in the JSON declares which one it uses in a `"basis"` field.
 
 | basis | 2024 value | means | use it for |
 |---|---|---|---|
-| `active` | **115 plans** | reporting at least one active participant, minus known defunct/wind-down plans | "how many working MA ESOPs", every per-plan average, all industry views |
-| `filed` | **128 plans** | every ESOP that filed for the year, including plans winding down | the year-over-year trend lines |
+| `active` | **118 plans** | reporting at least one active participant, minus known defunct/wind-down plans | "how many working MA ESOPs", every per-plan average, all industry views |
+| `filed` | **131 plans** | every ESOP that filed for the year, including plans winding down | the year-over-year trend lines |
 
 The trend series uses `filed` because a trend line has to count the same way in
 every year, and earlier years cannot be re-adjudicated. Everything else uses
-`active`. **Do not put 115 and 128 on the same chart**, and label any headline
+`active`. **Do not put 118 and 131 on the same chart**, and label any headline
 figure with which one it is. If you show a single "number of MA ESOPs", use
-**115** and call it *active* plans.
+**118** and call it *active* plans.
 
 ## What to build
 
@@ -44,15 +44,15 @@ One page, these sections in order. Titles are suggestions; the numbers are not.
 
 Five or six stat tiles:
 
-- **115** Active MA ESOPs — `active_plans`
-- **26,228** Participants — `total_participants`
-- **$3.44B** Total assets — `total_assets`
-- **$6.47M** Median plan size — `median_assets_per_plan`
+- **118** Active MA ESOPs — `active_plans`
+- **27,599** Participants — `total_participants`
+- **$3.77B** Total assets — `total_assets`
+- **$6.46M** Median plan size — `median_assets_per_plan`
 - **$118,383** Median assets per active participant — `median_assets_per_active_participant_per_plan`
-- **$131,256** Assets per participant (aggregate) — `aggregate_assets_per_participant`
+- **$136,497** Assets per participant (aggregate) — `aggregate_assets_per_participant`
 
 The medians are the ones that describe a *typical* plan. Means are in the same
-object (`mean_assets_per_plan` is **$30.2M**) but are pulled far above the typical
+object (`mean_assets_per_plan` is **$31.9M**) but are pulled far above the typical
 plan by a handful of very large ESOPs — Consigli alone is $729M. If you show only
 one, show the median. If you show both, label them.
 
@@ -78,15 +78,15 @@ will fill in. Do not annotate it as a decline in employee ownership.
 ### 4. Distributions — from `distributions`
 
 Two histograms, `plan_assets` and `participant_counts`. Each is an ordered array
-of `{label, count}`; both sum to 115. Render in array order — the labels are
+of `{label, count}`; both sum to 118. Render in array order — the labels are
 ranges, so alphabetical or by-value sorting will scramble them.
 
 ### 5. Formation cohorts and decade shares — from `formation_cohorts`, `decade_shares`
 
-`cohorts` gives plans, participants and assets per era (sums to 115). `decades`
-gives plans and `pct_of_active` per decade. **The percentages sum to 99.9%, not
+`cohorts` gives plans, participants and assets per era (sums to 118). `decades`
+gives plans and `pct_of_active` per decade. **The percentages sum to 100.1%, not
 100** — each is rounded to one decimal. Do not "fix" this by normalising; if a
-total is displayed, either show 100% as a label or sum the raw plan counts (115)
+total is displayed, either show 100% as a label or sum the raw plan counts (118)
 instead.
 
 ### 6. Industry — from `industry.sectors`
@@ -95,7 +95,7 @@ Already sorted by plan count descending, which is the order to render. Each entr
 has `sector`, `plans`, `participants`, `assets`, `avg_account_balance` and
 `include_in_balance_table`.
 
-- Sector bar chart — `plans` (all 13 sectors, sums to 115)
+- Sector bar chart — `plans` (all 13 sectors, sums to 118)
 - Average account balance table — `avg_account_balance`, filtered to rows where
   `include_in_balance_table` is true (8 of the 13 sectors). A one-plan sector's
   "average" is just that plan and reads as a sector characteristic when it is
@@ -105,9 +105,9 @@ has `sector`, `plans`, `participants`, `assets`, `avg_account_balance` and
 
 ### 7. Optional: plan roster — from `plans`
 
-All 115 active plans, sorted by assets descending, with sponsor, city, industry,
+All 118 active plans, sorted by assets descending, with sponsor, city, industry,
 participants and assets. Useful for a sortable table or a "largest plans" list.
-`employer_securities` is `null` for most (see below).
+`employer_securities` is `null` for the six plans that left the line blank (see below).
 
 ## Labelling rules — these prevent published errors
 
@@ -116,14 +116,16 @@ Carry these into any tooltip, footnote or methodology blurb:
 1. **Participants are measured on two different dates.** `total_participants` is
    the plan total at the *beginning* of the plan year (Form 5500 line 5).
    `active_participants` is current employees at the *end* of the year (line 6a).
-   DOL publishes no end-of-year total, so a plan that grew during the year can
+   Because the two sit on different dates, a plan that grew during the year can
    show more active than total. Eleven plans do. This is not an error and should
-   not be "corrected".
+   not be "corrected". (Form 5500 also reports an end-of-year total, line 6f; the
+   dataset uses line 5 in every year so the series stays comparable.)
 
-2. **`employer_securities` is null for most plans, and null is not zero.** Company
-   stock is itemised only on Schedule H, which large plans file. Never sum it
-   across all plans and divide by total assets — the denominators differ. Only 34
-   of 115 report it.
+2. **`employer_securities`: null is not zero.** Company stock comes from Schedule H
+   line 1d(1) for large plans and Schedule I line 3d for small plans. 111 of the
+   118 active plans report a positive value; one reports $0 and six leave the line
+   blank (`null`). Before the October 2026 refresh only Schedule H was read, so
+   only 34 plans carried a figure — if you cached the old file, re-fetch it.
 
 3. **The most recent form year is not final.** Plans may file up to ~18 months
    after a plan year begins, so 2024 will keep growing. Show the "as of" date from
@@ -140,16 +142,16 @@ After wiring it up, these should appear on screen. If any differ, something is
 being re-derived that should have been read straight from the file:
 
 ```
-active plans                    115
-filed plans                     128
-total participants           26,228
-total assets         $3,442,584,179
-median plan assets       $6,468,002
+active plans                    118
+filed plans                     131
+total participants           27,599
+total assets         $3,767,181,258
+median plan assets       $6,463,366
 median $/active participant $118,383
-employer securities  $2,489,022,553   (34 of 115 plans)
+employer securities  $3,387,447,709   (111 of 118 plans)
 trend years               2014–2024   (11 points)
-industry sectors                 13   (plans sum to 115)
+industry sectors                 13   (plans sum to 118)
 ```
 
 Top three sectors by plan count: Professional & Technical Services (27),
-Manufacturing (24), Construction (18).
+Manufacturing (25), Construction (20).
