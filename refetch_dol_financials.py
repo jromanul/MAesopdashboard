@@ -73,10 +73,9 @@ def _download(url: str, dest: str) -> bool:
         return False
 
 
-# DOL's "All" files (every filing version) are also fetched for the most recent
-# form years, where re-filings and rejected amendments are still common and the
-# "Latest" file can drop a filing (see dol_bulk, rule 4).
-ALL_VERSION_YEARS = YEARS[-3:]
+# DOL's "All" files (every filing version) are fetched for every form year: the
+# "Latest" file can drop a filing in any year (see dol_bulk, rule 4).
+ALL_VERSION_YEARS = YEARS
 
 
 def fetch_bulk(download: bool = True):
