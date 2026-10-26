@@ -111,37 +111,23 @@ NAICS_SECTORS = {
     "92": "Public Administration",
 }
 
+# End-of-year columns only, Schedule H name first and the Schedule I (SMALL_*)
+# name second; a Schedule H row has no SMALL_* columns and vice versa, so one
+# list serves both files. These lists used to fall back to the beginning-of-
+# year column when the end-of-year one was blank, and for employer
+# contributions to EMPLR_CONTRIB_EOY_AMT — the contributions *receivable*
+# balance, not the year's contributions — which put stale and wrong figures
+# into the database. dol_bulk.py holds the authoritative field map; keep the
+# two in step.
 SCHEDULE_FINANCIAL_FIELDS = {
-    "total_assets": [
-        "TOT_ASSETS_EOY_AMT", "TOT_ASSETS_BOY_AMT",
-        "TOTAL_ASSETS_EOY_AMT", "TOTAL_ASSETS_BOY_AMT",
-        "NET_ASSETS_EOY_AMT",
-    ],
-    "total_liabilities": [
-        "TOT_LIABILITIES_EOY_AMT", "TOT_LIABILITIES_BOY_AMT",
-        "TOTAL_LIABILITIES_EOY_AMT", "TOTAL_LIABILITIES_BOY_AMT",
-    ],
-    "employer_contributions": [
-        "EMPLR_CONTRIB_INCOME_AMT", "EMPLR_CONTRIB_AMT", "EMPLOYER_CONTRIB_AMT",
-        "EMPLR_CONTRIB_CUR_YR_AMT", "EMPLR_CONTRIB_EOY_AMT",
-    ],
-    "participant_contributions": [
-        "PARTICIPANT_CONTRIB_AMT", "PARTCP_CONTRIB_AMT", "PARTCPNT_CONTRIB_AMT",
-        "EE_CONTRIB_AMT",
-    ],
-    "benefits_paid": [
-        "TOT_DISTRIB_BNFT_AMT", "BENEFIT_PAYMENT_AMT",
-        "BENEFITS_PAID_AMT",
-    ],
-    "net_income": [
-        "NET_INCOME_AMT", "NET_INCM_AMT",
-        "NET_GAIN_LOSS_AMT",
-    ],
-    "employer_securities": [
-        "EMPLR_SEC_EOY_AMT", "EMPLR_SEC_BOY_AMT",
-        "EMPLR_SECURITIES_EOY_AMT", "EMPLOYER_SECURITIES_EOY_AMT",
-        "EMPLR_SECURITIES_BOY_AMT", "EMPLOYER_SECURITIES_BOY_AMT",
-    ],
+    "total_assets": ["TOT_ASSETS_EOY_AMT", "SMALL_TOT_ASSETS_EOY_AMT"],
+    "total_liabilities": ["TOT_LIABILITIES_EOY_AMT", "SMALL_TOT_LIABILITIES_EOY_AMT"],
+    "employer_contributions": ["EMPLR_CONTRIB_INCOME_AMT", "SMALL_EMPLR_CONTRIB_INCOME_AMT"],
+    "participant_contributions": ["PARTICIPANT_CONTRIB_AMT", "SMALL_PARTICIPANT_CONTRIB_AMT"],
+    "benefits_paid": ["TOT_DISTRIB_BNFT_AMT", "SMALL_TOT_DISTRIB_BNFT_AMT"],
+    "net_income": ["NET_INCOME_AMT", "SMALL_NET_INCOME_AMT"],
+    # Schedule H line 1d(1); Schedule I line 3d.
+    "employer_securities": ["EMPLR_SEC_EOY_AMT", "SMALL_EMPLR_SEC_EOY_AMT"],
 }
 
 SCHEDULE_EIN_FIELDS = ["SCH_H_EIN", "SCH_I_EIN", "SPONS_DFE_EIN", "SPONSOR_DFE_EIN", "EIN"]
@@ -362,6 +348,19 @@ def get_prior_eins(before_year: int) -> set[str]:
     return {r["ein"] for r in rows if r["ein"]}
 
 
+def get_prior_sponsor_names(before_year: int) -> set[str]:
+    """Sponsor names of every plan filed before the given form year.
+
+    Paired with get_prior_eins() to tell a genuinely new sponsor from a known one
+    filing under a new EIN (RCM Services' 2025 return names its old EIN as the
+    prior sponsor).
+    """
+    rows = _get_conn().execute(
+        "SELECT DISTINCT sponsor_name FROM form5500_filings WHERE filing_year < ?",
+        (before_year,)).fetchall()
+    return {r["sponsor_name"] for r in rows if r["sponsor_name"]}
+
+
 def get_ma_filings_by_city(year: int | None = None, *,
                            exclude_zombie: bool = False) -> list[dict]:
     query = """
@@ -578,10 +577,9 @@ def get_asset_distribution(year: int | None = None, *,
     """Plan asset values for the size histogram.
 
     Includes plans that reported exactly $0 — they belong in the lowest bucket,
-    and dropping them silently made this histogram cover a different population
-    than the participant histogram displayed beside it (114 plans against 115 for
-    2024, because Savogran reports $0 assets while still having active
-    participants). NULL is still excluded: unreported is not the same as zero.
+    and dropping them would make this histogram cover a different population
+    than the participant histogram displayed beside it. NULL is still excluded:
+    unreported is not the same as zero.
     """
     query = """
         SELECT total_assets FROM form5500_filings
@@ -1141,39 +1139,37 @@ def recompute_annual_summaries():
 def nullify_unreported_employer_securities(schedule_dir: str = None) -> int:
     """Store NULL (not 0) for employer-securities figures the filer never reported.
 
-    Employer securities — company stock held in the ESOP trust — is broken out
-    only on **Schedule H, Part I, line 1c**. Small ESOPs that file Schedule I /
-    Form 5500-SF do not itemize this figure, but legacy processing stored it as
-    ``0.0`` for those plans. A literal ``0`` is then rendered as a misleading
-    "$0" (e.g. a $32M-asset ESOP appearing to hold no company stock) and is
-    silently summed into column totals, understating "% of assets reporting
-    stock" denominators.
+    Employer securities — company stock held in the ESOP trust — is reported on
+    **Schedule H line 1d(1)** by large plans and on **Schedule I line 3d** by
+    small plans. Legacy processing stored ``0.0`` where no value was filed, and
+    a literal ``0`` then renders as a misleading "$0" (e.g. a $32M-asset ESOP
+    appearing to hold no company stock).
 
     This sets ``employer_securities = NULL`` for every MA ESOP filing whose
     stored value is ``0`` **unless** that zero was *explicitly reported* on the
-    plan's Schedule H (line 1c == 0 for a handful of diversified / wind-down
-    plans). Positive values (from Schedule H or Form 5500-SF) and genuine
-    Schedule-H reported zeros are preserved untouched. After this runs, missing
-    data renders as an em-dash ("—") and is skipped by ``pd.to_numeric(...).sum()``
-    and by ``SUM(employer_securities)``; ``COALESCE(employer_securities, 0)``
-    aggregates are unchanged in value but now correctly mean "sum across plans
-    that reported company stock."
+    plan's own Schedule H or Schedule I (a handful of diversified / wind-down
+    plans do report $0). Positive values and explicitly reported zeros are
+    preserved untouched. After this runs, missing data renders as an em-dash
+    ("—"), and ``COALESCE(employer_securities, 0)`` aggregates mean "sum across
+    plans that reported company stock."
 
     Idempotent. Returns the number of rows set to NULL.
     """
     schedule_dir = schedule_dir or config.FORM5500_SCHEDULE_DIR
     conn = _get_conn()
 
-    # Build the set of (year, ein, pn) that EXPLICITLY reported 0 on Schedule H,
-    # mirroring import_schedule_csv's field selection so the discriminator is
-    # consistent with how positive values were imported.
+    # Build the set of (year, ein, pn) that EXPLICITLY reported 0 on Schedule H
+    # or Schedule I, mirroring import_schedule_csv's field selection so the
+    # discriminator is consistent with how positive values were imported.
     confirmed_zero: set[tuple] = set()
+    sched_patterns = (config.FORM5500_SCHEDULE_H_PATTERNS
+                      + config.FORM5500_SCHEDULE_I_PATTERNS)
     if os.path.isdir(schedule_dir):
         for filename in sorted(os.listdir(schedule_dir)):
             fn_lower = filename.lower()
             if not fn_lower.endswith(".csv"):
                 continue
-            if not any(p.lower() in fn_lower for p in config.FORM5500_SCHEDULE_H_PATTERNS):
+            if not any(p.lower() in fn_lower for p in sched_patterns):
                 continue
             year_match = re.search(r"(20\d{2})", filename)
             if not year_match:
@@ -1191,7 +1187,7 @@ def nullify_unreported_employer_securities(schedule_dir: str = None) -> int:
                             confirmed_zero.add(
                                 (yr, _normalize_ein(ein), _normalize_pn(pn)))
             except Exception as e:  # noqa: BLE001
-                logger.error("Error scanning Schedule H %s: %s", filename, e)
+                logger.error("Error scanning schedule file %s: %s", filename, e)
 
     rows = conn.execute(
         "SELECT id, filing_year, ein, plan_num FROM form5500_filings "
@@ -1221,7 +1217,7 @@ def nullify_unreported_employer_securities(schedule_dir: str = None) -> int:
     set_meta("employer_securities_nullified",
              datetime.now(timezone.utc).isoformat())
     logger.info("nullify_unreported_employer_securities: set %d rows to NULL "
-                "(%d confirmed Schedule-H reported zeros preserved)",
+                "(%d explicitly reported zeros preserved)",
                 len(null_ids), len(rows) - len(null_ids))
     return len(null_ids)
 

@@ -1,0 +1,10 @@
+bucket,sponsor_name,city,ein,plan_num,source,participants,detail
+EXCLUDED,RANELLA HIRSCH MD PC,CAMBRIDGE,352223136,001,F_5500,2.0,Ranella Hirsch MD PC 401(k): two-person 401(k); 2Q with no ESOP code
+EXCLUDED,CHICOPEE SAVINGS BANK,WESTFIELD,041174490,003,F_5500,121.0,Chicopee Savings Bank ESOP final return after the 2016 acquisition by Westfield Financial: classed investor-owned
+EXCLUDED,"THE HABERMAN INSURANCE GROUP, INC.",WEST SPRINGFIELD,042079638,001,F_5500,20.0,Haberman Insurance: plan renamed from '401(K) AND ESOP' to '401(K) PROFIT SHARING' for 2017 and reports $0 employer securities; ESOP component ended
+EXCLUDED,RAYTHEON COMPANY,WALTHAM,951778500,026,F_5500,81981.0,"Raytheon Company - 'RAYTHEON SAVINGS AND INVESTMENT PLAN', 2O alongside 2J/2K"
+EXCLUDED,WELLESLEY BANK,WELLESLEY,041956610,003,F_5500,65.0,"Wellesley Bank ESOP: classed investor-owned (public bank, minority stake)"
+EXCLUDED,STATE STREET CORPORATION,BOSTON,042456637,002,F_5500,23826.0,"State Street Corporation (NYSE: STT) - 'SALARY SAVINGS PROGRAM', 2O alongside 2J/2K"
+EXCLUDED,CABOT CORPORATION,BILLERICA,042271897,022,F_5500,2166.0,"Cabot Corporation (NYSE: CBT) - 'CABOT 401(K) PLAN', 2O alongside 2J/2K"
+EXCLUDED,GENERAL ELECTRIC COMPANY,BOSTON,140689340,334,F_5500,233103.0,"General Electric (NYSE: GE) - 'GE RETIREMENT SAVINGS PLAN', 2O alongside 2J/2K"
+OVERRIDE,Shawmut Group (EIN 813645861),,,,F_5500,,total_participants: DB=789 DOL=256

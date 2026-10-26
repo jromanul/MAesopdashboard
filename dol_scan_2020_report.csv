@@ -1,0 +1,10 @@
+bucket,sponsor_name,city,ein,plan_num,source,participants,detail
+EXCLUDED,STATE STREET CORPORATION,BOSTON,042456637,002,F_5500,23944.0,"State Street Corporation (NYSE: STT) - 'SALARY SAVINGS PROGRAM', 2O alongside 2J/2K"
+EXCLUDED,GRIPNAIL CORPORATION,TAUNTON,050309452,002,F_5500,39.0,"Gripnail Corporation: Rhode Island company; MA mailing address only from 2019, by which point it had no active participants"
+EXCLUDED,COURTSMART DIGITAL SYSTEMS INC.,NORTH CHELMSFORD,861384153,002,F_5500,28.0,CourtSmart Digital Systems: duplicate of the EIN 043358086 return
+EXCLUDED,"NORTHERN TREE HOLDCO, INC.",PALMER,042401206,002,F_5500,112.0,Northern Tree Holdco: duplicate of the EIN 851665706 return
+EXCLUDED,CABOT CORPORATION,BILLERICA,042271897,022,F_5500,2183.0,"Cabot Corporation (NYSE: CBT) - 'CABOT 401(K) PLAN', 2O alongside 2J/2K"
+EXCLUDED,"BERMAN DONOVAN STERN & WOOD, LLP",BOSTON,042765092,001,F_5500,56.0,"Berman Donovan Stern & Wood, LLP profit-sharing plan: a partnership has no stock for an ESOP to hold; 2P is a coding error"
+EXCLUDED,WELLESLEY BANK,WELLESLEY,041956610,003,F_5500,81.0,"Wellesley Bank ESOP: classed investor-owned (public bank, minority stake)"
+EXCLUDED,RAYTHEON TECHNOLOGIES CORPORATION,WALTHAM,060570975,017,F_5500,123814.0,"RTX / United Technologies - 'EMPLOYEE SAVINGS PLAN', 2P alongside 2J/2K"
+EXCLUDED,RAYTHEON COMPANY,WALTHAM,951778500,026,F_5500,91450.0,"Raytheon Company - 'RAYTHEON SAVINGS AND INVESTMENT PLAN', 2O alongside 2J/2K"

@@ -1,3 +1,2 @@
 bucket,sponsor_name,city,ein,plan_num,source,participants,detail
-DB_ONLY,"MASS. BAY BREWING COMPANY, INC.",BOSTON,42925204,2,db,11,not in fresh bulk
-DB_ONLY,B & B ENGINEERING CORPORATION,GEORGETOWN,42501424,2,db,27,not in fresh bulk
+EXCLUDED,"CRANE NXT, CO.",WALTHAM,880706021,001,F_5500,2511.0,"Crane NXT, Co. (NYSE: CXT) - 'CRANE NXT, CO. SAVINGS AND INVESTMENT PLAN'"
