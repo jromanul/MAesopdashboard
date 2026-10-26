@@ -247,6 +247,10 @@ def main():
         refetch.save_filtered_schedules(located)
         fa.nullify_unreported_employer_securities()
         fa.recompute_annual_summaries()
+        # The app opens the database in WAL mode. Fold the log into the main
+        # file, which is what gets committed (the -wal file is gitignored).
+        with sqlite3.connect(DB) as c:
+            c.execute("PRAGMA wal_checkpoint(TRUNCATE)")
 
     print(f"\nimported {n_new}; non-MA rows removed {n_removed}; financial rows changed "
           f"{stats['changed']}; participant pairs fixed {n_pairs}; city spellings fixed {n_cities}"
