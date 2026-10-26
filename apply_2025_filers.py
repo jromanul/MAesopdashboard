@@ -37,7 +37,9 @@ the acquirer's number, correctly excluded as a cross-EIN duplicate. The 2025
 return under that EIN is named "EASTERN BANK EMPLOYEE STOCK OWNERSHIP PLAN",
 carries no prior-EIN link, and reports 2,202 participants and $273.2M. That is
 Eastern's own plan, which this dataset tracked from 2020 to 2023 (1,786 ->
-1,904 participants) and which filed nothing for 2024. Cambridge's own plan files
+1,904 participants) and which filed nothing for 2024. (Corrected October 2026:
+it did file for 2024; DOL's Latest file had dropped that return. See
+apply_2026_10_sweep.py.) Cambridge's own plan files
 separately for 2025 as a final amended return (485 participants) and is already
 in the database.
 

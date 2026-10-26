@@ -4,7 +4,7 @@
     "form_year": 2024,
     "data_as_of": "October 26, 2026",
     "dol_release": "September 30, 2026",
-    "generated_utc": "2026-10-26T18:38:43+00:00",
+    "generated_utc": "2026-10-26T21:18:55+00:00",
     "source": "U.S. Department of Labor, EFAST2 Form 5500 bulk datasets",
     "source_url": "https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/public-disclosure/foia/form-5500-datasets",
     "dashboard_url": "https://maesopdashboard.streamlit.app",
@@ -23,57 +23,57 @@
   },
   "headline": {
     "basis": "active",
-    "active_plans": 118,
-    "filed_plans": 131,
+    "active_plans": 121,
+    "filed_plans": 134,
     "excluded_inactive": 13,
     "ksop_plans": 6,
-    "total_participants": 27599,
-    "total_active_participants": 17926,
-    "total_assets": 3767181258,
-    "mean_assets_per_plan": 31925265,
-    "median_assets_per_plan": 6463366,
-    "mean_participants_per_plan": 233.9,
+    "total_participants": 29953,
+    "total_active_participants": 19944,
+    "total_assets": 4024926501,
+    "mean_assets_per_plan": 33263855,
+    "median_assets_per_plan": 6458729,
+    "mean_participants_per_plan": 247.5,
     "median_participants_per_plan": 74,
-    "aggregate_assets_per_participant": 136497,
-    "aggregate_assets_per_active_participant": 210152,
-    "median_assets_per_active_participant_per_plan": 118383,
-    "mean_assets_per_active_participant_per_plan": 230913,
-    "employer_securities": 3387447709,
-    "employer_securities_pct_of_assets": 89.9,
-    "plans_reporting_employer_securities": 111
+    "aggregate_assets_per_participant": 134375,
+    "aggregate_assets_per_active_participant": 201811,
+    "median_assets_per_active_participant_per_plan": 117645,
+    "mean_assets_per_active_participant_per_plan": 226601,
+    "employer_securities": 3643465687,
+    "employer_securities_pct_of_assets": 90.5,
+    "plans_reporting_employer_securities": 114
   },
   "typical_plan": {
     "basis": "active",
-    "plans_described": 118,
+    "plans_described": 121,
     "rows": [
       {
         "metric": "ESOP age (years since plan start)",
-        "median": 9.0,
-        "mean": 14.1,
+        "median": 9,
+        "mean": 13.8,
         "unit": "years"
       },
       {
         "metric": "Total participants (incl. retirees/separated)",
         "median": 74,
-        "mean": 234,
+        "mean": 248,
         "unit": "people"
       },
       {
         "metric": "Active participants (current employees)",
         "median": 52,
-        "mean": 152,
+        "mean": 165,
         "unit": "people"
       },
       {
         "metric": "Plan assets",
-        "median": 6463366,
-        "mean": 31925265,
+        "median": 6458729,
+        "mean": 33263855,
         "unit": "usd"
       },
       {
         "metric": "Assets per active participant (per plan)",
-        "median": 118383,
-        "mean": 230913,
+        "median": 117645,
+        "mean": 226601,
         "unit": "usd"
       }
     ]
@@ -97,106 +97,106 @@
       "plan_count": [
         121,
         124,
-        128,
-        123,
-        118,
-        119,
+        129,
+        124,
+        121,
+        120,
         127,
         122,
         129,
-        132,
-        131
+        133,
+        134
       ],
       "total_participants": [
         26343,
         26309,
-        25734,
-        25342,
-        25392,
-        26115,
+        25768,
+        25373,
+        25559,
+        26144,
         29367,
         30424,
         31359,
-        33080,
-        29877
+        33359,
+        32231
       ],
       "active_participants": [
         17761,
         17228,
-        17827,
-        17852,
-        17989,
-        17957,
+        17853,
+        17876,
+        18117,
+        17976,
         20136,
         19677,
         19351,
-        21715,
-        17926
+        21935,
+        19944
       ],
       "total_assets": [
         1835107704,
         1868012123,
-        1777720988,
-        2016054977,
-        2198706990,
-        2677654737,
+        1777984495,
+        2016346133,
+        2219271862,
+        2677884982,
         3455655769,
         4879912335,
         3850234409,
-        3994430775,
-        3830235839
+        3975647417,
+        4087981082
       ],
       "mean_plan_assets": [
         15166179,
         15064614,
-        13888445,
-        16390691,
-        18633110,
-        22501300,
+        13782826,
+        16260856,
+        18341090,
+        22315708,
         27209888,
         39999281,
         29846778,
-        30260839,
-        29238442
+        29892086,
+        30507322
       ],
       "employer_contributions": [
         58451749,
         61451551,
         71332247,
         72696454,
-        74552330,
+        74866856,
         79544825,
         94976678,
         99051618,
         123602620,
-        134633923,
-        125398195
+        136565459,
+        135340343
       ],
       "benefits_paid": [
         167820359,
         137723404,
-        189932224,
-        110666017,
-        271289013,
-        181889812,
+        189936274,
+        110671516,
+        273011783,
+        181917808,
         111488848,
         648174249,
         751453255,
-        309585680,
-        492304369
+        309591494,
+        494934240
       ],
       "employer_securities": [
         1615935697,
         1659118036,
-        1515894014,
-        1748731359,
-        1926227492,
-        2265226763,
+        1516009410,
+        1748857236,
+        1939214474,
+        2265277729,
         2523789155,
         4151652512,
         3279695379,
-        3493349297,
-        3387447709
+        3474461997,
+        3643465687
       ]
     }
   },
@@ -205,11 +205,11 @@
     "plan_assets": [
       {
         "label": "< $1M",
-        "count": 13
+        "count": 14
       },
       {
         "label": "$1M - $5M",
-        "count": 40
+        "count": 41
       },
       {
         "label": "$5M - $10M",
@@ -225,7 +225,7 @@
       },
       {
         "label": "$100M - $500M",
-        "count": 6
+        "count": 7
       },
       {
         "label": "$500M - $1B",
@@ -243,11 +243,11 @@
       },
       {
         "label": "50 - 100",
-        "count": 30
+        "count": 31
       },
       {
         "label": "100 - 250",
-        "count": 21
+        "count": 22
       },
       {
         "label": "250 - 500",
@@ -259,7 +259,7 @@
       },
       {
         "label": "1,000 - 5,000",
-        "count": 7
+        "count": 8
       },
       {
         "label": "5,000 - 10,000",
@@ -300,9 +300,9 @@
       },
       {
         "era": "2020-present",
-        "plans": 37,
-        "participants": 4526,
-        "assets": 425980505
+        "plans": 40,
+        "participants": 6880,
+        "assets": 683725748
       }
     ]
   },
@@ -317,27 +317,27 @@
       {
         "decade": "1980s",
         "plans": 10,
-        "pct_of_active": 8.5
+        "pct_of_active": 8.3
       },
       {
         "decade": "1990s",
         "plans": 14,
-        "pct_of_active": 11.9
+        "pct_of_active": 11.6
       },
       {
         "decade": "2000s",
         "plans": 19,
-        "pct_of_active": 16.1
+        "pct_of_active": 15.7
       },
       {
         "decade": "2010s",
         "plans": 35,
-        "pct_of_active": 29.7
+        "pct_of_active": 28.9
       },
       {
         "decade": "2020s",
-        "plans": 37,
-        "pct_of_active": 31.4
+        "plans": 40,
+        "pct_of_active": 33.1
       }
     ]
   },
@@ -354,18 +354,26 @@
       },
       {
         "sector": "Manufacturing",
-        "plans": 25,
-        "participants": 5992,
-        "assets": 1121008746,
-        "avg_account_balance": 187084,
+        "plans": 26,
+        "participants": 6241,
+        "assets": 1121200746,
+        "avg_account_balance": 179651,
         "include_in_balance_table": true
       },
       {
         "sector": "Construction",
-        "plans": 20,
-        "participants": 4610,
-        "assets": 1315750335,
-        "avg_account_balance": 285412,
+        "plans": 21,
+        "participants": 4674,
+        "assets": 1316793763,
+        "avg_account_balance": 281727,
+        "include_in_balance_table": true
+      },
+      {
+        "sector": "Finance & Insurance",
+        "plans": 13,
+        "participants": 5196,
+        "assets": 461554977,
+        "avg_account_balance": 88829,
         "include_in_balance_table": true
       },
       {
@@ -374,14 +382,6 @@
         "participants": 2092,
         "assets": 190870476,
         "avg_account_balance": 91238,
-        "include_in_balance_table": true
-      },
-      {
-        "sector": "Finance & Insurance",
-        "plans": 12,
-        "participants": 3155,
-        "assets": 205045162,
-        "avg_account_balance": 64991,
         "include_in_balance_table": true
       },
       {
@@ -451,9 +451,9 @@
     ],
     "avg_account_balance_min_plans": 2,
     "totals": {
-      "plans": 118,
-      "participants": 27599,
-      "assets": 3767181258
+      "plans": 121,
+      "participants": 29953,
+      "assets": 4024926501
     }
   },
   "plans": [
@@ -492,6 +492,18 @@
       "active_participants": 825,
       "total_assets": 322045611.0,
       "employer_securities": 313531188.0
+    },
+    {
+      "plan_name": "EASTERN BANK EMPLOYEE STOCK OWNERSHIP PLAN",
+      "sponsor": "Eastern Bank",
+      "city": "Boston",
+      "industry": "Finance & Insurance",
+      "plan_year_started": 2020,
+      "is_ksop": false,
+      "total_participants": 2041,
+      "active_participants": 1773,
+      "total_assets": 256509815.0,
+      "employer_securities": 254895978.0
     },
     {
       "plan_name": "FIRST AMENDED AND RESTATED CREATIVE FINANCIAL STAFFING, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1706,6 +1718,18 @@
       "employer_securities": 1064068.0
     },
     {
+      "plan_name": "ENFIELD ENTERPRISES INC. EMPLOYEE STOCK OWNERSHIP PLAN",
+      "sponsor": "Enfield Enterprises Inc.",
+      "city": "Springfield",
+      "industry": "Construction",
+      "plan_year_started": 2020,
+      "is_ksop": false,
+      "total_participants": 64,
+      "active_participants": 41,
+      "total_assets": 1043428.0,
+      "employer_securities": 930000.0
+    },
+    {
       "plan_name": "DIETZ & COMPANY ARCHITECTS EMPLOYEE STOCK OWNERSHIP PLAN",
       "sponsor": "Dietz & Company Architects, Inc.",
       "city": "Springfield",
@@ -1836,6 +1860,18 @@
       "active_participants": 35,
       "total_assets": 350549.0,
       "employer_securities": 296938.0
+    },
+    {
+      "plan_name": "ATLANTIC SINTERED EMPLOYEE STOCK OWNERSHIP PLAN",
+      "sponsor": "Atlantic Holdings, Inc. (Atlantic Sintered)",
+      "city": "Wrentham",
+      "industry": "Manufacturing",
+      "plan_year_started": 2023,
+      "is_ksop": false,
+      "total_participants": 249,
+      "active_participants": 204,
+      "total_assets": 192000.0,
+      "employer_securities": 192000.0
     },
     {
       "plan_name": "SEAL-RYT CORP. EMPLOYEE STOCK OWNERSHIP PLAN AND TRUST",

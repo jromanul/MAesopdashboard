@@ -79,7 +79,10 @@ EXCLUDED_EINS: dict[str, str] = {
 # or other years of the same plan, that ARE tracked, so the key is the plan and
 # an optional set of years limits it further. Reviewed 2026-10-26 against the
 # September 2026 DOL release; each was surfaced by a full 2014-2025 rescan.
-KNOWN_NOT_TRACKED: dict[tuple[str, str], tuple[set | None, str]] = {
+# An entry may carry a third element, a plan-name substring: the exclusion then
+# applies only to returns whose PLAN_NAME contains it, so a second plan filed
+# under the same EIN and plan number is not excluded with it.
+KNOWN_NOT_TRACKED: dict[tuple[str, str], tuple] = {
     # Not ESOPs, whatever the code says.
     ("352223136", "1"): (None, "Ranella Hirsch MD PC 401(k): two-person 401(k); 2Q with no ESOP code"),
     ("42765092", "1"): (None, "Berman Donovan Stern & Wood, LLP profit-sharing plan: a partnership "
@@ -110,8 +113,11 @@ KNOWN_NOT_TRACKED: dict[tuple[str, str], tuple[set | None, str]] = {
     ("884313116", "2"): ({2022}, "Feinmann, Inc.: duplicate of the EIN 043104386 return"),
     ("42606179", "2"): ({2022}, "Erland Construction, Inc.: duplicate of the EIN 043579044 return"),
     ("861384153", "2"): ({2020}, "CourtSmart Digital Systems: duplicate of the EIN 043358086 return"),
-    ("43067724", "3"): ({2024}, "Cambridge Bancorp ESOP filed under Eastern Bank's EIN after the "
-                                "acquisition; Cambridge's own EIN 042777442 return is tracked"),
+    ("43067724", "3"): ({2024, 2025}, "Cambridge Bancorp ESOP filed under Eastern Bank's EIN and "
+                                      "plan number after the acquisition; Cambridge's own EIN "
+                                      "042777442 return is tracked. Scoped by plan name: Eastern's "
+                                      "own ESOP files under the same number and IS tracked",
+                        "CAMBRIDGE BANCORP"),
     ("43298009", "3"): ({2024}, "Northern Construction Holding: administrative re-filing of the "
                                 "PN 002 return already tracked"),
     ("332432954", "1"): ({2024}, "Green Tech Enterprises: superseded original; corrected re-filing "
@@ -137,16 +143,46 @@ NEW_COMPANY_NAMES: dict[str, tuple[str, str]] = {
     "364615460": ("Helical Drilling, Inc.", "Braintree"),
     "200508239": ("Wildlife Acoustics, Inc.", "Maynard"),
     "921304786": ("FE Holdings, Inc.", "Mansfield"),
+    "931156047": ("Atlantic Holdings, Inc. (Atlantic Sintered)", "Wrentham"),
+}
+
+# A city as one return spells it (a typo or an abbreviation), and the spelling
+# the same sponsor uses on its other returns. Applied on import and accepted by
+# verification; map_utils aliases them too.
+CITY_SPELLINGS: dict[str, str] = {
+    "RANDDOLPH": "Randolph",               # Econocorp 2022
+    "SO. LANCASTER": "South Lancaster",    # James Monroe Corp. 2020-2023
+    "W. SPRINGFIELD": "West Springfield",  # New England Bank 2014
 }
 
 
-def not_tracked_reason(ein: str, pn: str, year: int) -> str | None:
+def city_spelling(city: str) -> str:
+    c = (city or "").strip()
+    return CITY_SPELLINGS.get(c.upper(), c)
+
+
+def not_tracked_reason(ein: str, pn: str, year: int, plan_name: str = "") -> str | None:
     if ein in EXCLUDED_EINS:
         return EXCLUDED_EINS[ein]
     hit = KNOWN_NOT_TRACKED.get((ein, pn))
-    if hit and (hit[0] is None or year in hit[0]):
-        return hit[1]
-    return None
+    if not hit or (hit[0] is not None and year not in hit[0]):
+        return None
+    if len(hit) > 2 and hit[2].upper() not in (plan_name or "").upper():
+        return None
+    return hit[1]
+
+
+def drop_name_scoped_exclusions(year: int, returns: dict) -> dict:
+    """Remove the individual returns a plan-name-scoped exclusion covers, so the
+    canonical return for that EIN and plan number is chosen from the rest."""
+    out = {}
+    for key, lst in returns.items():
+        hit = KNOWN_NOT_TRACKED.get(key)
+        if hit and len(hit) > 2 and (hit[0] is None or year in hit[0]):
+            lst = [x for x in lst if hit[2].upper() not in x["plan_name"].upper()]
+        if lst:
+            out[key] = lst
+    return out
 
 
 def norm_key(ein, pn) -> tuple[str, str]:
@@ -177,12 +213,16 @@ def _download(url: str, dest: str) -> bool:
 
 
 def fetch(year: int, no_download: bool):
+    """Download the year's Latest and All files. Later form years already in the
+    cache are also searched for late returns (dol_bulk.returns_for_year)."""
     os.makedirs(CACHE_DIR, exist_ok=True)
-    for kind in KINDS:
-        if dol_bulk.has_zip(year, kind) or no_download:
-            continue
-        print(f"    downloading {kind}_{year}_Latest.zip ...")
-        _download(dol_bulk.zip_url(year, kind), dol_bulk.zip_path(year, kind))
+    for variant in dol_bulk.VARIANTS:
+        for kind in KINDS:
+            if dol_bulk.has_zip(year, kind, variant) or no_download:
+                continue
+            print(f"    downloading {kind}_{year}_{variant}.zip ...")
+            _download(dol_bulk.zip_url(year, kind, variant),
+                      dol_bulk.zip_path(year, kind, variant))
 
 
 def sf_esop_returns(year: int) -> dict:
@@ -192,7 +232,7 @@ def sf_esop_returns(year: int) -> dict:
     if not dol_bulk.has_zip(year, "F_5500_SF"):
         return out
     for r in dol_bulk.iter_rows(year, "F_5500_SF"):
-        if r.get("SF_SPONS_US_STATE", "").strip().upper() != "MA" or \
+        if not dol_bulk.is_ma_address(r.get("SF_SPONS_US_STATE"), r.get("SF_SPONS_US_ZIP")) or \
                 not dol_bulk.has_esop_code(r.get("SF_TYPE_PENSION_BNFT_CODE")):
             continue
         k = norm_key(r.get("SF_SPONS_EIN"), r.get("SF_PLAN_NUM"))
@@ -217,7 +257,8 @@ def inherit_city(prior_city: str | None, filed_city: str) -> str:
     Casing is inherited so a plan reads the same in every year, but an address
     change on the return is real information and wins.
     """
-    if prior_city and prior_city.strip().lower() == filed_city.strip().lower():
+    filed_city = city_spelling(filed_city)
+    if prior_city and prior_city.strip().lower() == filed_city.lower():
         return prior_city
     return filed_city.strip().title() if filed_city else (prior_city or "")
 
@@ -233,7 +274,7 @@ def build_record(conn, year: int, ret: dict, sched: dict, now: str) -> dict:
         city = inherit_city(prior["sponsor_city"], ret["sponsor_city"])
     else:
         sponsor, city = NEW_COMPANY_NAMES.get(
-            ret["ein"], (ret["sponsor_name"].title(), ret["sponsor_city"].title()))
+            ret["ein"], (ret["sponsor_name"].title(), city_spelling(ret["sponsor_city"]).title()))
         naics = ret["naics_code"]
         sector = fa.NAICS_SECTORS.get(naics[:2], "") if naics else ""
     if not naics:
@@ -255,25 +296,17 @@ def build_record(conn, year: int, ret: dict, sched: dict, now: str) -> dict:
 
 
 def gather(year: int, db_keys: set | None = None):
-    """Returns for the form year (plus open-year strays) and their schedules.
+    """Every return that can represent a plan in the form year, and their schedules.
 
+    Reads the year's Latest and All files, later forms for late returns, and for
+    the open year the previous form's short final years (dol_bulk.returns_for_year).
     ``db_keys`` pulls in the returns of plans already tracked even when their
     latest return dropped its ESOP code, so they are verified, not lost.
     """
-    returns = dol_bulk.ma_esop_returns(year, extra_keys=db_keys)
-    sched_years = [year]
-    if year == config.FORM5500_OPEN_FORM_YEAR and dol_bulk.has_zip(year - 1, "F_5500"):
-        for k, lst in dol_bulk.ma_esop_returns(year - 1, extra_keys=db_keys).items():
-            strays = [x for x in lst if x["plan_year_begin"][:4] == str(year)]
-            if strays:
-                returns.setdefault(k, []).extend(strays)
-        sched_years.append(year - 1)
-    acks = {x["ack_id"] for lst in returns.values() for x in lst}
-    sched: dict = {}
-    for sy in sched_years:
-        for ack, s in dol_bulk.schedules_by_ack(sy, acks).items():
-            sched.setdefault(ack, {}).update(s)
-    return returns, sched
+    returns = dol_bulk.returns_for_year(year, extra_keys=db_keys,
+                                        open_year=config.FORM5500_OPEN_FORM_YEAR)
+    returns = drop_name_scoped_exclusions(year, returns)
+    return returns, dol_bulk.schedules_for_returns(returns)
 
 
 def classify(conn, year: int, returns: dict):
@@ -289,11 +322,12 @@ def classify(conn, year: int, returns: dict):
         if key in db_year:
             continue
         rec = dol_bulk.canonical_return(year, lst)
-        if rec["state"] != "MA" or not dol_bulk.has_esop_code(rec["codes"]):
+        if not dol_bulk.is_ma_address(rec["state"], rec["sponsor_zip"]) or \
+                not dol_bulk.has_esop_code(rec["codes"]):
             continue
         if rec["plan_year_begin"][:4] != str(year):
             continue  # a next-year return filed early on this form; belongs to that year
-        why = not_tracked_reason(key[0], key[1], year)
+        why = not_tracked_reason(key[0], key[1], year, rec["plan_name"])
         if why:
             excluded.append((key, rec, why))
             continue
@@ -330,7 +364,7 @@ def verify(year: int, db_year: dict, returns: dict, sched: dict):
             (overrides if fld in ov else mismatches).append(
                 (label, fld, dbv, int(dolv), "F_5500"))
         if ret["sponsor_city"] and row["sponsor_city"] and \
-                ret["sponsor_city"].strip().lower() != str(row["sponsor_city"]).strip().lower():
+                city_spelling(ret["sponsor_city"]).lower() != str(row["sponsor_city"]).strip().lower():
             mismatches.append((label, "sponsor_city", row["sponsor_city"], ret["sponsor_city"], "F_5500"))
         money, src = dol_bulk.financials(sched.get(ret["ack_id"], {}))
         for fld in MONEY_FIELDS:
@@ -416,7 +450,8 @@ def main():
     # code, are not already tracked for this year, and are not known exclusions.
     named = []
     for key, lst in dol_bulk.ma_esop_named_returns_without_code(y).items():
-        if key in db_year or not_tracked_reason(key[0], key[1], y):
+        if key in db_year or not_tracked_reason(key[0], key[1], y,
+                                                  lst[0]["plan_name"] if lst else ""):
             continue
         rec = dol_bulk.canonical_return(y, lst)
         if rec["plan_year_begin"][:4] == str(y):

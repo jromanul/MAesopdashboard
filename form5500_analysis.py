@@ -499,14 +499,16 @@ def get_new_and_terminated(year: int) -> tuple[list[dict], list[dict]]:
     #   Voting (PN=005) Stock Ownership Plans have filed substantial,
     #   continuous ESOP returns every year through 2023 ($100M-$900M range);
     #   they were fiscal-year late filers like the others above, now imported
-    #   with FY2024 Schedule H figures).
+    #   with FY2024 Schedule H figures), The Severn Group (2026-10-26 — its
+    #   only tracked row, 2023, was a state typo: the return reads "Upper
+    #   Marlboro, MA 20774", a Maryland address, so the row is removed and the
+    #   plan was never a Massachusetts ESOP to terminate).
     #
     # TIER 1 — Confirmed Terminated: acquisition/wind-down confirmed AND backed
     # by filing evidence (current-yr non-ESOP filing or $0/0 final return) or a
     # confirmed acquisition of a 100%-ESOP by a strategic/PE buyer.
     _TIER1_TERMINATED_EINS: dict[str, str] = {
         "822323992": "Sold to CI Capital (2021); filed 2024 401(k)+welfare, no ESOP",
-        "550796211": "Relocated to MD; filed 2024 401(k), no ESOP (no longer MA)",
         "43533865":  "Wound down — $0 assets / 0 active in final (2023) filing",
         "10367721":  "Acquired by BetterBody Foods (Dec 1 2024); 0 active in final filing",
         "521405842": "Acquired by PAE/Amentum; $0/0 final filing",
@@ -534,11 +536,10 @@ def get_new_and_terminated(year: int) -> tuple[list[dict], list[dict]]:
         "42556035":  "100% employee-owned since Jan 2022 (Landry's Bicycles)",
         "42699206":  "Employee-owned per MA state EO registry (Packaging Consultants)",
         "42170946":  "Operating; ESOP filed 2023, no acquisition found (Paul K. Guillow / Guillow's)",
-        # Its own ESOP filed 2020-2023 and again for 2025 (2,202 participants,
-        # $273.2M). The 2024 gap is real but not a termination: for that year the
-        # only ESOP return under this EIN was the acquired Cambridge Bancorp plan,
-        # excluded here as a cross-EIN duplicate of Cambridge's own filing.
-        "43067724":  "Still active — filed its own 2025 ESOP return (Eastern Bank)",
+        # Eastern Bank (43067724) left this list 2026-10-26: its own 2024 ESOP
+        # return was filed (2,041 participants, $256.5M) but DOL's "Latest" file
+        # had dropped it in favour of the Cambridge Bancorp plan filed later
+        # under the same EIN and plan number. See apply_2026_10_sweep.py.
     }
 
     terminated: list[dict] = []

@@ -17,7 +17,7 @@ Rules, per database row (see dol_bulk.py for why each matters):
   5. Participant counts are NOT changed here. They come from the main form and
      are verified instead: any row whose stored counts differ from its return is
      reported so it can be reviewed, since a difference can be a documented
-     correction (see apply_2026_10_refresh.PARTICIPANT_OVERRIDES).
+     correction (see scan_dol_filers.PARTICIPANT_OVERRIDES).
 
 Also writes the filtered schedule rows for every tracked filing to data/form5500/
 (f_sch_h_<year>.csv, f_sch_i_<year>.csv). Those files are what
@@ -45,7 +45,7 @@ import urllib.request
 import config
 import dol_bulk
 import form5500_analysis as fa
-from scan_dol_filers import PARTICIPANT_OVERRIDES
+from scan_dol_filers import PARTICIPANT_OVERRIDES, drop_name_scoped_exclusions
 
 import safe_console
 
@@ -73,15 +73,24 @@ def _download(url: str, dest: str) -> bool:
         return False
 
 
+# DOL's "All" files (every filing version) are also fetched for the most recent
+# form years, where re-filings and rejected amendments are still common and the
+# "Latest" file can drop a filing (see dol_bulk, rule 4).
+ALL_VERSION_YEARS = YEARS[-3:]
+
+
 def fetch_bulk(download: bool = True):
     os.makedirs(dol_bulk.CACHE_DIR, exist_ok=True)
     for y in YEARS:
-        for kind in KINDS:
-            if dol_bulk.has_zip(y, kind) or not download:
+        for variant in dol_bulk.VARIANTS:
+            if variant == "All" and y not in ALL_VERSION_YEARS:
                 continue
-            url = dol_bulk.zip_url(y, kind)
-            print(f"  {kind} {y}: {url}")
-            _download(url, dol_bulk.zip_path(y, kind))
+            for kind in KINDS:
+                if dol_bulk.has_zip(y, kind, variant) or not download:
+                    continue
+                url = dol_bulk.zip_url(y, kind, variant)
+                print(f"  {kind} {y} {variant}: {url}")
+                _download(url, dol_bulk.zip_path(y, kind, variant))
 
 
 def locate_returns(conn) -> dict:
@@ -94,25 +103,14 @@ def locate_returns(conn) -> dict:
 
     located = {}
     for y in sorted(by_year):
-        if not dol_bulk.has_zip(y, "F_5500"):
+        if not (dol_bulk.has_zip(y, "F_5500") or dol_bulk.has_zip(y, "F_5500", "All")):
             print(f"  {y}: no main-form zip cached; financials left as they are")
             continue
         keys = {(dol_bulk.norm_ein(r["ein"]), dol_bulk.norm_pn(r["plan_num"]))
                 for r in by_year[y]}
-        returns = dol_bulk.ma_esop_returns(y, extra_keys=keys)
-        sched_years = [y]
-        if y == OPEN_YEAR and dol_bulk.has_zip(y - 1, "F_5500"):
-            # A plan whose open-year plan year is short (typically a final
-            # return) may file it on the prior year's form.
-            for k, lst in dol_bulk.ma_esop_returns(y - 1, extra_keys=keys).items():
-                returns.setdefault(k, []).extend(
-                    x for x in lst if x["plan_year_begin"][:4] == str(y))
-            sched_years.append(y - 1)
-        acks = {x["ack_id"] for lst in returns.values() for x in lst}
-        sched: dict = {}
-        for sy in sched_years:
-            for ack, s in dol_bulk.schedules_by_ack(sy, acks).items():
-                sched.setdefault(ack, {}).update(s)
+        returns = dol_bulk.returns_for_year(y, extra_keys=keys, open_year=OPEN_YEAR)
+        returns = drop_name_scoped_exclusions(y, returns)
+        sched = dol_bulk.schedules_for_returns(returns)
         for r in by_year[y]:
             k = (dol_bulk.norm_ein(r["ein"]), dol_bulk.norm_pn(r["plan_num"]))
             cands = returns.get(k, [])
