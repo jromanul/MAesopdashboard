@@ -49,10 +49,11 @@ CSS = """
     --ma-gold-deep:   #A87F08;
     --ma-gold-050:    #FFF9E6;
 
-    /* Neutral ramp */
+    /* Neutral ramp. ink-3 is the lightest text colour used for copy; it holds
+       at least 4.5:1 against both surfaces (WCAG 2.1 AA for body text). */
     --ink:            #0F1E2E;
     --ink-2:          #3D4E60;
-    --ink-3:          #64758A;
+    --ink-3:          #55667A;
     --line:           #E4EAF1;
     --line-soft:      #EEF2F7;
     --surface:        #FFFFFF;
@@ -109,8 +110,12 @@ html, body, [class*="st-"] {
 [data-testid="stAppViewContainer"] [data-testid="stCaptionContainer"],
 [data-testid="stAppViewContainer"] [data-testid="stCaptionContainer"] * {
     color: var(--ink-3) !important;
-    font-size: .78rem !important;
+    font-size: .8rem !important;
+    line-height: 1.55;
 }
+/* Streamlit fades captions to 60% opacity, which drops them below WCAG AA
+   contrast; the ink token already makes them visibly secondary. */
+[data-testid="stCaptionContainer"] { opacity: 1 !important; }
 
 /* ══════════════════════════════════════════════════════════════
    ICON FONT — Material Symbols must render as ligatures, not text
@@ -146,52 +151,181 @@ summary span[class*="Icon"],
     -webkit-font-feature-settings: 'liga' !important;
 }
 
+/* Keyboard focus is always visible (WCAG 2.4.7). */
+[data-testid="stAppViewContainer"] a:focus-visible,
+[data-testid="stAppViewContainer"] button:focus-visible,
+[data-testid="stAppViewContainer"] input:focus-visible,
+[data-testid="stSidebar"] label[data-testid="stRadioOption"][data-focus-visible="true"],
+.data-table th.sortable:focus-visible {
+    outline: 3px solid var(--ma-gold) !important;
+    outline-offset: 2px;
+}
+
+/* Reader-mode toolbar: the app header strip stays out of the way. */
+[data-testid="stHeader"] { background: transparent !important; }
+[data-testid="stAppDeployButton"], [data-testid="stStatusWidget"] .stDeployButton { display: none !important; }
+
 /* ══════════════════════════════════════════════════════════════
-   HEADER — flat navy band, gold hairline, no gradient
+   MASTHEAD — flat navy band, gold hairline, no gradient
    ══════════════════════════════════════════════════════════════ */
-.main-header {
+.gov-header {
     background: var(--ma-navy-900);
-    padding: 1.35rem 1.75rem 1.2rem;
+    padding: 1.5rem 1.85rem 1.45rem;
     border-radius: var(--radius);
-    margin-bottom: 1.4rem;
+    margin-bottom: 1rem;
     position: relative;
     overflow: hidden;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1.5rem;
+    flex-wrap: wrap;
 }
-.main-header::after {
+.gov-header::after {
     content: '';
     position: absolute;
     left: 0; right: 0; bottom: 0;
-    height: 3px;
+    height: 4px;
     background: var(--ma-gold);
 }
-.main-header h1,
-.main-header h1 *,
-[data-testid="stAppViewContainer"] .main-header h1 {
+.gov-header .gov-eyebrow,
+[data-testid="stAppViewContainer"] .gov-header .gov-eyebrow {
+    color: var(--ma-gold) !important;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    margin: 0 0 .45rem;
+}
+.gov-header h1,
+.gov-header h1 *,
+[data-testid="stAppViewContainer"] .gov-header h1 {
     color: #FFFFFF !important;
     margin: 0;
-    font-size: 1.6rem;
+    padding: 0;
+    font-size: 1.85rem;
     font-weight: 800;
     letter-spacing: -0.025em;
-    line-height: 1.15;
+    line-height: 1.12;
 }
-.main-header p,
-[data-testid="stAppViewContainer"] .main-header p {
+.gov-header h1 a { display: none !important; }   /* Streamlit's heading anchor */
+.gov-header .gov-lede,
+[data-testid="stAppViewContainer"] .gov-header .gov-lede {
+    color: rgba(255,255,255,.80) !important;
+    margin: .5rem 0 0 0;
+    font-size: .92rem;
+    line-height: 1.5;
+    max-width: 52rem;
+}
+.gov-header dl {
+    margin: 0;
+    display: flex;
+    gap: 1.6rem;
+    flex-wrap: wrap;
+}
+.gov-header dl div { min-width: 9rem; }
+.gov-header dt,
+[data-testid="stAppViewContainer"] .gov-header dt {
     color: rgba(255,255,255,.62) !important;
-    margin: .3rem 0 0 0;
-    font-size: .88rem;
-    font-weight: 400;
-    letter-spacing: .005em;
-}
-.main-header .header-date,
-[data-testid="stAppViewContainer"] .main-header .header-date {
-    color: var(--ma-gold) !important;
-    font-size: .74rem;
-    font-weight: 600;
-    text-align: right;
-    white-space: nowrap;
-    padding-left: 1.5rem;
+    font-size: .66rem;
+    font-weight: 700;
+    letter-spacing: .12em;
     text-transform: uppercase;
-    letter-spacing: .09em;
+    margin: 0 0 .2rem;
+}
+.gov-header dd,
+[data-testid="stAppViewContainer"] .gov-header dd {
+    color: #FFFFFF !important;
+    font-size: .92rem;
+    font-weight: 600;
+    margin: 0;
+    white-space: nowrap;
+}
+
+/* Status line under the masthead (download + data vintage) */
+.data-status,
+[data-testid="stAppViewContainer"] .data-status {
+    color: var(--ink-3) !important;
+    font-size: .8rem;
+    line-height: 1.45;
+    padding-top: .55rem;
+}
+.data-status b { color: var(--ink-2) !important; font-weight: 600; }
+
+/* ══════════════════════════════════════════════════════════════
+   PAGE HEAD — one per page: kicker, title, one-paragraph lede
+   ══════════════════════════════════════════════════════════════ */
+.page-head { margin: 1.1rem 0 1.15rem; }
+.page-head .page-kicker,
+[data-testid="stAppViewContainer"] .page-head .page-kicker {
+    color: var(--ma-navy) !important;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin: 0 0 .25rem;
+}
+.page-head h2,
+[data-testid="stAppViewContainer"] .page-head h2 {
+    font-size: 1.55rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: var(--ink) !important;
+}
+.page-head h2 a { display: none !important; }
+.page-head p,
+[data-testid="stAppViewContainer"] .page-head p {
+    color: var(--ink-2) !important;
+    font-size: .95rem;
+    line-height: 1.55;
+    margin: .45rem 0 0;
+    max-width: 62rem;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FOOTER
+   ══════════════════════════════════════════════════════════════ */
+.gov-footer {
+    margin-top: 3rem;
+    border-top: 3px solid var(--ma-gold);
+    background: var(--surface);
+    border-radius: 0 0 var(--radius) var(--radius);
+    padding: 1.4rem 1.6rem 1.2rem;
+    box-shadow: var(--shadow);
+}
+.gov-footer .gov-footer__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1.25rem 2rem;
+}
+.gov-footer h6,
+[data-testid="stAppViewContainer"] .gov-footer h6 {
+    font-size: .7rem !important;
+    font-weight: 700 !important;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ma-navy) !important;
+    margin: 0 0 .4rem !important;
+    padding: 0 !important;
+}
+.gov-footer h6 a { display: none !important; }
+.gov-footer p,
+[data-testid="stAppViewContainer"] .gov-footer p {
+    font-size: .8rem;
+    line-height: 1.55;
+    color: var(--ink-2) !important;
+    margin: 0;
+}
+.gov-footer a { color: var(--ma-navy) !important; font-weight: 600; }
+.gov-footer .gov-footer__legal,
+[data-testid="stAppViewContainer"] .gov-footer .gov-footer__legal {
+    margin-top: 1.1rem;
+    padding-top: .85rem;
+    border-top: 1px solid var(--line);
+    font-size: .74rem;
+    color: var(--ink-3) !important;
 }
 
 /* Section rules */
@@ -286,6 +420,26 @@ section.main hr {
     font-weight: 500;
     line-height: 1.35;
 }
+.metric-card .metric-sub,
+[data-testid="stAppViewContainer"] .metric-card .metric-sub {
+    margin: .3rem 0 0;
+    color: var(--ink-3) !important;
+    font-size: .74rem;
+    font-weight: 500;
+    line-height: 1.4;
+}
+.metric-card .metric-badge {
+    display: inline-block;
+    font-size: .6rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    color: #7A5A00 !important;
+    background: var(--ma-gold-050);
+    border: 1px solid #F0DFA6;
+    padding: 1px 7px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+}
 .metric-card .delta-up   { color: var(--pos) !important; font-size: .78rem; font-weight: 600; }
 .metric-card .delta-down { color: var(--neg) !important; font-size: .78rem; font-weight: 600; }
 
@@ -342,6 +496,38 @@ section.main hr {
     margin: 1rem 0;
 }
 .callout-warning h4 { color: var(--ma-gold-deep) !important; margin-top: 0; }
+.callout-eo p, .callout-warning p,
+[data-testid="stAppViewContainer"] .callout-eo p,
+[data-testid="stAppViewContainer"] .callout-warning p {
+    color: var(--ink) !important;
+    font-size: .88rem;
+    line-height: 1.55;
+    margin: 0 0 .45rem;
+}
+.callout-eo p:last-child, .callout-warning p:last-child { margin-bottom: 0; }
+.callout-eo .callout-title,
+.callout-warning .callout-title,
+[data-testid="stAppViewContainer"] .callout-eo .callout-title,
+[data-testid="stAppViewContainer"] .callout-warning .callout-title {
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ma-navy) !important;
+    margin-bottom: .3rem;
+}
+.callout-warning .callout-title,
+[data-testid="stAppViewContainer"] .callout-warning .callout-title { color: #7A5A00 !important; }
+
+/* Progress bar used on the open-year page */
+.progress-track {
+    height: 10px;
+    border-radius: 6px;
+    background: var(--line);
+    overflow: hidden;
+    margin: .5rem 0 .25rem;
+}
+.progress-fill { height: 100%; background: var(--ma-navy); border-radius: 6px; }
 
 /* Streamlit's own info/warning blocks, matched to the callouts */
 [data-testid="stAlert"] {
@@ -514,15 +700,97 @@ button[data-testid="stBaseButton-secondary"] span,
     letter-spacing: .08em;
 }
 
+/* Sidebar masthead */
+.side-brand,
+[data-testid="stSidebar"] .side-brand {
+    padding: .2rem 0 .9rem;
+    border-bottom: 1px solid rgba(255,255,255,.11);
+    margin-bottom: .8rem;
+}
+[data-testid="stSidebar"] .side-brand .side-brand__org {
+    color: var(--ma-gold) !important;
+    font-size: .64rem !important;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    line-height: 1.4;
+}
+[data-testid="stSidebar"] .side-brand .side-brand__title {
+    color: #FFFFFF !important;
+    font-size: 1.02rem !important;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin-top: .2rem;
+}
+[data-testid="stSidebar"] .side-asof,
+[data-testid="stSidebar"] .side-asof * {
+    color: rgba(255,255,255,.62) !important;
+    font-size: .74rem !important;
+    line-height: 1.5;
+}
+
 /* ══════════════════════════════════════════════════════════════
    NAV (radio rendered as a nav rail on the navy sidebar)
+   Two DOM generations are styled: Streamlit >= 1.4x renders options as
+   label[data-testid="stRadioOption"] with data-selected; older releases
+   render bare labels under div[data-testid="stRadio"] > div.
    ══════════════════════════════════════════════════════════════ */
-div[data-testid="stRadio"] > label { display: none; }
-div[data-testid="stRadio"] > div {
+[data-testid="stSidebar"] [data-testid="stRadio"] > label[data-testid="stWidgetLabel"] { display: none !important; }
+[data-testid="stSidebar"] [data-testid="stRadio"],
+[data-testid="stSidebar"] [data-testid="stRadio"] > div { width: 100% !important; }
+[data-testid="stSidebar"] [data-testid="stRadioGroup"] {
+    display: flex !important;
+    flex-direction: column !important;
     gap: 2px !important;
     width: 100% !important;
 }
-div[data-testid="stRadio"] > div > label {
+[data-testid="stSidebar"] [data-testid="stRadioGroup"] > div { width: 100% !important; }
+[data-testid="stSidebar"] label[data-testid="stRadioOption"] {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    border-radius: 9px !important;
+    padding: .62rem .8rem !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+    border-left: 3px solid transparent !important;
+    transition: background-color .15s ease !important;
+}
+/* The radio ring is the first child of the option's content wrapper. */
+[data-testid="stSidebar"] label[data-testid="stRadioOption"] > div > div:first-child:not([data-testid="stMarkdownContainer"]) {
+    display: none !important;
+}
+[data-testid="stSidebar"] label[data-testid="stRadioOption"] p {
+    color: rgba(255,255,255,.80) !important;
+    font-weight: 500 !important;
+    font-size: .9rem !important;
+    margin: 0 !important;
+}
+[data-testid="stSidebar"] label[data-testid="stRadioOption"]:hover { background-color: rgba(255,255,255,.08) !important; }
+[data-testid="stSidebar"] label[data-testid="stRadioOption"]:hover p { color: #FFFFFF !important; }
+[data-testid="stSidebar"] label[data-testid="stRadioOption"][data-selected="true"] {
+    background-color: rgba(255,255,255,.11) !important;
+    border-left-color: var(--ma-gold) !important;
+}
+[data-testid="stSidebar"] label[data-testid="stRadioOption"][data-selected="true"] p {
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+}
+[data-testid="stSidebar"] label[data-testid="stRadioOption"] [data-testid="stIconMaterial"] {
+    color: inherit !important;
+    font-size: 19px !important;
+    margin-right: .15rem;
+    vertical-align: -4px;
+}
+
+/* Older Streamlit DOM (kept so the nav survives a version change). */
+[data-testid="stSidebar"] div[data-testid="stRadio"] > label { display: none; }
+[data-testid="stSidebar"] div[data-testid="stRadio"] > div {
+    gap: 2px !important;
+    width: 100% !important;
+}
+[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label {
     display: flex !important;
     align-items: center !important;
     width: 100% !important;
@@ -537,32 +805,32 @@ div[data-testid="stRadio"] > div > label {
     overflow: hidden !important;
 }
 /* Hide the leftover baseweb radio dot so only the icon + label show */
-div[data-testid="stRadio"] > div > label > div:first-child { display: none !important; }
+[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label > div:first-child { display: none !important; }
 
-div[data-testid="stRadio"] > div > label p,
-div[data-testid="stRadio"] > div > label span {
+[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label p,
+[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label span {
     color: rgba(255,255,255,.74) !important;
     font-weight: 500 !important;
     font-size: .875rem !important;
     letter-spacing: -0.005em;
 }
-div[data-testid="stRadio"] > div > label:hover {
+[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label:hover {
     background-color: rgba(255,255,255,.08) !important;
 }
-div[data-testid="stRadio"] > div > label:hover p,
-div[data-testid="stRadio"] > div > label:hover span { color: #FFFFFF !important; }
+[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label:hover p,
+[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label:hover span { color: #FFFFFF !important; }
 
-div[data-testid="stRadio"] > div > label[data-checked="true"],
-div[data-testid="stRadio"] > div > label:has(input:checked) {
+[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label[data-checked="true"],
+[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label:has(input:checked) {
     background-color: rgba(246,197,27,.14) !important;
     border-left-color: var(--ma-gold) !important;
 }
-div[data-testid="stRadio"] > div > label[data-checked="true"] p,
-div[data-testid="stRadio"] > div > label[data-checked="true"] span,
-div[data-testid="stRadio"] > div > label[data-checked="true"] div,
-div[data-testid="stRadio"] > div > label:has(input:checked) p,
-div[data-testid="stRadio"] > div > label:has(input:checked) span,
-div[data-testid="stRadio"] > div > label:has(input:checked) div {
+[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label[data-checked="true"] p,
+[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label[data-checked="true"] span,
+[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label[data-checked="true"] div,
+[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label:has(input:checked) p,
+[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label:has(input:checked) span,
+[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label:has(input:checked) div {
     color: #FFFFFF !important;
     font-weight: 600 !important;
 }

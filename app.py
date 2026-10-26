@@ -1,13 +1,16 @@
 """
-Form 5500 ESOP Dashboard — Standalone Streamlit Application
-Duplicate of the Form 5500 ESOP section from the MassCEO Intelligence Dashboard.
+Massachusetts ESOP Dashboard — Streamlit application.
+
+Analysis of U.S. Department of Labor Form 5500 filings by Massachusetts
+employee stock ownership plans. Originally a duplicate of the Form 5500 ESOP
+section of the MassCEO Intelligence Dashboard.
 """
 
 import os
+import re
+import html as _html
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
-from datetime import datetime
 
 import config
 import utils
@@ -22,7 +25,9 @@ st.set_page_config(
     page_title=config.APP_TITLE,
     page_icon=config.APP_ICON,
     layout="wide",
-    initial_sidebar_state="expanded",
+    # "auto": open on desktop (where theme.CSS also pins it), collapsed on
+    # phones so the page opens on its content rather than behind the menu.
+    initial_sidebar_state="auto",
 )
 
 # ── Custom CSS ──────────────────────────────────
@@ -34,55 +39,121 @@ st.markdown(theme.CSS, unsafe_allow_html=True)
 # ── Helper: shareable data package ──────────────
 
 @st.cache_data(show_spinner=False)
-def _build_share_package(year: int) -> bytes:
+def _build_share_package(year: int, data_as_of: str) -> bytes:
     """ZIP of a form year's MA ESOP data, built in memory and cached.
 
-    Cached on `year` so the archive is assembled once per session rather than on
-    every rerun; it is rebuilt whenever the app restarts, which is also when the
-    underlying database can have changed.
+    Cached on `year` and the data vintage so the archive is assembled once per
+    session rather than on every rerun, and is rebuilt when the data refreshes.
     """
     return utils.build_share_package(
         year=year,
         all_rows=form5500_analysis.get_ma_filings(year),
         active_rows=form5500_analysis.get_ma_filings(year, exclude_zombie=True),
         summaries=form5500_analysis.get_annual_summaries(),
-        data_as_of=config.DATA_AS_OF,
+        data_as_of=data_as_of,
+        dol_release=config.DOL_RELEASE_DATE,
+        org_name=config.ORG_NAME,
+        dashboard_url=config.DASHBOARD_URL,
     )
+
+
+# ── Helpers: Streamlit version compatibility ────
+# Streamlit Cloud installs the newest release on every rebuild. Newer releases
+# deprecate `use_container_width` (for `width="stretch"`) and
+# `st.components.v1.html` (for `st.iframe`); older ones lack the replacements.
+# Pick whichever the installed version supports so a rebuild cannot break us.
+
+import inspect as _inspect
+
+_PLOTLY_PARAMS = set(_inspect.signature(st.plotly_chart).parameters)
+_STRETCH = ({"width": "stretch"} if "width" in _PLOTLY_PARAMS
+            else {"use_container_width": True})
+_BUTTON_STRETCH = ({"width": "stretch"}
+                   if "width" in _inspect.signature(st.download_button).parameters
+                   else {"use_container_width": True})
+
+
+def _chart(fig, key=None, alt=None):
+    """st.plotly_chart at full width, with alt text where supported."""
+    kw = dict(_STRETCH, config=charts.PLOTLY_CONFIG)
+    if key:
+        kw["key"] = key
+    if alt and "alt" in _PLOTLY_PARAMS:
+        kw["alt"] = alt
+    st.plotly_chart(fig, **kw)
+
+
+def _inject_script(html_doc: str):
+    """Run a script that needs the parent document (st.iframe, else components)."""
+    if hasattr(st, "iframe"):
+        st.iframe(html_doc, height=1)
+    else:
+        import streamlit.components.v1 as components
+        components.html(html_doc, height=0, scrolling=False)
+
+
+# ── Helpers: formatting ─────────────────────────
+
+def _money(v, digits: int = 1) -> str:
+    """$3.77B / $31.9M / $504,065 — one money style across every page."""
+    if v is None or pd.isna(v):
+        return "N/A"
+    a = abs(v)
+    sign = "-" if v < 0 else ""
+    if a >= 1e9:
+        return f"{sign}${a / 1e9:.{digits}f}B"
+    if a >= 1e6:
+        return f"{sign}${a / 1e6:.{digits}f}M"
+    return f"{sign}${a:,.0f}"
+
+
+def _md_safe(text: str) -> str:
+    """Escape '$' so Streamlit markdown does not read a pair of them as LaTeX."""
+    return text.replace("$", "\\$")
 
 
 # ── Helper: Render DataFrame as HTML table ──────
 
 def _render_html_table(df, money_cols=None, number_cols=None, height=600,
-                       numbered=False, sortable_cols=None, show_totals=False):
-    """Render a DataFrame as a styled HTML table with guaranteed black text.
+                       numbered=False, sortable_cols=None, show_totals=False,
+                       caption=None):
+    """Render a DataFrame as a styled HTML table.
 
-    - Money columns: show '$X' for values, '$0' for zero, '\u2014' for NULL/missing.
-    - Number columns: show 'X' for values, '0' for zero, '\u2014' for NULL/missing.
-    - Text columns: show value or '\u2014' for empty/NULL.
+    - Money columns: show '$X' for values, '$0' for zero, '—' for NULL/missing.
+    - Number columns: show 'X' for values, '0' for zero, '—' for NULL/missing.
+    - Text columns: show value or '—' for empty/NULL.
     - numbered: if True, adds a '#' column on the left with row numbers (1, 2, 3...).
     - sortable_cols: list of column names that can be sorted by clicking the header.
     - show_totals: if True, adds a Total row at the bottom summing numeric columns.
+    - caption: visually hidden table caption for screen readers.
     """
     import hashlib
     money_cols = money_cols or []
     number_cols = number_cols or []
     sortable_cols = sortable_cols or []
 
-    table_id = "tbl_" + hashlib.md5(str(df.columns.tolist()).encode()).hexdigest()[:8]
+    table_id = "tbl_" + hashlib.md5(
+        (str(df.columns.tolist()) + str(caption)).encode()).hexdigest()[:8]
 
     _table_cls = "data-table numbered" if numbered else "data-table"
-    html = f'<div class="data-table-wrapper" style="max-height:{height}px;">'
-    html += f'<table class="{_table_cls}" id="{table_id}"><thead><tr>'
+    html = f'<div class="data-table-wrapper" style="max-height:{height}px;" tabindex="0">'
+    html += f'<table class="{_table_cls}" id="{table_id}">'
+    if caption:
+        html += (f'<caption style="position:absolute;left:-9999px;">'
+                 f'{_html.escape(caption)}</caption>')
+    html += '<thead><tr>'
     if numbered:
-        html += '<th style="text-align:center;min-width:35px;">#</th>'
+        html += '<th scope="col" style="text-align:center;min-width:35px;">#</th>'
     for col_idx, col in enumerate(df.columns):
+        align = ' style="text-align:right;"' if (col in money_cols or col in number_cols) else ""
         if col in sortable_cols:
-            html += f'<th class="sortable" data-col="{col_idx}">{col}</th>'
+            html += (f'<th scope="col" class="sortable" data-col="{col_idx}" '
+                     f'title="Sort by {_html.escape(col)}"{align}>{col}</th>')
         else:
-            html += f'<th>{col}</th>'
+            html += f'<th scope="col"{align}>{col}</th>'
     html += '</tr></thead><tbody>'
 
-    na_cell = '<td style="color:#999999;text-align:center;">\u2014</td>'
+    na_cell = '<td style="color:#55667A;text-align:center;">—</td>'
 
     for row_idx, (_, row) in enumerate(df.iterrows(), start=1):
         html += '<tr>'
@@ -97,13 +168,7 @@ def _render_html_table(df, money_cols=None, number_cols=None, height=600,
             if col in sortable_cols:
                 if is_missing:
                     sort_attr = ' data-val="-999999999999"'
-                elif col in money_cols or col in number_cols:
-                    try:
-                        sort_attr = f' data-val="{float(val)}"'
-                    except (ValueError, TypeError):
-                        sort_attr = ' data-val="-999999999999"'
                 else:
-                    # Text-based sortable columns (e.g. year strings)
                     try:
                         sort_attr = f' data-val="{float(val)}"'
                     except (ValueError, TypeError):
@@ -111,26 +176,26 @@ def _render_html_table(df, money_cols=None, number_cols=None, height=600,
 
             if col in money_cols:
                 if is_missing:
-                    html += f'<td style="color:#999999;text-align:center;"{sort_attr}>\u2014</td>'
+                    html += f'<td style="color:#55667A;text-align:center;"{sort_attr}>—</td>'
                 else:
                     try:
                         num = float(val)
                         if num == 0:
-                            html += f'<td class="num" style="color:#999999;"{sort_attr}>$0</td>'
+                            html += f'<td class="num" style="color:#55667A;"{sort_attr}>$0</td>'
                         elif num < 0:
-                            html += f'<td class="num" style="color:#C0392B;"{sort_attr}>-${abs(num):,.0f}</td>'
+                            html += f'<td class="num" style="color:#B03A2E;"{sort_attr}>-${abs(num):,.0f}</td>'
                         else:
                             html += f'<td class="num"{sort_attr}>${num:,.0f}</td>'
                     except (ValueError, TypeError):
                         html += f'<td{sort_attr}>{val}</td>'
             elif col in number_cols:
                 if is_missing:
-                    html += f'<td style="color:#999999;text-align:center;"{sort_attr}>\u2014</td>'
+                    html += f'<td style="color:#55667A;text-align:center;"{sort_attr}>—</td>'
                 else:
                     try:
                         num = float(val)
                         if num == 0:
-                            html += f'<td class="num" style="color:#999999;"{sort_attr}>0</td>'
+                            html += f'<td class="num" style="color:#55667A;"{sort_attr}>0</td>'
                         else:
                             html += f'<td class="num"{sort_attr}>{num:,.0f}</td>'
                     except (ValueError, TypeError):
@@ -138,17 +203,17 @@ def _render_html_table(df, money_cols=None, number_cols=None, height=600,
             else:
                 if is_missing:
                     if sort_attr:
-                        html += f'<td style="color:#999999;text-align:center;"{sort_attr}>\u2014</td>'
+                        html += f'<td style="color:#55667A;text-align:center;"{sort_attr}>—</td>'
                     else:
                         html += na_cell
                 else:
-                    html += f'<td{sort_attr}>{val}</td>'
+                    html += f'<td{sort_attr}>{_html.escape(str(val))}</td>'
         html += '</tr>'
     html += '</tbody>'
 
     # ── Totals footer row ──
     if show_totals:
-        _tfoot_style = ('style="background-color:#0E3D6B !important;color:#FFFFFF !important;'
+        _tfoot_style = ('style="background-color:#0A2E52 !important;color:#FFFFFF !important;'
                         'font-weight:700;border-top:2px solid #F6C51B;"')
         html += f'<tfoot><tr {_tfoot_style}>'
         if numbered:
@@ -167,23 +232,16 @@ def _render_html_table(df, money_cols=None, number_cols=None, height=600,
             if col in _ratio_cols:
                 # Use weighted average instead of sum
                 avg = _ratio_cols[col]
-                if col in money_cols:
-                    cell_val = f'${avg:,.0f}'
-                else:
-                    cell_val = f'{avg:,.0f}'
-                html += (f'<td class="num" {_tfoot_style}>{cell_val}</td>')
+                cell_val = f'${avg:,.0f}' if col in money_cols else f'{avg:,.0f}'
+                html += f'<td class="num" {_tfoot_style}>{cell_val}</td>'
                 first_col = False
             elif col in money_cols or col in number_cols:
-                # Sum non-null values
                 total = pd.to_numeric(df[col], errors="coerce").sum()
                 if col in money_cols:
-                    if total < 0:
-                        cell_val = f'-${abs(total):,.0f}'
-                    else:
-                        cell_val = f'${total:,.0f}'
+                    cell_val = f'-${abs(total):,.0f}' if total < 0 else f'${total:,.0f}'
                 else:
                     cell_val = f'{total:,.0f}'
-                html += (f'<td class="num" {_tfoot_style}>{cell_val}</td>')
+                html += f'<td class="num" {_tfoot_style}>{cell_val}</td>'
                 first_col = False
             else:
                 if first_col:
@@ -199,7 +257,6 @@ def _render_html_table(df, money_cols=None, number_cols=None, height=600,
 
     # Inject JavaScript for sorting via st.components.v1.html (Streamlit strips <script> from st.markdown)
     if sortable_cols:
-        import streamlit.components.v1 as components
         sort_js = f"""
 <script>
 (function() {{
@@ -214,8 +271,10 @@ def _render_html_table(df, money_cols=None, number_cols=None, height=600,
     // Remove any existing listeners by cloning
     var newTh = th.cloneNode(true);
     th.parentNode.replaceChild(newTh, th);
+    newTh.setAttribute('tabindex', '0');
+    newTh.setAttribute('aria-sort', 'none');
 
-    newTh.addEventListener('click', function() {{
+    function sortBy() {{
       var colIdx = parseInt(newTh.getAttribute('data-col'));
       var tbody = table.querySelector('tbody');
       var rows = Array.from(tbody.querySelectorAll('tr'));
@@ -223,14 +282,18 @@ def _render_html_table(df, money_cols=None, number_cols=None, height=600,
 
       // Determine sort direction (default first click = descending / highest first)
       var isDesc = newTh.classList.contains('sort-desc');
-      // Clear all sort indicators
       var allHeaders = table.querySelectorAll('th.sortable');
-      allHeaders.forEach(function(h) {{ h.classList.remove('sort-asc', 'sort-desc'); }});
+      allHeaders.forEach(function(h) {{
+        h.classList.remove('sort-asc', 'sort-desc');
+        h.setAttribute('aria-sort', 'none');
+      }});
 
       if (isDesc) {{
         newTh.classList.add('sort-asc');
+        newTh.setAttribute('aria-sort', 'ascending');
       }} else {{
         newTh.classList.add('sort-desc');
+        newTh.setAttribute('aria-sort', 'descending');
       }}
       var ascending = isDesc;
 
@@ -251,57 +314,74 @@ def _render_html_table(df, money_cols=None, number_cols=None, height=600,
           row.children[0].textContent = idx + 1;
         }}
       }});
+    }}
+    newTh.addEventListener('click', sortBy);
+    newTh.addEventListener('keydown', function(e) {{
+      if (e.key === 'Enter' || e.key === ' ') {{ e.preventDefault(); sortBy(); }}
     }});
   }});
 }})();
 </script>"""
-        components.html(sort_js, height=0, scrolling=False)
+        _inject_script(sort_js)
 
 
-# ── Helper: Metric Card ─────────────────────────
+# ── Helpers: page furniture ─────────────────────
 
-def _render_metric(col, value, label, source="", ma=False, delta=None, delta_fmt="", scope=""):
+def _render_metric(col, value, label, sub="", ma=False):
     card_class = "metric-card metric-card-ma" if ma else "metric-card"
-    delta_html = ""
-    if delta is not None:
-        arrow = "\u25b2" if delta >= 0 else "\u25bc"
-        cls = "delta-up" if delta >= 0 else "delta-down"
-        delta_html = f'<span class="{cls}">{arrow} {delta_fmt}</span>'
-    source_html = f'<p style="font-size:0.7rem;color:#8899AA;">{source}</p>' if source else ""
-    _scope = scope if scope else ("MA" if ma else "")
-    if _scope == "MA":
-        badge_html = '<span style="display:inline-block;font-size:0.6rem;font-weight:700;color:#B8930E;background:#F6C51B22;padding:1px 7px;border-radius:8px;margin-bottom:4px;">MA</span>'
-    elif _scope == "US":
-        badge_html = '<span style="display:inline-block;font-size:0.6rem;font-weight:700;color:#14558F;background:#14558F18;padding:1px 7px;border-radius:8px;margin-bottom:4px;">US</span>'
-    elif _scope == "Federal":
-        badge_html = '<span style="display:inline-block;font-size:0.6rem;font-weight:700;color:#6C3483;background:#6C348318;padding:1px 7px;border-radius:8px;margin-bottom:4px;">Federal</span>'
-    else:
-        badge_html = ""
+    badge_html = '<span class="metric-badge">MA</span>' if ma else ""
+    sub_html = f'<p class="metric-sub">{sub}</p>' if sub else ""
     with col:
         st.markdown(
-            f'<div class="{card_class}">'
-            f'{badge_html}'
-            f'<h3>{value}</h3>'
-            f'<p>{label}</p>'
-            f'{delta_html}'
-            f'{source_html}'
-            f'</div>',
+            f'<div class="{card_class}">{badge_html}<h3>{value}</h3>'
+            f'<p>{label}</p>{sub_html}</div>',
             unsafe_allow_html=True,
         )
 
 
-# ── Header ──────────────────────────────────────
+def _page_head(kicker: str, title: str, lede: str):
+    st.markdown(
+        f'<div class="page-head"><div class="page-kicker">{kicker}</div>'
+        f'<h2>{title}</h2><p>{lede}</p></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _note(body_html: str, title: str = "", kind: str = "info"):
+    cls = "callout-warning" if kind == "warning" else "callout-eo"
+    title_html = f'<div class="callout-title">{title}</div>' if title else ""
+    st.markdown(f'<div class="{cls}" role="note">{title_html}{body_html}</div>',
+                unsafe_allow_html=True)
+
+
+def _numeric_frame(rows: list[dict]) -> pd.DataFrame:
+    df = pd.DataFrame(rows)
+    for c in ["total_assets", "total_participants", "active_participants",
+              "employer_securities", "employer_contributions",
+              "benefits_paid", "is_ksop"]:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+    return df
+
+
+def _norm_name(s) -> str:
+    return re.sub(r"[^a-z0-9]", "", str(s or "").lower())
+
+
+# ── Masthead ────────────────────────────────────
 
 st.markdown(
-    f'<div class="main-header">'
-    f'<div style="display:flex;justify-content:space-between;align-items:center;">'
+    f'<header class="gov-header" role="banner">'
     f'<div>'
-    f'<h1>{config.APP_ICON} {config.APP_TITLE}</h1>'
-    f'<p>Original analysis of DOL Form 5500 bulk filings.</p>'
+    f'<div class="gov-eyebrow">{config.ORG_NAME}</div>'
+    f'<h1>{config.APP_TITLE}</h1>'
+    f'<p class="gov-lede">{config.APP_SUBTITLE}</p>'
     f'</div>'
-    f'<div class="header-date">{datetime.now().strftime("%B %d, %Y")}</div>'
-    f'</div>'
-    f'</div>',
+    f'<dl>'
+    f'<div><dt>Data current as of</dt><dd>{config.DATA_AS_OF}</dd></div>'
+    f'<div><dt>DOL data release</dt><dd>{config.DOL_RELEASE_DATE}</dd></div>'
+    f'</dl>'
+    f'</header>',
     unsafe_allow_html=True,
 )
 
@@ -334,31 +414,35 @@ if form5500_analysis.has_data() and not form5500_analysis.has_financial_data():
                     form5500_analysis.recompute_annual_summaries()
                     st.rerun()
 
-# Controls
-f5500_c0, f5500_c2, f5500_c3 = st.columns([3, 3, 6])
+f5500_summaries = form5500_analysis.get_annual_summaries()
+_open_year = config.FORM5500_OPEN_FORM_YEAR
+
+# ── Status row: dataset download + data vintage ──
+
+_dl_year = form5500_analysis.get_latest_year()
+f5500_c0, f5500_c2 = st.columns([3, 9])
 with f5500_c0:
     # The dataset download leads, since sharing the data is the common errand.
-    # Uses get_latest_year() rather than the `latest_year` computed further down
-    # so the button can sit above the page's main content.
-    _dl_year = form5500_analysis.get_latest_year()
     if _dl_year:
         st.download_button(
-            f"⬇  Download {_dl_year} dataset (ZIP)",
-            _build_share_package(_dl_year),
+            f"Download {_dl_year} data (ZIP)",
+            _build_share_package(_dl_year, config.DATA_AS_OF),
             f"MA_ESOP_Form5500_{_dl_year}.zip", "application/zip",
+            **_BUTTON_STRETCH,
             help=(f"Everything for form year {_dl_year}: all filed plans and the "
                   "active subset as CSVs, the year-by-year summary, and a README "
                   "documenting sources, definitions and caveats."))
 with f5500_c2:
-    _f5500_meta_import = form5500_analysis.get_meta("last_import")
-    if _f5500_meta_import:
-        st.caption(f"Last import: {utils.format_last_updated(_f5500_meta_import)}")
-    else:
-        st.caption("No data imported yet")
+    if _dl_year:
+        st.markdown(
+            f'<div class="data-status">Most recent complete form year: <b>{_dl_year}</b>. '
+            f'Reconciled filing by filing against the U.S. Department of Labor EFAST2 '
+            f'bulk release of <b>{config.DOL_RELEASE_DATE}</b> on '
+            f'<b>{config.DATA_AS_OF}</b>. Form year {_open_year} is still being filed and '
+            f'appears only on the <b>{_open_year} Filers</b> page.</div>',
+            unsafe_allow_html=True)
 
 # ── Main Content ────────────────────────────────
-
-f5500_summaries = form5500_analysis.get_annual_summaries()
 
 if f5500_summaries:
     _f5500_valid = [s for s in f5500_summaries if s.get("ma_plan_count", 0) > 0]
@@ -366,138 +450,124 @@ if f5500_summaries:
         latest_year = _f5500_valid[-1]["filing_year"]
     else:
         latest_year = f5500_summaries[-1]["filing_year"]
+    latest = next((s for s in reversed(f5500_summaries) if s.get("ma_plan_count", 0) > 0),
+                  f5500_summaries[-1])
+    _first_year = _f5500_valid[0]["filing_year"] if _f5500_valid else latest_year
 
     # ── Sidebar Navigation (placed first in sidebar) ──
-    _nav_options = [
-        "\U0001f4ca Overview",
-        "\U0001f4c8 Trends",
-        "\U0001f3ed Industry",
-        "\U0001f5fa\ufe0f Geography",
-        "\U0001f195 2025 Filers",
-    ]
+    _PAGES = {
+        "overview": ":material/dashboard: Overview",
+        "trends": ":material/trending_up: Trends",
+        "industry": ":material/factory: Industry",
+        "geography": ":material/map: Geography",
+        "open_year": f":material/pending_actions: {_open_year} Filers",
+    }
 
     with st.sidebar:
-        _selected_page = st.radio(
+        st.markdown(
+            f'<div class="side-brand"><div class="side-brand__org">{config.ORG_NAME}</div>'
+            f'<div class="side-brand__title">{config.APP_TITLE}</div></div>',
+            unsafe_allow_html=True)
+        _selected_key = st.radio(
             "Navigation",
-            _nav_options,
-            key="f5500_nav",
+            list(_PAGES),
+            format_func=_PAGES.get,
+            key="f5500_nav_page",
             label_visibility="collapsed",
         )
 
     # ────────────────────────────────────
-    # PAGE: Overview (Summary Cards + Full Data Table + Distribution)
+    # PAGE: Overview
     # ────────────────────────────────────
-    if _selected_page == "\U0001f4ca Overview":
-        latest = next((s for s in reversed(f5500_summaries) if s.get("ma_plan_count", 0) > 0), f5500_summaries[-1])
-        st.markdown(f"#### Most Recent Filing Year: {latest_year}")
+    if _selected_key == "overview":
+        _page_head(
+            f"Form year {latest_year}",
+            "Overview",
+            f"How many Massachusetts companies sponsor an employee stock ownership plan, "
+            f"how many people those plans cover, and what they hold. Headline figures "
+            f"describe the <b>active</b> plans: those reporting at least one current "
+            f"employee as a participant.")
 
-        # Compute Overview metrics from *active* filings only (excluding zombie plans)
-        _ov_fin = form5500_analysis.get_financial_summary(
-            latest_year, exclude_zombie=True)
+        _ov_rows = form5500_analysis.get_ma_filings(latest_year, exclude_zombie=True)
+        _ov_df = _numeric_frame(_ov_rows)
+        _ov_fin = form5500_analysis.get_financial_summary(latest_year, exclude_zombie=True)
         _ov_plan_count = _ov_fin.get("plans_total", 0) or 0
         _ov_total_part = _ov_fin.get("total_participants", 0) or 0
         _ov_total_assets = _ov_fin.get("total_assets", 0) or 0
         _ov_avg_assets = _ov_fin.get("avg_assets_per_plan", 0) or 0
         _ov_avg_part = (_ov_total_part / _ov_plan_count) if _ov_plan_count > 0 else 0
-        _ov_unique_cos = len({f["ein"] for f in
-                             form5500_analysis.get_ma_filings(latest_year,
-                                                              exclude_zombie=True)})
+        _ov_active_part = int(_ov_df["active_participants"].fillna(0).sum()) if len(_ov_df) else 0
+        _ov_filed = latest["ma_plan_count"]
 
         # Row 1: Core counts
         oc1, oc2, oc3 = st.columns(3)
-        _render_metric(oc1, f"{_ov_plan_count:,}", "Active MA ESOP Plans", ma=True)
-        _render_metric(oc2, f"{_ov_total_part:,}", "Total MA ESOP Participants", ma=True)
-        if _ov_total_assets > 0:
-            assets_label = f"${_ov_total_assets / 1e9:.1f}B" if _ov_total_assets >= 1e9 else f"${_ov_total_assets / 1e6:.0f}M"
-        else:
-            assets_label = "N/A"
-        _render_metric(oc3, assets_label, "Total MA ESOP Assets", ma=True)
+        _render_metric(oc1, f"{_ov_plan_count:,}", "Active MA ESOP plans",
+                       f"of {_ov_filed:,} plans that filed for {latest_year}", ma=True)
+        _render_metric(oc2, f"{_ov_total_part:,}", "Participants in active plans",
+                       f"{_ov_active_part:,} are current employees", ma=True)
+        _render_metric(oc3, _money(_ov_total_assets, 2) if _ov_total_assets > 0 else "N/A",
+                       "Total plan assets", "End-of-plan-year value as filed", ma=True)
 
-        # Row 2: Averages
+        # Row 2: Averages, each with the median beside it
         oc4, oc5, oc6 = st.columns(3)
-        if _ov_avg_assets > 0:
-            avg_label = f"${_ov_avg_assets / 1e6:.1f}M" if _ov_avg_assets >= 1e6 else f"${_ov_avg_assets:,.0f}"
-        else:
-            avg_label = "N/A"
-        _render_metric(oc4, avg_label, "Average Plan Size (Assets)")
-        _render_metric(oc5, f"{_ov_avg_part:,.0f}", "Avg Participants Per Plan")
+        _med_assets = _ov_df["total_assets"].median() if len(_ov_df) else 0
+        _med_part = _ov_df["total_participants"].median() if len(_ov_df) else 0
+        _render_metric(oc4, _money(_ov_avg_assets) if _ov_avg_assets > 0 else "N/A",
+                       "Average plan size (assets)", f"Median plan: {_money(_med_assets)}")
+        _render_metric(oc5, f"{_ov_avg_part:,.0f}", "Average participants per plan",
+                       f"Median plan: {_med_part:,.0f}")
         if _ov_total_assets > 0 and _ov_total_part > 0:
-            _ov_avg_assets_per_part = _ov_total_assets / _ov_total_part
-            avg_per_part_label = f"${_ov_avg_assets_per_part:,.0f}"
+            _per_part = f"${_ov_total_assets / _ov_total_part:,.0f}"
+            _per_act = (f"${_ov_total_assets / _ov_active_part:,.0f} per current employee"
+                        if _ov_active_part else "")
         else:
-            avg_per_part_label = "N/A"
-        _render_metric(oc6, avg_per_part_label, "Avg Assets Per Participant")
+            _per_part, _per_act = "N/A", ""
+        _render_metric(oc6, _per_part, "Assets per participant", _per_act)
 
-        # 2024 data disclaimer
-        if latest_year == 2024:
-            st.info(
-                "**2024 Data Disclaimer:** The data shown reflects filings available through the "
-                f"DOL EFAST2 bulk data releases and individual filing searches as of {config.DATA_AS_OF}. "
-                "Some plans file on fiscal-year schedules or request extensions, so their "
-                "2024 filings may not yet be published by DOL."
-            )
+        _note(
+            f"<p>Figures include every {latest_year} return DOL had published in its "
+            f"{config.DOL_RELEASE_DATE} release. Plans on fiscal years or extensions can "
+            f"file up to 9½ months after their plan year ends, so a few {latest_year} "
+            f"returns may still arrive. Each refresh re-checks every stored figure "
+            f"against DOL's latest data.</p>",
+            title=f"About the {latest_year} figures")
 
-        # Financial data: show employer securities section if available
-        _has_fin = form5500_analysis.has_financial_data()
-        if _has_fin:
-            _fin_summary = form5500_analysis.get_financial_summary(
-                latest_year, exclude_zombie=True)
-            _es = _fin_summary.get("total_employer_securities", 0) or 0
-            if _es > 0:
-                st.markdown("---")
-                st.markdown("##### ESOP-Specific Financial Data")
-                _sec_c1, _sec_c2, _sec_c3 = st.columns(3)
-                _es_label = f"${_es / 1e9:.1f}B" if _es >= 1e9 else f"${_es / 1e6:.0f}M"
-                _render_metric(_sec_c1, _es_label, "Employer Securities (Company Stock)",
-                              "Schedule H, Part I Line 1c", ma=True)
-                _es_pct = _es / _fin_summary["total_assets"] * 100 if _fin_summary.get("total_assets", 0) > 0 else 0
-                _render_metric(_sec_c2, f"{_es_pct:.0f}%", "Stock as % of Total Assets",
-                              "Line 1c ÷ all active-plan assets (see below for "
-                              "the ratio among only stock-reporting plans)", ma=True)
-                # Count of active plans actually reporting employer securities
-                # (distinct from the "Avg Assets Per Participant" card above, which
-                # would otherwise be duplicated here).
-                _stock_holders = sum(
-                    1 for _f in form5500_analysis.get_ma_filings(
-                        latest_year, exclude_zombie=True)
-                    if float(_f.get("employer_securities") or 0) > 0)
-                _render_metric(_sec_c3, f"{_stock_holders} of {_ov_plan_count}",
-                              "Plans Reporting Company Stock",
-                              "Schedule H, Part I Line 1c", ma=True)
-
-        elif not _has_fin:
-            st.markdown(
-                '<div class="callout-eo" style="border-left-color: #C5960C;">'
-                '<h4>Financial Data Note</h4>'
-                '<p>Asset and contribution data require Schedule H/I filings, which are separate from the main '
-                'Form 5500. The current dataset includes plan counts, participants, and geographic data from the '
-                'main filing. To add financial data, place Schedule H/I CSV files in <code>data/form5500/</code> '
-                'and refresh this page, or re-run the processor with Schedule H/I downloads enabled.</p>'
-                '</div>',
-                unsafe_allow_html=True,
-            )
+        # ESOP-specific: company stock held in the trust
+        _es = float(_ov_df["employer_securities"].fillna(0).sum()) if len(_ov_df) else 0
+        if _es > 0:
+            st.markdown("##### Company Stock Held by Active Plans")
+            _sec_c1, _sec_c2, _sec_c3 = st.columns(3)
+            _render_metric(_sec_c1, _money(_es, 2), "Employer securities (company stock)",
+                           "Schedule H line 1d(1) or Schedule I line 3d", ma=True)
+            _es_pct = _es / _ov_total_assets * 100 if _ov_total_assets > 0 else 0
+            _render_metric(_sec_c2, f"{_es_pct:.0f}%", "Share of total plan assets",
+                           "Company stock ÷ assets of all active plans", ma=True)
+            _stock_holders = int((_ov_df["employer_securities"].fillna(0) > 0).sum())
+            _render_metric(_sec_c3, f"{_stock_holders} of {_ov_plan_count}",
+                           "Plans reporting company stock",
+                           "The rest report $0 or leave the line blank", ma=True)
 
         # ── Full Data Table (active MA ESOP filings) ──
         st.markdown("---")
-        st.markdown(f"#### Active MA ESOP Filings ({latest_year})")
+        st.markdown(f"#### Active MA ESOP Plans, {latest_year}")
 
-        f5500_search = st.text_input("Search by plan name, sponsor, or city", key="f5500_search")
+        f5500_search = st.text_input("Search by plan name, sponsor, or city", key="f5500_search",
+                                     placeholder="e.g. Worcester, construction, Tighe")
 
-        filings = form5500_analysis.get_ma_filings(latest_year,
-                                                     exclude_zombie=True)
+        filings = _ov_rows
         if filings:
             f_df = pd.DataFrame(filings)
             if f5500_search:
                 sl = f5500_search.lower()
                 mask = f_df.apply(lambda r: sl in (
-                    str(r.get("plan_name", "")) + str(r.get("sponsor_name", "")) +
-                    str(r.get("sponsor_city", ""))
+                    str(r.get("plan_name", "")) + " " + str(r.get("sponsor_name", "")) + " " +
+                    str(r.get("sponsor_city", "")) + " " + str(r.get("industry_sector", ""))
                 ).lower(), axis=1)
                 f_df = f_df[mask]
 
             display_cols = {
-                "plan_name": "Plan Name",
                 "sponsor_name": "Sponsor",
+                "plan_name": "Plan Name",
                 "sponsor_city": "City",
                 "industry_sector": "Industry",
                 "plan_eff_date": "Plan Year Started",
@@ -517,18 +587,16 @@ if f5500_summaries:
 
             if "Plan Year Started" in show_df.columns:
                 show_df["Plan Year Started"] = show_df["Plan Year Started"].apply(
-                    lambda x: str(x)[:4] if pd.notna(x) and x else "")
+                    lambda x: str(x)[:4] if pd.notna(x) and x and str(x)[:4] != "1900" else "")
             if "KSOP?" in show_df.columns:
                 show_df["KSOP?"] = show_df["KSOP?"].apply(lambda x: "Yes" if x else "No")
 
             # Compute Assets per Participant column
             if "Total Assets" in show_df.columns and "Participants" in show_df.columns:
                 def _calc_app(row):
-                    assets = row.get("Total Assets")
-                    ptcp = row.get("Participants")
                     try:
-                        a = float(assets)
-                        p = float(ptcp)
+                        a = float(row.get("Total Assets"))
+                        p = float(row.get("Participants"))
                         if pd.notna(a) and pd.notna(p) and p > 0 and a > 0:
                             return a / p
                     except (ValueError, TypeError):
@@ -549,151 +617,137 @@ if f5500_summaries:
                                height=600,
                                numbered=True,
                                sortable_cols=_sortable,
-                               show_totals=True)
-            _total_filed = latest['ma_plan_count']
-            _excluded_n = _total_filed - len(filings)
+                               show_totals=True,
+                               caption=f"Active Massachusetts ESOP plans, form year {latest_year}")
+            _excluded_n = _ov_filed - len(filings)
             st.caption(
-                f"Showing {len(show_df)} of {len(filings)} active MA ESOP filings "
-                f"for {latest_year} ({_excluded_n} plans with 0 active participants or "
-                f"on the known wind-down list excluded from {_total_filed} total filed)")
+                f"Showing {len(show_df)} of {len(filings)} active plans. "
+                f"{_excluded_n} of the {_ov_filed} plans that filed for {latest_year} are "
+                f"excluded as inactive: they report no active participants (most are "
+                f"winding down) or are on a short list of known wind-down plans. "
+                f"Click a numeric column heading to sort; the table scrolls sideways.")
             st.caption(
                 "**Participants** is the plan's total at the *beginning* of the plan "
-                "year (Form 5500 line 5); **Active Participants** is the count of "
-                "currently employed participants at the *end* of the year (line 6a). "
-                "DOL publishes no end-of-year total in this dataset, so the two "
-                "figures sit on different dates — a plan that grew during the year can "
-                "therefore show more active participants than the beginning-of-year "
-                "total. Both are reproduced exactly as filed.")
-
+                "year (Form 5500 line 5) and includes retirees and former employees still "
+                "owed a balance; **Active Participants** counts current employees at the "
+                "*end* of the year (line 6a). The two sit on different dates, so a plan "
+                "that grew during the year can show more active participants than total. "
+                "Dollar figures are end-of-year values as filed; — means the plan did "
+                "not report the item.")
         else:
-            st.info("No filing-level data available. Run the Form 5500 processor with "
-                   "`--import-to-db` to load individual filing records.")
+            st.info("No filing-level data available.")
 
-
-
-
-        # ── Supplementary Analysis (moved from Additional Data Analysis tab) ──
-        st.markdown("---")
-        _ada = [r for r in form5500_analysis.get_ma_filings(latest_year, exclude_zombie=True)]
-        if _ada:
-            _adf = pd.DataFrame(_ada)
-            for _c in ["total_assets", "total_participants", "active_participants",
-                       "employer_securities", "employer_contributions",
-                       "benefits_paid", "is_ksop"]:
-                if _c in _adf.columns:
-                    _adf[_c] = pd.to_numeric(_adf[_c], errors="coerce")
-
-            # Per-plan assets per active participant, used by the largest-plans
-            # table below. The typical-plan profile that also derived this moved
-            # to the Trends page, so it is computed here independently.
-            _appp = _adf[(_adf["active_participants"].fillna(0) > 0) &
-                         (_adf["total_assets"].fillna(0) > 0)].copy()
+        # ── Largest plans ──
+        if len(_ov_df):
+            st.markdown("---")
+            _appp = _ov_df[(_ov_df["active_participants"].fillna(0) > 0) &
+                           (_ov_df["total_assets"].fillna(0) > 0)].copy()
             _appp["_per"] = _appp["total_assets"] / _appp["active_participants"]
 
-
-            # ===== Largest plans (replaces Wealth Concentration) =====
             st.markdown("##### Largest MA ESOP Plans")
             st.caption("The biggest active MA ESOPs two ways: by total plan assets, "
                        "and by assets per active participant (a per-worker wealth "
                        "measure). Different plans top each list.")
             _lc1, _lc2 = st.columns(2)
             with _lc1:
-                st.caption("**Top 5 by total assets**")
-                _top_assets = _adf.sort_values("total_assets", ascending=False).head(5)[
-                    ["sponsor_name", "total_assets"]].copy()
-                _top_assets.columns = ["Company", "Total Assets"]
-                _render_html_table(_top_assets, money_cols=["Total Assets"], height=240)
+                st.markdown("**Top 5 by total assets**")
+                _top_assets = _ov_df.sort_values("total_assets", ascending=False).head(5)[
+                    ["sponsor_name", "sponsor_city", "total_assets"]].copy()
+                _top_assets.columns = ["Company", "City", "Total Assets"]
+                _render_html_table(_top_assets, money_cols=["Total Assets"], height=260,
+                                   caption="Top 5 plans by total assets")
             with _lc2:
-                st.caption("**Top 5 by assets per active participant**")
+                st.markdown("**Top 5 by assets per active participant**")
                 _byper = _appp.sort_values("_per", ascending=False).head(5)[
                     ["sponsor_name", "_per", "active_participants"]].copy()
-                _byper.columns = ["Company", "Assets / Active Participant", "Active Participants"]
-                _render_html_table(_byper,
-                                   money_cols=["Assets / Active Participant"],
-                                   number_cols=["Active Participants"], height=240)
-            st.caption("_Assets-per-participant uses each plan's total assets divided "
-                       "by its active participants; smaller plans with concentrated "
-                       "stock often rank highest._")
-
+                _byper.columns = ["Company", "Assets / Active", "Active"]
+                _render_html_table(_byper, money_cols=["Assets / Active"],
+                                   number_cols=["Active"], height=260,
+                                   caption="Top 5 plans by assets per active participant")
+            st.caption("Assets per active participant divides each plan's total assets by "
+                       "its active participants. Plans whose balances belong mostly to "
+                       "former employees, or that hold concentrated stock, rank highest.")
 
     # ────────────────────────────────────
-    # PAGE: Trends (5-10 year time series)
+    # PAGE: Trends
     # ────────────────────────────────────
-    elif _selected_page == "\U0001f4c8 Trends":
-        st.markdown("#### MA ESOP Trends Over Time")
-        st.caption("The most recent filing year may show incomplete data due to DOL filing lag. "
-                   "Form 5500 filings are due 7 months after plan year end (extensions allow up to 9.5 months), "
-                   "so some plans may not yet appear in the most recent year's data.")
+    elif _selected_key == "trends":
+        _page_head(
+            f"Form years {_first_year}–{latest_year}",
+            "Trends",
+            f"How Massachusetts ESOPs have changed over {latest_year - _first_year + 1} "
+            f"years of filings, followed by a profile of today's plans. Time series count "
+            f"<b>every plan that filed</b> each year, so every year is counted the same "
+            f"way; the {latest_year} distributions and profiles describe the "
+            f"<b>active</b> plans shown on the Overview.")
 
-        st.markdown(f"#### Plan Size Distribution ({latest_year})")
+        _note(
+            f"<p>The most recent year can read low until late filers arrive: returns are "
+            f"due 7 months after a plan year ends (9½ with an extension), and fiscal-year "
+            f"plans end months after December. A drop in {latest_year} is largely plans "
+            f"leaving the dataset or not yet filed, not shrinkage at continuing plans.</p>",
+            title="Reading the latest year")
 
+        st.markdown(f"#### Plan Size Distribution, {latest_year}")
         dcol1, dcol2 = st.columns(2)
         with dcol1:
             asset_vals = form5500_analysis.get_asset_distribution(
                 latest_year, exclude_zombie=True)
-            fig_ahist = charts.build_f5500_asset_histogram(asset_vals)
-            st.plotly_chart(fig_ahist, use_container_width=True, config=charts.PLOTLY_CONFIG)
+            _chart(charts.build_f5500_asset_histogram(asset_vals),
+                   alt=f"Bar chart: number of active {latest_year} plans in each total-assets range.")
         with dcol2:
             partcp_vals = form5500_analysis.get_participant_distribution(
                 latest_year, exclude_zombie=True)
-            fig_phist = charts.build_f5500_participant_histogram(partcp_vals)
-            st.plotly_chart(fig_phist, use_container_width=True, config=charts.PLOTLY_CONFIG)
+            _chart(charts.build_f5500_participant_histogram(partcp_vals),
+                   alt=f"Bar chart: number of active {latest_year} plans in each participant-count range.")
 
-        if partcp_vals and not asset_vals:
-            st.markdown(
-                '<div class="callout-eo" style="border-left-color: #C5960C;">'
-                '<h4>Data Note</h4>'
-                '<p>Participant count distribution is available from the main Form 5500 filing. '
-                'Asset distribution requires Schedule H/I data which is not yet included in this dataset.</p>'
-                '</div>',
-                unsafe_allow_html=True,
-            )
         st.markdown("---")
-
-        fig_count = charts.build_f5500_plan_count_trend(f5500_summaries)
-        st.plotly_chart(fig_count, use_container_width=True, config=charts.PLOTLY_CONFIG)
+        st.markdown(f"#### Change Over Time, {_first_year}–{latest_year}")
+        _chart(charts.build_f5500_plan_count_trend(f5500_summaries),
+               alt="Line chart: Massachusetts ESOP plans filed each form year, "
+                   + ", ".join(f"{s['filing_year']}: {s['ma_plan_count']}" for s in _f5500_valid) + ".")
 
         tcol1, tcol2 = st.columns(2)
         with tcol1:
-            fig_partcp = charts.build_f5500_participants_trend(f5500_summaries)
-            st.plotly_chart(fig_partcp, use_container_width=True, config=charts.PLOTLY_CONFIG)
+            _chart(charts.build_f5500_participants_trend(f5500_summaries),
+                   alt="Line chart: total and active participants in Massachusetts ESOPs by form year.")
         with tcol2:
-            fig_assets = charts.build_f5500_assets_trend(f5500_summaries)
-            st.plotly_chart(fig_assets, use_container_width=True, config=charts.PLOTLY_CONFIG)
+            _chart(charts.build_f5500_assets_trend(f5500_summaries),
+                   alt="Area chart: total assets held by Massachusetts ESOPs by form year.")
 
         tcol3, tcol4 = st.columns(2)
         with tcol3:
-            fig_avg = charts.build_f5500_avg_plan_assets_trend(f5500_summaries)
-            st.plotly_chart(fig_avg, use_container_width=True, config=charts.PLOTLY_CONFIG)
+            _chart(charts.build_f5500_avg_plan_assets_trend(f5500_summaries),
+                   alt="Line chart: average assets per filed plan by form year.")
         with tcol4:
-            fig_contrib = charts.build_f5500_contributions_bar(f5500_summaries)
-            st.plotly_chart(fig_contrib, use_container_width=True, config=charts.PLOTLY_CONFIG)
+            _chart(charts.build_f5500_contributions_bar(f5500_summaries),
+                   alt="Bar chart: employer contributions to Massachusetts ESOPs by form year.")
 
         st.markdown("---")
-        st.markdown("##### Contributions vs Distributions Over Time")
-        st.caption("Money flowing into ESOPs (employer contributions) vs money flowing "
-                   "out (benefits paid to departing participants).")
+        st.markdown("##### Contributions vs. Distributions Over Time")
+        st.caption("Money flowing into ESOPs (employer contributions) against money "
+                   "flowing out (benefits paid to departing and retiring participants). "
+                   "Large payouts usually mark a sale of the company or a plan winding down.")
+        _chart(charts.build_f5500_contributions_vs_distributions(f5500_summaries),
+               alt="Grouped bar chart: employer contributions into and benefits paid out of "
+                   "Massachusetts ESOPs by form year.")
 
-        _fig_flow = charts.build_f5500_contributions_vs_distributions(f5500_summaries)
-        st.plotly_chart(_fig_flow, use_container_width=True, config=charts.PLOTLY_CONFIG)
-
-        # ── Plan-profile and maturity views (moved here from the Overview) ──
+        # ── Plan-profile and maturity views ──
         st.markdown("---")
         _ada = form5500_analysis.get_ma_filings(latest_year, exclude_zombie=True)
         if _ada:
-            _adf = pd.DataFrame(_ada)
-            for _c in ["total_assets", "total_participants", "active_participants",
-                       "employer_securities", "employer_contributions",
-                       "benefits_paid", "is_ksop"]:
-                if _c in _adf.columns:
-                    _adf[_c] = pd.to_numeric(_adf[_c], errors="coerce")
+            _adf = _numeric_frame(_ada)
             # ===== Typical Plan Profile (median + mean) =====
             st.markdown("##### Typical Plan Profile")
+            _biggest = ", ".join(
+                _adf.sort_values("total_assets", ascending=False)["sponsor_name"].head(3)
+                .str.replace(r",? (Inc|LLC|Corp)\.?$", "", regex=True))
             st.caption("The median describes the *typical* plan; the mean is shown "
-                       "alongside it because a few very large ESOPs (Consigli, "
-                       "Gillette, Abt) pull averages well above the typical plan. "
+                       "alongside it because a few very large ESOPs "
+                       f"({_md_safe(_biggest)}) pull averages well above the typical plan. "
                        f"Based on {len(_adf)} active MA ESOPs in {latest_year}.")
             _m_eff = pd.to_datetime(_adf.get("plan_eff_date"), errors="coerce").dt.year
+            _m_eff = _m_eff.where(_m_eff > 1900)
             _m_age = (latest_year - _m_eff).dropna()
             _ap = pd.to_numeric(_adf["active_participants"], errors="coerce")
             _ap_pos = _ap[_ap > 0]
@@ -703,9 +757,6 @@ if f5500_summaries:
             _agg_assets = _adf["total_assets"].fillna(0).sum()
             _agg_active = _adf["active_participants"].fillna(0).sum()
             _agg_per = (_agg_assets / _agg_active) if _agg_active else 0
-
-            def _fmt_money(v):
-                return f"${v/1e6:.1f}M" if v >= 1e6 else f"${v:,.0f}"
 
             _profile_rows = [
                 {"Metric": "ESOP age (years since plan start)",
@@ -718,34 +769,30 @@ if f5500_summaries:
                  "Median": f"{_ap_pos.median():,.0f}",
                  "Mean": f"{_ap_pos.mean():,.0f}"},
                 {"Metric": "Plan assets",
-                 "Median": _fmt_money(_adf['total_assets'].median()),
-                 "Mean": _fmt_money(_adf['total_assets'].mean())},
+                 "Median": _money(_adf['total_assets'].median()),
+                 "Mean": _money(_adf['total_assets'].mean())},
                 {"Metric": "Assets per active participant (per plan)",
                  "Median": f"${_appp['_per'].median():,.0f}",
                  "Mean": f"${_appp['_per'].mean():,.0f}"},
             ]
-            _render_html_table(pd.DataFrame(_profile_rows), height=260)
-            _agg_assets_disp = _fmt_money(_agg_assets).replace("$", "\\$")
-            _agg_per_disp = ("$" + format(_agg_per, ",.0f")).replace("$", "\\$")
-            st.caption(
-                f"_Aggregate assets per active participant (total plan assets "
-                f"{_agg_assets_disp} / {_agg_active:,.0f} active "
-                f"participants across all active MA ESOPs) = "
-                f"**{_agg_per_disp}**  -  this weights "
-                "every participant equally, unlike the per-plan median/mean above. "
-                "'Active' participants are current employees still accruing shares; "
-                "'total' also includes retirees and separated participants owed a "
-                "balance._")
+            _render_html_table(pd.DataFrame(_profile_rows), height=280,
+                               caption="Typical plan profile, median and mean")
+            st.caption(_md_safe(
+                f"Aggregate assets per active participant: {_money(_agg_assets, 2)} in "
+                f"total plan assets ÷ {_agg_active:,.0f} active participants = "
+                f"${_agg_per:,.0f}. This weights every participant equally, unlike the "
+                "per-plan median and mean above. 'Active' participants are current "
+                "employees; 'total' also includes retirees and separated participants "
+                "owed a balance."))
 
             st.markdown("---")
 
             # ===== ESOP maturity / formation cohorts =====
-            st.markdown("##### ESOP Maturity  -  Formation Cohorts")
+            st.markdown("##### ESOP Maturity: Formation Cohorts")
             st.caption("When today's active MA ESOPs first established their plans "
-                       "(by ESOP plan effective date). Shows the age profile and "
+                       "(by ESOP plan effective date), showing the age profile and "
                        "succession-pipeline maturity of the sector.")
-            _adf["_eff_year"] = pd.to_datetime(
-                _adf.get("plan_eff_date"), errors="coerce").dt.year
+            _adf["_eff_year"] = _m_eff
             _cohorts = [
                 ("Before 1990", 0, 1989),
                 ("1990-1999", 1990, 1999),
@@ -761,30 +808,38 @@ if f5500_summaries:
                                "Assets": float(_m["total_assets"].fillna(0).sum())})
             _unknown = int(_adf["_eff_year"].isna().sum())
             if _unknown:
-                _crows.append({"Era": "Unknown", "Plans": _unknown, "Participants": 0, "Assets": 0.0})
+                _u = _adf[_adf["_eff_year"].isna()]
+                _crows.append({"Era": "Unknown", "Plans": _unknown,
+                               "Participants": int(_u["total_participants"].fillna(0).sum()),
+                               "Assets": float(_u["total_assets"].fillna(0).sum())})
             _cdf = pd.DataFrame(_crows)
             _cc1, _cc2 = st.columns([3, 2])
             with _cc1:
-                _fig_c = go.Figure(go.Bar(
-                    x=_cdf["Era"], y=_cdf["Plans"],
-                    marker_color=config.CHART_COLORS["navy"],
-                    text=_cdf["Plans"], textposition="outside"))
-                _fig_c.update_layout(
-                    height=config.CHART_HEIGHT_SM, margin=dict(t=10, b=10, l=10, r=10),
-                    yaxis_title="Active plans", plot_bgcolor="white",
-                    font=dict(family=config.CHART_FONT_FAMILY))
-                st.plotly_chart(_fig_c, use_container_width=True, key="ov_cohort")
+                _chart(
+                    charts.build_f5500_category_bar(
+                        list(_cdf["Era"]), list(_cdf["Plans"]),
+                        title="Active Plans by Era Established", y_title="Active plans"),
+                    key="ov_cohort",
+                    alt="Bar chart: active plans by era established, "
+                        + ", ".join(f"{e}: {n}" for e, n in zip(_cdf["Era"], _cdf["Plans"])) + ".")
             with _cc2:
-                _render_html_table(_cdf, money_cols=["Assets"],
-                                   number_cols=["Plans", "Participants"], height=260)
+                _cdisp = _cdf.copy()
+                _cdisp["Assets"] = _cdisp["Assets"].apply(lambda v: _money(v))
+                _render_html_table(_cdisp, number_cols=["Plans", "Participants"], height=320,
+                                   show_totals=False,
+                                   caption="Active plans, participants and assets by era established")
+                st.caption(_md_safe(
+                    f"Totals: {int(_cdf['Plans'].sum())} plans, "
+                    f"{int(_cdf['Participants'].sum()):,} participants, "
+                    f"{_money(_cdf['Assets'].sum(), 2)} in assets."))
 
             st.markdown("---")
 
             # ===== % of ESOPs started by decade =====
-            st.markdown("##### % of ESOPs Started, by Decade")
+            st.markdown("##### Share of Active ESOPs by Decade Established")
             st.caption("Share of today's active MA ESOPs by the decade their plan "
-                       "was established. (DOL placeholder dates of 1900-01-01 are "
-                       "counted as 'Unknown').")
+                       "was established. DOL placeholder dates of 1900-01-01 count as "
+                       "'Unknown'. Shares are rounded, so they may not sum to exactly 100%.")
 
             def _decade_label(y):
                 if pd.isna(y) or int(y) <= 1900:
@@ -805,89 +860,88 @@ if f5500_summaries:
             _ddf = pd.DataFrame(_drows)
             _dc1, _dc2 = st.columns([3, 2])
             with _dc1:
-                _fig_d = go.Figure(go.Bar(
-                    x=_ddf["Decade"], y=_ddf["% of Active ESOPs"],
-                    marker_color=config.CHART_COLORS["navy"],
-                    text=[f"{v:.1f}%" for v in _ddf["% of Active ESOPs"]],
-                    textposition="outside"))
-                _fig_d.update_layout(
-                    height=config.CHART_HEIGHT_SM,
-                    margin=dict(t=10, b=10, l=10, r=10),
-                    yaxis_title="% of active ESOPs", plot_bgcolor="white",
-                    font=dict(family=config.CHART_FONT_FAMILY))
-                st.plotly_chart(_fig_d, use_container_width=True, key="ov_decade")
+                _chart(
+                    charts.build_f5500_category_bar(
+                        list(_ddf["Decade"]), list(_ddf["% of Active ESOPs"]),
+                        title="Share of Active Plans by Decade Established",
+                        y_title="% of active ESOPs",
+                        text=[f"{v:.1f}%" for v in _ddf["% of Active ESOPs"]]),
+                    key="ov_decade",
+                    alt="Bar chart: share of active plans by decade established, "
+                        + ", ".join(f"{d}: {v:.1f}%" for d, v in
+                                    zip(_ddf["Decade"], _ddf["% of Active ESOPs"])) + ".")
             with _dc2:
                 _ddf_disp = _ddf.copy()
-                if "% of Active ESOPs" in _ddf_disp.columns:
-                    _ddf_disp["% of Active ESOPs"] = _ddf_disp["% of Active ESOPs"].apply(
-                        lambda x: f"{x:.1f}%" if pd.notna(x) else "")
-                _render_html_table(_ddf_disp, number_cols=["Plans"], height=320)
+                _ddf_disp["% of Active ESOPs"] = _ddf_disp["% of Active ESOPs"].apply(
+                    lambda x: f"{x:.1f}%" if pd.notna(x) else "")
+                _render_html_table(_ddf_disp, number_cols=["Plans"], height=340,
+                                   caption="Share of active plans by decade established")
 
     # ────────────────────────────────────
     # PAGE: Industry
     # ────────────────────────────────────
-    elif _selected_page == "🏭 Industry":
-        st.markdown(f"#### MA ESOPs by Industry ({latest_year})")
+    elif _selected_key == "industry":
+        _page_head(
+            f"Form year {latest_year}",
+            "Industry",
+            "Which industries Massachusetts ESOPs operate in, classified by each "
+            "sponsor's NAICS business code (verified against company websites). "
+            f"All figures describe the {latest_year} <b>active</b> plans.")
 
         industry_data = form5500_analysis.get_ma_filings_by_industry(
             latest_year, exclude_zombie=True)
         if industry_data:
-            fig_ind = charts.build_f5500_industry_bar(industry_data)
-            st.plotly_chart(fig_ind, use_container_width=True, config=charts.PLOTLY_CONFIG)
+            _chart(charts.build_f5500_industry_bar(industry_data),
+                   alt="Horizontal bar chart: active plans by industry sector, "
+                       + ", ".join(f"{d['industry_sector']}: {d['plan_count']}"
+                                   for d in industry_data) + ".")
         else:
-            st.markdown(
-                '<div class="callout-eo" style="border-left-color: #C5960C; border-color: #C5960C;">'
-                '<h4>Industry Classification Not Available</h4>'
-                '<p>NAICS (industry) codes are not included in the main Form 5500 filing. '
-                'Industry classification requires cross-referencing with Schedule C data, '
-                'the IRS Business Master File, or external business registries (e.g., D&B, SBA). '
-                'This analysis is planned for a future update.</p>'
-                '</div>',
-                unsafe_allow_html=True,
-            )
+            st.info("Industry classification is not available for this year.")
         st.markdown("---")
         _ada = form5500_analysis.get_ma_filings(latest_year, exclude_zombie=True)
         if _ada:
-            _adf = pd.DataFrame(_ada)
-            for _c in ["total_assets", "total_participants", "active_participants",
-                       "employer_securities", "employer_contributions",
-                       "benefits_paid", "is_ksop"]:
-                if _c in _adf.columns:
-                    _adf[_c] = pd.to_numeric(_adf[_c], errors="coerce")
+            _adf = _numeric_frame(_ada)
 
             # ===== Average account balance by industry =====
             st.markdown("##### Average Account Balance by Industry")
-            st.caption("Assets per participant by industry  -  a proxy for "
-                       "per-worker wealth accumulation. Weighted (sector assets / "
-                       "sector participants).")
+            st.caption("Assets per participant by industry, a proxy for per-worker "
+                       "wealth accumulation. Weighted: sector assets ÷ sector participants.")
             _ind = _adf[_adf["total_participants"].fillna(0) > 0].copy()
             _grp = _ind.groupby(_ind["industry_sector"].fillna("(Unclassified)")).agg(
                 Plans=("ein", "count"),
                 _a=("total_assets", "sum"),
                 _p=("total_participants", "sum")).reset_index()
             _grp["Avg Account Balance"] = (_grp["_a"] / _grp["_p"]).round(0)
-            _grp = _grp.rename(columns={"industry_sector": "Industry"})
+            _grp = _grp.rename(columns={"industry_sector": "Industry",
+                                        "_p": "Participants", "_a": "Total Assets"})
             # Ordered by plan count so the rows line up with the sector chart above,
             # which is what a reader compares this against. Balance is broken out per
             # row, so it does not also need to drive the ordering.
             _grp = _grp[_grp["Plans"] >= 2].sort_values(
                 ["Plans", "Avg Account Balance"], ascending=[False, False])
-            _gdisp = _grp[["Industry", "Plans", "Avg Account Balance"]].copy()
-            _render_html_table(_gdisp, money_cols=["Avg Account Balance"],
-                               number_cols=["Plans"], height=440)
-            st.caption("_Industries with at least 2 active plans shown._")
+            _gdisp = _grp[["Industry", "Plans", "Participants", "Total Assets",
+                           "Avg Account Balance"]].copy()
+            _render_html_table(_gdisp, money_cols=["Total Assets", "Avg Account Balance"],
+                               number_cols=["Plans", "Participants"], height=460,
+                               caption="Average account balance by industry")
+            _single = int((_ind.groupby(_ind["industry_sector"].fillna("(Unclassified)"))
+                           .size() < 2).sum())
+            st.caption(f"Industries with at least 2 active plans are shown. {_single} "
+                       "sectors with a single plan are left out, because one plan's "
+                       "balance is not a sector average.")
 
             st.markdown("---")
 
-            # ===== Top industries (pie charts) =====
-            st.markdown("##### Top Industries for MA ESOPs")
-            st.caption("Industry mix of active MA ESOPs three ways  -  by number of "
-                       "plans, by participants (people), and by assets (dollars). "
-                       "Smaller sectors are grouped into 'Other' for legibility.")
+            # ===== Top industries (share charts) =====
+            st.markdown("##### Industry Mix of MA ESOPs")
+            st.caption("Industry mix of active MA ESOPs three ways: by number of plans, "
+                       "by participants (people), and by assets (dollars). Each sector keeps "
+                       "the same colour in every chart; smaller sectors are grouped into "
+                       "'Other' for legibility.")
 
             _adf["_one"] = 1
 
-            def _industry_pie(metric_col, title, key, top_n=7):
+            def _industry_share(metric_col, title, key, fmt, top_n=7):
                 _g = _adf.copy()
                 _g["industry_sector"] = _g["industry_sector"].fillna("(Unclassified)")
                 _agg = _g.groupby("industry_sector")[metric_col].sum().sort_values(ascending=False)
@@ -899,118 +953,155 @@ if f5500_summaries:
                 else:
                     _labels = list(_agg.index)
                     _values = [float(v) for v in _agg.values]
-                _fig = go.Figure(go.Pie(
-                    labels=_labels, values=_values, hole=0.45, sort=False,
-                    marker=dict(colors=config.CHART_PALETTE,
-                                line=dict(color="white", width=1.5)),
-                    textinfo="percent", textfont_size=12,
-                    hovertemplate="%{label}<br>%{value:,.0f} (%{percent})<extra></extra>"))
-                _fig.update_layout(
-                    title=dict(text=title, x=0.5, xanchor="center",
-                               font=dict(size=14, family=config.CHART_FONT_FAMILY)),
-                    height=config.CHART_HEIGHT_MD,
-                    margin=dict(t=50, b=70, l=10, r=10),
-                    showlegend=True,
-                    legend=dict(orientation="h", y=-0.08, x=0.5, xanchor="center",
-                                font=dict(size=10)),
-                    font=dict(family=config.CHART_FONT_FAMILY))
-                st.plotly_chart(_fig, use_container_width=True, key=key)
+                _tot = sum(_values) or 1
+                _chart(charts.build_f5500_industry_share(_labels, _values, title, fmt), key=key,
+                       alt=f"Donut chart, industry mix {title.lower()}: "
+                           + ", ".join(f"{l} {v / _tot:.0%}" for l, v in zip(_labels, _values)) + ".")
 
             _pc1, _pc2, _pc3 = st.columns(3)
             with _pc1:
-                _industry_pie("_one", "By Number of Plans", "ov_pie_plans")
+                _industry_share("_one", "By Number of Plans", "ov_pie_plans", ",d")
             with _pc2:
-                _industry_pie("total_participants", "By Participants", "ov_pie_part")
+                _industry_share("total_participants", "By Participants", "ov_pie_part", ",.0f")
             with _pc3:
-                _industry_pie("total_assets", "By Assets ($)", "ov_pie_assets")
+                _industry_share("total_assets", "By Assets", "ov_pie_assets", "$,.0f")
 
-            st.caption("_Percentages are shares of the active-MA-ESOP total for each "
-                       "measure. 'By Assets' is dominated by a few large plans; "
-                       "'By Number of Plans' best reflects how common each "
-                       "industry is._")
+            st.caption("Percentages are shares of the active-plan total for each measure. "
+                       "'By Assets' is dominated by a few large plans; 'By Number of "
+                       "Plans' best reflects how common each industry is.")
 
     # ────────────────────────────────────
     # PAGE: Geography
     # ────────────────────────────────────
-    elif _selected_page == "\U0001f5fa\ufe0f Geography":
-        st.markdown(f"#### Geographic Distribution of MA ESOPs ({latest_year})")
-        st.caption(f"_Shows all filed {latest_year} plans by sponsor city (not the "
-                   f"zombie-excluded 'active' subset on the Overview). Villages and "
-                   f"neighborhoods are rolled into their parent municipality on the map "
-                   f"(e.g. Hyannis \u2192 Barnstable, Allston \u2192 Boston)._")
+    elif _selected_key == "geography":
+        _page_head(
+            f"Form year {latest_year}",
+            "Geography",
+            "Where Massachusetts ESOP sponsors are based, by the city on each plan's "
+            "Form 5500 mailing address. Villages and neighborhoods are rolled into their "
+            "municipality (e.g. Hyannis → Barnstable, Allston → Boston).")
 
-        city_data = form5500_analysis.get_ma_filings_by_city(latest_year)
+        _basis = st.radio(
+            "Plans shown",
+            ["All plans that filed", "Active plans only"],
+            horizontal=True, key="geo_basis",
+            help=("'All plans that filed' includes plans winding down; 'Active plans "
+                  "only' matches the Overview's headline count."))
+        _active_only = _basis == "Active plans only"
+        city_data = form5500_analysis.get_ma_filings_by_city(
+            latest_year, exclude_zombie=_active_only)
         if city_data:
             _city_df = pd.DataFrame(city_data).rename(columns={"sponsor_city": "municipality"})
+            _city_df["_town"] = _city_df["municipality"].apply(map_utils._normalize_town_name)
+            _by_town = (_city_df.groupby("_town")[["plan_count", "total_partcp", "total_assets"]]
+                        .sum().sort_values("plan_count", ascending=False))
+            _n_plans = int(_by_town["plan_count"].sum())
+            _top_towns = ", ".join(f"{t.title()} ({int(n)})" for t, n in
+                                   _by_town["plan_count"].head(4).items())
+            gm1, gm2, gm3 = st.columns(3)
+            _render_metric(gm1, f"{_n_plans:,}",
+                           "Active plans" if _active_only else "Plans that filed",
+                           f"Form year {latest_year}", ma=True)
+            _render_metric(gm2, f"{len(_by_town):,}", "Municipalities with an ESOP sponsor",
+                           "Of Massachusetts' 351 cities and towns", ma=True)
+            _render_metric(gm3, _top_towns.split(" (")[0] if _top_towns else "N/A",
+                           "Most ESOP sponsors", _top_towns, ma=True)
+
             _esop_choropleth = map_utils.create_choropleth_map(
-                _city_df, value_col="plan_count",
-                title=f"MA ESOPs by Municipality ({latest_year})",
+                _city_df.drop(columns=["_town"]), value_col="plan_count",
+                title=f"MA ESOPs by Municipality, {latest_year}",
                 color_scale=[[0, "#9DC3E6"], [0.25, "#5B9BD5"], [0.5, "#2E75B6"],
                              [0.75, "#1A5490"], [1, "#0A2E52"]],
-                legend_title="ESOP Count",
-                source="DOL Form 5500 Filings",
+                legend_title="Plans",
+                source="U.S. DOL Form 5500 (sponsor mailing address); MassGIS town boundaries",
+                hover_fields=[("Plans", "plan_count", ",d"),
+                              ("Participants", "total_partcp", ",.0f"),
+                              ("Plan assets", "total_assets", "$,.0f")],
             )
             if _esop_choropleth is not None:
-                st.plotly_chart(_esop_choropleth, use_container_width=True, config=charts.PLOTLY_CONFIG)
+                _chart(_esop_choropleth,
+                       alt=f"Map of Massachusetts shading each municipality by its number of "
+                           f"ESOP sponsors. Most: {_top_towns}.")
             else:
-                fig_map = charts.build_f5500_city_map(city_data)
-                st.plotly_chart(fig_map, use_container_width=True, config=charts.PLOTLY_CONFIG)
+                _chart(charts.build_f5500_city_map(city_data))
+            st.caption("Hover over a municipality for its plans, participants and assets. "
+                       "Location is the sponsor's mailing address on the return, which for "
+                       "a few companies is a headquarters or administrator rather than "
+                       "where most employees work.")
         else:
-            st.info("No geographic data available. Run the Form 5500 processor to load filing data.")
+            st.info("No geographic data available.")
 
     # ────────────────────────────────────
-    # PAGE: 2025 Filers (early tracking — form year still open)
+    # PAGE: Open form year (still being filed)
     # ────────────────────────────────────
-    elif _selected_page == "\U0001f195 2025 Filers":
-        st.markdown("#### 2025 Filers — Early Tracking")
-        _f25 = form5500_analysis.get_ma_filings(2025)
-        st.markdown(
-            '<div class="callout-eo">'
-            '<p><b>Form year 2025 is still open.</b> Most calendar-year 2025 plans '
-            'file between July and October 2026, so this page shows <b>early filers '
-            'only</b> — typically fiscal-year plans whose 2025 plan year has already '
-            'ended, short plan years, and final (termination) filings. Counts and '
-            'totals here will grow all year and are <b>not comparable</b> to the '
-            'complete 2014&ndash;2024 years.</p>'
-            '<p>These filings are kept out of the Overview, Trends, Industry and '
-            'Geography pages until the filing year is substantially complete.</p>'
-            '</div>',
-            unsafe_allow_html=True,
-        )
+    elif _selected_key == "open_year":
+        _yr = _open_year
+        _page_head(
+            f"Form year {_yr} · in progress",
+            f"{_yr} Filers",
+            f"Massachusetts ESOP returns for form year {_yr} that DOL has published so far. "
+            f"The year is still being filed, so these figures will grow and are "
+            f"<b>not comparable</b> to the complete {_first_year}–{latest_year} years.")
+        _f25 = form5500_analysis.get_ma_filings(_yr)
+        _prev = form5500_analysis.get_ma_filings(_yr - 1)
+        _prior_eins = {str(e).lstrip("0") for e in form5500_analysis.get_prior_eins(_yr)}
+        _prior_names = {_norm_name(n) for n in form5500_analysis.get_prior_sponsor_names(_yr)}
+
+        _eins_now = {str(f.get("ein") or "").lstrip("0") for f in _f25}
+        _names_now = {_norm_name(f.get("sponsor_name")) for f in _f25}
+        _continuing = sum(1 for f in _prev
+                          if str(f.get("ein") or "").lstrip("0") in _eins_now
+                          or _norm_name(f.get("sponsor_name")) in _names_now)
+        _cov = _continuing / len(_prev) * 100 if _prev else 0
+
+        _note(
+            f"<p>Calendar-year {_yr} plans were due by July 31, {_yr + 1}, or "
+            f"October 15, {_yr + 1} with an extension; fiscal-year plans file later still. "
+            f"DOL's bulk files trail receipt by several weeks, so its {config.DOL_RELEASE_DATE} "
+            f"release holds only part of the year. So far <b>{_continuing} of the "
+            f"{len(_prev)}</b> plans that filed for {_yr - 1} have a {_yr} return on file "
+            f"({_cov:.0f}%).</p>"
+            f'<div class="progress-track" role="img" aria-label="{_cov:.0f}% of {_yr - 1} '
+            f'filers have filed for {_yr}"><div class="progress-fill" '
+            f'style="width:{min(_cov, 100):.0f}%;"></div></div>'
+            f"<p>These filings stay off the Overview, Trends, Industry and Geography pages "
+            f"until the year is substantially complete.</p>",
+            title=f"Form year {_yr} is still open")
+
         if _f25:
-            _prior_eins = form5500_analysis.get_prior_eins(2025)
-            _n_new = sum(1 for _f in _f25 if _f.get("ein") not in _prior_eins)
+            def _is_new(f):
+                return (str(f.get("ein") or "").lstrip("0") not in _prior_eins
+                        and _norm_name(f.get("sponsor_name")) not in _prior_names)
+            _n_new = sum(1 for _f in _f25 if _is_new(_f))
             _tot_p = sum(_f.get("total_participants") or 0 for _f in _f25)
             # `is not None`, not truthiness: a plan that reported exactly $0 did
-            # report. Four of the 2025 filings are final/wind-up returns showing
-            # $0, and treating them as "not reported" understated the count.
+            # report. Final/wind-up returns show $0, and treating them as "not
+            # reported" understated the count.
             _assets_known = [_f["total_assets"] for _f in _f25
                              if _f.get("total_assets") is not None]
 
-            def _fmt25(v):
-                if v >= 1e9:
-                    return f"${v / 1e9:.2f}B"
-                if v >= 1e6:
-                    return f"${v / 1e6:.1f}M"
-                return f"${v:,.0f}"
-
             mcol1, mcol2, mcol3, mcol4 = st.columns(4)
-            _render_metric(mcol1, f"{len(_f25):,}", "2025 Filings Received So Far")
-            _render_metric(mcol2, f"{_n_new:,}", "First-Time Filers (new EIN)")
-            _render_metric(mcol3, f"{_tot_p:,}", "Participants (filed so far)")
+            _render_metric(mcol1, f"{len(_f25):,}", f"{_yr} returns received so far",
+                           f"{_continuing} continue a {_yr - 1} plan", ma=True)
+            _render_metric(mcol2, f"{_n_new:,}", "Sponsors new to the dataset",
+                           "No earlier ESOP return under their EIN or name", ma=True)
+            _render_metric(mcol3, f"{_tot_p:,}", "Participants (returns so far)",
+                           "Beginning-of-year totals", ma=True)
             _render_metric(mcol4,
-                           _fmt25(sum(_assets_known)) if _assets_known else "N/A",
-                           f"Assets ({len(_assets_known)} plans reporting)")
+                           _money(sum(_assets_known), 2) if _assets_known else "N/A",
+                           "Plan assets (returns so far)",
+                           f"{len(_assets_known)} of {len(_f25)} returns report assets", ma=True)
 
+            st.markdown(f"#### {_yr} Returns Received")
             f25_search = st.text_input("Search by plan name, sponsor, or city",
-                                       key="f5500_2025_search")
+                                       key="f5500_2025_search",
+                                       placeholder="e.g. Boston, Consigli")
             f25_df = pd.DataFrame(_f25)
-            f25_df["new_to_dataset"] = f25_df["ein"].apply(
-                lambda e: "Yes" if e not in _prior_eins else "No")
+            f25_df["new_to_dataset"] = [("Yes" if _is_new(f) else "No") for f in _f25]
             if f25_search:
                 _sl = f25_search.lower()
                 _mask = f25_df.apply(lambda r: _sl in (
-                    str(r.get("plan_name", "")) + str(r.get("sponsor_name", "")) +
+                    str(r.get("plan_name", "")) + " " + str(r.get("sponsor_name", "")) + " " +
                     str(r.get("sponsor_city", ""))
                 ).lower(), axis=1)
                 f25_df = f25_df[_mask]
@@ -1020,11 +1111,12 @@ if f5500_summaries:
                 "plan_name": "Plan Name",
                 "sponsor_city": "City",
                 "industry_sector": "Industry",
-                "new_to_dataset": "New to Dataset?",
+                "new_to_dataset": "New Sponsor?",
                 "is_ksop": "KSOP?",
                 "total_participants": "Participants",
                 "active_participants": "Active Participants",
                 "total_assets": "Total Assets",
+                "employer_securities": "Employer Securities",
                 "employer_contributions": "Employer Contributions",
                 "benefits_paid": "Benefits Paid",
             }
@@ -1034,66 +1126,72 @@ if f5500_summaries:
             if "KSOP?" in _show25.columns:
                 _show25["KSOP?"] = _show25["KSOP?"].apply(lambda x: "Yes" if x else "No")
             _render_html_table(_show25,
-                               money_cols=["Total Assets", "Employer Contributions",
-                                           "Benefits Paid"],
+                               money_cols=["Total Assets", "Employer Securities",
+                                           "Employer Contributions", "Benefits Paid"],
                                number_cols=["Participants", "Active Participants"],
-                               height=500,
+                               height=520,
                                numbered=True,
                                sortable_cols=["Participants", "Active Participants",
-                                              "Total Assets", "Employer Contributions",
-                                              "Benefits Paid"],
-                               show_totals=True)
+                                              "Total Assets", "Employer Securities",
+                                              "Employer Contributions", "Benefits Paid"],
+                               show_totals=True,
+                               caption=f"Massachusetts ESOP returns received for form year {_yr}")
             st.caption(
-                f"Showing {len(_show25)} of {len(_f25)} MA ESOP filings received for "
-                f"form year 2025. Financial fields appear once the plan's "
-                f"Schedule H/I or 5500-SF data is published by DOL.")
-            st.download_button("Download 2025 Early Filers as CSV",
-                               utils.to_csv_bytes(_f25),
-                               "ma_esops_form5500_2025_early.csv", "text/csv")
+                f"Showing {len(_show25)} of {len(_f25)} MA ESOP returns received for form "
+                f"year {_yr}, including final returns from plans that are winding down "
+                f"(0 active participants). Financial figures are end-of-year values from "
+                f"each return's Schedule H or I.")
+            st.download_button(f"Download {_yr} returns (CSV)",
+                               utils.export_csv_bytes(_f25),
+                               f"MA_ESOP_Form5500_{_yr}_received_so_far.csv", "text/csv")
         else:
-            st.info("No 2025 filings imported yet. Run "
-                    "`python3 scan_dol_filers.py --year 2025 --import-new` "
-                    "to scan DOL bulk data and import early 2025 filers.")
+            st.info(f"No {_yr} filings imported yet. Run "
+                    f"`python3 scan_dol_filers.py --year {_yr} --import-new` "
+                    f"to scan DOL bulk data and import {_yr} filers.")
 
+    # ── Footer (every page) ──
+    st.markdown(
+        f'<footer class="gov-footer" role="contentinfo">'
+        f'<div class="gov-footer__grid">'
+        f'<div><h6>Source</h6><p>U.S. Department of Labor, Employee Benefits Security '
+        f'Administration: Form 5500 annual returns, EFAST2 bulk datasets (release of '
+        f'{config.DOL_RELEASE_DATE}). Individual filings are public at '
+        f'<a href="{config.DOL_FORM_5500_URL}" target="_blank" rel="noopener">efast.dol.gov</a>.'
+        f'</p></div>'
+        f'<div><h6>Which plans are counted</h6><p>A plan is included when its sponsor\'s '
+        f'mailing address is in Massachusetts and its return carries an ESOP feature code '
+        f'(2O, 2P or 2Q). 401(k) plans at large public companies that merely offer '
+        f'company stock are excluded. <b>Active</b> plans report at least one current '
+        f'employee as a participant.</p></div>'
+        f'<div><h6>Timeliness</h6><p>Plans file up to 9½ months after their plan year '
+        f'ends, so the newest form year keeps growing. This edition reflects every return '
+        f'DOL had published as of {config.DOL_RELEASE_DATE}, reconciled on '
+        f'{config.DATA_AS_OF}.</p></div>'
+        f'</div>'
+        f'<p class="gov-footer__legal">Figures are reproduced as filed with the U.S. '
+        f'Department of Labor; a dash (—) means the plan did not report the item. '
+        f'{config.ORG_NAME} · {config.APP_TITLE}</p>'
+        f'</footer>',
+        unsafe_allow_html=True,
+    )
 
 else:
     # No Form 5500 data — show setup instructions
-    st.markdown(
-        '<div class="callout-eo">'
-        '<h4>Form 5500 Data Not Yet Loaded</h4>'
-        '<p>This dashboard analyzes DOL Form 5500 bulk filings to build a unique Massachusetts-specific '
-        'ESOP dataset. Nobody else produces this data at the state level.</p>'
-        '<p><b>To load the data:</b></p>'
-        '<ol>'
-        '<li>Open a terminal in the dashboard directory</li>'
-        '<li>Run <code>python3 scan_dol_filers.py --year 2024 --import-new</code> (repeat per filing year)</li>'
-        '<li>Re-derive financials: <code>python3 refetch_dol_financials.py</code></li>'
-        '<li>Refresh this page when complete</li>'
-        '</ol>'
-        '<p>Alternatively, place pre-processed CSV files (<code>form5500_ma_esops.csv</code> and/or '
-        '<code>form5500_annual_summary.csv</code>) in the dashboard directory and they will be '
-        'auto-imported on next page load.</p>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
+    _note(
+        '<p>This dashboard analyzes DOL Form 5500 bulk filings to build a '
+        'Massachusetts-specific ESOP dataset.</p>'
+        '<p><b>To load the data:</b> run <code>python3 scan_dol_filers.py --year 2024 '
+        '--import-new</code> (repeat per form year), then '
+        '<code>python3 refetch_dol_financials.py</code>, and refresh this page. '
+        'Alternatively, place <code>form5500_ma_esops.csv</code> in the dashboard '
+        'directory and it will be imported on the next page load.</p>',
+        title="Form 5500 data not yet loaded")
 
 # ── Sidebar: About / Data Sources / Quick Stats (below navigation) ──
 
 with st.sidebar:
     st.markdown("---")
-    st.markdown("### About")
-    st.markdown(
-        "This dashboard analyzes **DOL Form 5500** bulk filings to provide "
-        "the most detailed Massachusetts-specific ESOP dataset available."
-    )
-    st.markdown("---")
-    st.markdown("### Data Sources")
-    st.markdown(
-        f"- [DOL Form 5500 Search]({config.DOL_FORM_5500_URL})\n"
-        f"- [DOL Form 5500 Bulk Downloads]({config.DOL_FORM_5500_BULK})"
-    )
-    st.markdown("---")
-    st.markdown("### Quick Stats")
+    st.markdown("### At a Glance")
     if f5500_summaries:
         _sidebar_latest = next((s for s in reversed(f5500_summaries) if s.get("ma_plan_count", 0) > 0), None)
         if _sidebar_latest:
@@ -1103,10 +1201,25 @@ with st.sidebar:
             _sb_plans = _sb_fin.get("plans_total", 0) or 0
             _sb_part = _sb_fin.get("total_participants", 0) or 0
             _sb_assets = _sb_fin.get("total_assets", 0) or 0
-            st.metric("Active MA ESOP Plans", f"{_sb_plans:,}")
-            st.metric("Total Participants", f"{_sb_part:,}")
+            st.metric(f"Active MA ESOPs ({_sb_yr})", f"{_sb_plans:,}")
+            st.metric("Participants", f"{_sb_part:,}")
             if _sb_assets > 0:
-                st.metric("Total Assets", f"${_sb_assets / 1e9:.1f}B" if _sb_assets >= 1e9 else f"${_sb_assets / 1e6:.0f}M")
-            st.metric("Filing Year", str(_sb_yr))
+                st.metric("Plan Assets", _money(_sb_assets, 2))
     else:
         st.info("No data loaded yet")
+    st.markdown("---")
+    st.markdown("### About")
+    st.markdown(
+        "An analysis of the annual **Form 5500** returns that employee stock ownership "
+        "plans file with the U.S. Department of Labor, covering every ESOP sponsored "
+        "by a Massachusetts employer since 2014."
+    )
+    st.markdown("### Data Sources")
+    st.markdown(
+        f"- [DOL Form 5500 filing search]({config.DOL_FORM_5500_URL})\n"
+        f"- [DOL Form 5500 bulk datasets]({config.DOL_FORM_5500_BULK})"
+    )
+    st.markdown(
+        f'<div class="side-asof">Data current as of {config.DATA_AS_OF}<br>'
+        f'DOL release: {config.DOL_RELEASE_DATE}</div>',
+        unsafe_allow_html=True)

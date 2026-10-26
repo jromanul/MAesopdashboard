@@ -33,6 +33,13 @@ def to_csv_bytes(data: list[dict]) -> bytes:
     return df.to_csv(index=False).encode("utf-8")
 
 
+def export_csv_bytes(rows: list[dict]) -> bytes:
+    """CSV of filing rows with the reader-facing columns used in the data package."""
+    if not rows:
+        return b""
+    return _export_frame(rows).to_csv(index=False).encode("utf-8")
+
+
 # ── Shareable data package ──────────────────────
 
 # (database column, column heading in the exported CSV). Ordered for a reader,
@@ -90,6 +97,8 @@ def _export_frame(rows: list[dict]) -> pd.DataFrame:
 
 def build_share_package(year: int, all_rows: list[dict], active_rows: list[dict],
                         summaries: list[dict], data_as_of: str,
+                        dol_release: str = "",
+                        org_name: str = "Massachusetts Center for Employee Ownership",
                         dashboard_url: str = "https://maesopdashboard.streamlit.app") -> bytes:
     """Build the distributable ZIP of a single form year's MA ESOP data.
 
@@ -129,11 +138,12 @@ def build_share_package(year: int, all_rows: list[dict], active_rows: list[dict]
     span = (f"{min(s['filing_year'] for s in sum_rows)}-{max(s['filing_year'] for s in sum_rows)}"
             if sum_rows else str(year))
 
+    release_line = f"\n         DOL release used: {dol_release}" if dol_release else ""
     readme = f"""MASSACHUSETTS EMPLOYEE STOCK OWNERSHIP PLANS (ESOPs)
 Form 5500 data for form year {year}
 
 Source:  U.S. Department of Labor, EFAST2 Form 5500 bulk datasets
-         (annual returns filed by employee benefit plans)
+         (annual returns filed by employee benefit plans){release_line}
 Data as of: {data_as_of}
 Dashboard:  {dashboard_url}
 
@@ -174,25 +184,25 @@ HOW TO READ THE COLUMNS
 -----------------------
 Total Participants is the plan's total at the BEGINNING of the plan year
 (Form 5500, line 5). Active Participants is the count of currently employed
-participants at the END of the year (line 6a). DOL does not publish an
-end-of-year total in this dataset, so the two figures are measured on
-different dates -- a plan that grew during the year can show more active
-participants than the beginning-of-year total. Both are reproduced exactly
-as filed; neither has been adjusted.
+participants at the END of the year (line 6a). The two figures are measured
+on different dates -- a plan that grew during the year can show more active
+participants than the beginning-of-year total. Form 5500 also reports an
+end-of-year total (line 6f); this dataset uses line 5 in every year so the
+series stays comparable over time.
 
 "Total Participants" counts everyone owed a balance, including retirees and
 former employees who have not yet been paid out. It is not a headcount of
 current employees; "Active Participants" is closer to that.
 
-Employer Securities -- the company stock held in the ESOP trust -- is
-reported only on Schedule H, which large plans file. Plans filing Schedule I
-or Form 5500-SF do not itemize it, so the field is blank for them rather
-than zero. {stock_rep} of the {n_act} active plans report it. Do not sum this
-column and compare it to total assets across all plans; the denominators
-differ.
+Employer Securities -- the company stock held in the ESOP trust -- comes
+from Schedule H line 1d(1) for large plans and Schedule I line 3d for small
+plans. {stock_rep} of the {n_act} active plans report a positive value; the
+rest report $0 (for example, a plan that has sold its shares) or leave the
+line blank.
 
-Dollar figures are end-of-year values as filed with DOL. Blank means the
-plan did not report that item, which is not the same as zero.
+Dollar figures are end-of-year values from each plan's own Schedule H or I,
+as filed with DOL. Blank means the plan did not report that item, which is
+not the same as zero.
 
 
 HOW PLANS WERE IDENTIFIED
@@ -210,12 +220,13 @@ ownership by thousands of participants each.
 
 Because plans may file up to roughly 18 months after a plan year begins,
 a recent form year keeps growing as late filers arrive. Figures for {year}
-reflect what DOL had published as of {data_as_of}.
+reflect every return in DOL's {dol_release or "latest"} bulk release, reconciled
+against this dataset on {data_as_of}.
 
 
 QUESTIONS
 ---------
-Massachusetts Center for Employee Ownership -- {dashboard_url}
+{org_name} -- {dashboard_url}
 Underlying filings are public: https://www.efast.dol.gov/5500Search/
 """
 

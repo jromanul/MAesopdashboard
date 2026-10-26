@@ -116,7 +116,10 @@ def create_choropleth_map(
     source: str = "",
     range_color: tuple | None = None,
     municipality_col: str = "municipality",
+    hover_fields: list[tuple[str, str, str]] | None = None,
 ) -> go.Figure | None:
+    """Municipal choropleth. ``hover_fields`` is [(label, column, d3-format)]
+    shown under the town name, e.g. [("Plans", "plan_count", ",d")]."""
     geojson = load_geojson()
     if geojson is None:
         return None
@@ -166,25 +169,39 @@ def create_choropleth_map(
         title=title,
     )
 
-    fig.update_traces(marker_line_width=0)
+    fig.update_traces(marker_line_width=0.4, marker_line_color="rgba(255,255,255,.7)")
+    if hover_fields:
+        cols = [c for _l, c, _f in hover_fields if c in plot_df.columns]
+        fig.update_traces(
+            customdata=plot_df[cols].fillna(0).to_numpy(),
+            hovertemplate="<b>%{hovertext}</b><br>" + "<br>".join(
+                f"{label}: %{{customdata[{i}]:{fmt}}}"
+                for i, (label, _c, fmt) in enumerate(
+                    [h for h in hover_fields if h[1] in plot_df.columns]))
+            + "<extra></extra>")
 
     fig.update_layout(
-        font=dict(family=_FONT, color=_NAVY, size=12),
-        paper_bgcolor="white",
-        margin=dict(l=0, r=0, t=50 if title else 10, b=30 if source else 0),
+        font=dict(family=_FONT, color="#0F1E2E", size=12),
+        title=dict(font=dict(size=14, family=_FONT, color="#0F1E2E", weight=700), x=0.01),
+        paper_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=0, r=0, t=50 if title else 10, b=34 if source else 0),
         coloraxis_colorbar=dict(
-            title=legend_title or value_col.replace("_", " ").title(),
-            thickness=15,
+            title=dict(text=legend_title or value_col.replace("_", " ").title(),
+                       font=dict(size=11, color="#3D4E60")),
+            thickness=14,
             len=0.7,
+            tickfont=dict(size=10.5, color="#55667A"),
         ),
+        hoverlabel=dict(bgcolor="#0A2E52", bordercolor="#0A2E52",
+                        font=dict(family=_FONT, color="#FFFFFF", size=12)),
     )
 
     if source:
         fig.add_annotation(
             text=f"Source: {source}",
             xref="paper", yref="paper",
-            x=0, y=-0.03, showarrow=False,
-            font=dict(size=9, color="#95A5A6", family=_FONT),
+            x=0, y=0, yanchor="top", yshift=-8, showarrow=False,
+            font=dict(size=10, color="#55667A", family=_FONT),
         )
 
     return fig
