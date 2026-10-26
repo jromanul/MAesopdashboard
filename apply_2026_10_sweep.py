@@ -15,7 +15,10 @@ version DOL holds, including superseded and FILING_ERROR ones); the Form
 and plan-administrator addresses; plans holding employer stock; continuity of
 every tracked plan into the next year; and late returns filed on later forms.
 Each candidate was then checked against the return itself, its schedules, and
-the reviewed exclusion lists.
+the reviewed exclusion lists. A completeness review of that search pointed out
+that the Latest-file loss described in 2 below can hide a year in any form
+year, so the All files for 2014-2022 were fetched too, and every tracked plan
+was checked for missing years inside, before and after its tracked history.
 
 WHAT IT FOUND
 -------------
@@ -57,14 +60,47 @@ WHAT IT FOUND
      Bakers, 2018 (on the 2021 form) — each the one missing year in an
      otherwise continuous history.
 
-4. REMOVED: The Severn Group, 2023. Its return reads "Upper Marlboro, MA
+4. THE SAME LOSS IN EARLIER YEARS (2014-2022 All files). Three more:
+   - Halloran Consulting Group, 2022 (136 participants, $8.3M). Its 401(k)
+     was filed under the same plan number 001 later the same day and displaced
+     the ESOP's accepted, amended return. The plan is tracked 2020-2021 (plan
+     001) and 2023-2024 (plan 002); this closes its one-year gap.
+   - Washburn-Garfield Corporation, 2019 (fiscal year from November 1, 2019;
+     22 participants, $1.9M). Its only version is FILING_ERROR, as with
+     Atlantic Sintered 2024. Tracked 2014-2018 and 2020-2024.
+   - Northern Construction Holding, 2022 (51 participants, $1.2M): the
+     plan's first return (it is effective January 1, 2022; tracked from 2023).
+     The sponsor's 401(k), filed on the 5500-SF under the same plan number 002
+     seven weeks later, displaced it; the sponsor has since renumbered the ESOP
+     to 003. Its name and industry come from the plan's next year
+     (scan_dol_filers._prior_row now falls back to the nearest later row when
+     there is no earlier one).
+   Each was checked by two independent reviewers; in all three the return's
+   opening balances equal the prior tracked year's closing balances, or its
+   closing balances the next year's opening ones, to the dollar.
+
+5. A ROW NOW DESCRIBES A FULL YEAR: New England Biolabs' Voting Stock
+   Ownership Plan (plan 005), 2021. Two plan years of that plan begin in 2021:
+   a short first year (June 28 - September 30, 2021) and the full fiscal year
+   from October 1, 2021. The full year's return was accepted, but a later
+   amendment was rejected, so only the short year was in Latest and the row
+   was built from it ($891.8M of assets, 389 participants). The dataset's rule
+   prefers the full year (dol_bulk.canonical_return; the same rule as Erland
+   2023), which now reads $656.1M of assets, $342.1M of liabilities, $396.1M
+   paid out and 407 participants (390 active). Its opening assets equal the
+   short year's closing assets, and the next row (2022) begins October 1,
+   2022, so the plan's October 2021 - September 2022 year, previously absent,
+   is now the one counted - on the same fiscal year as the sponsor's
+   Non-Voting plan (003), whose 2021 row already covered it.
+
+6. REMOVED: The Severn Group, 2023. Its return reads "Upper Marlboro, MA
    20774" — the ZIP and city are Maryland, as is the state on its other
    returns. dol_bulk.is_ma_address now requires a Massachusetts ZIP as well as
    the MA state code, so a state typo can no longer bring a plan in. It was
    the only tracked row affected. Its Tier 1 "relocated to MD" note on the
    Year-over-Year page goes with it.
 
-5. CITY SPELLINGS: three filed abbreviations or typos are given the spelling
+7. CITY SPELLINGS: three filed abbreviations or typos are given the spelling
    the same sponsor uses in its other years (scan_dol_filers.CITY_SPELLINGS,
    which new imports and verification now apply too).
 
@@ -75,8 +111,15 @@ NOT IMPORTED, AND WHY
    - Meditech's profit-sharing plan and CDM Smith's plan: the companies are
      employee-owned, but neither plan is coded or structured as an ESOP.
    - 1A Auto, 2024: its return is addressed to New Hampshire.
-   - Short final returns filed on a closed year's form for the next plan year;
-     these follow the existing convention and belong to the year they begin in.
+   - Short final returns filed on a closed year's form for the next plan year
+     (for example Georgetown Savings Bank's plan year 2018, filed on the 2017
+     form). Only the open form year also reads the previous form; closed years
+     read their own form and later ones. Whether closed years should pick
+     these up is left to the owner.
+   - The Gillette Company, 2016-2020. Its ESOP returns for those years are
+     mailed from Procter & Gamble in Cincinnati, so the mailing-state rule
+     leaves them out; from 2021 it files from Boston under a new EIN and is
+     tracked. Changing that is a rule decision left to the owner.
 
 Usage:
     DOL_CACHE_DIR=/path/to/zips python3 apply_2026_10_sweep.py [--dry-run]
@@ -94,6 +137,7 @@ import dol_bulk
 import form5500_analysis as fa
 import refetch_dol_financials as refetch
 import scan_dol_filers as scan
+from apply_2026_10_refresh import fix_participant_pairs
 
 import safe_console
 
@@ -171,22 +215,24 @@ def main():
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
 
-    print("=== 1-3. returns the database does not hold ===")
+    print("=== returns the database does not hold ===")
     n_new = import_missing_returns(conn, dry_run)
 
     print("\n=== locating each row's return (2014-2025) ===")
     located = refetch.locate_returns(conn)
     print(f"  {len(located)} rows located")
 
-    print("\n=== 4. rows not addressed to Massachusetts ===")
+    print("\n=== rows not addressed to Massachusetts ===")
     n_removed = remove_non_ma_rows(conn, located, dry_run)
     located = {k: v for k, v in located.items()
                if dol_bulk.is_ma_address(v[1]["state"], v[1]["sponsor_zip"])}
 
     print("\n=== financials re-derived for every row (new rows included) ===")
     stats = refetch.rederive(conn, located, dry_run)
+    print("\n=== participant counts paired with the same return ===")
+    n_pairs = fix_participant_pairs(conn, located, dry_run)
 
-    print("\n=== 5. city spellings ===")
+    print("\n=== city spellings ===")
     n_cities = fix_city_spellings(conn, dry_run)
 
     if not dry_run:
@@ -203,7 +249,7 @@ def main():
         fa.recompute_annual_summaries()
 
     print(f"\nimported {n_new}; non-MA rows removed {n_removed}; financial rows changed "
-          f"{stats['changed']}; city spellings fixed {n_cities}"
+          f"{stats['changed']}; participant pairs fixed {n_pairs}; city spellings fixed {n_cities}"
           + (" (dry run, nothing written)" if dry_run else ""))
 
 
