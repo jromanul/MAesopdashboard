@@ -1,8 +1,6 @@
 bucket,sponsor_name,city,ein,plan_num,source,participants,detail
-EXCLUDED,ROCKLAND TRUST COMPANY,ROCKLAND,041782600,001,F_5500,82.0,Peoples Federal Savings Bank ESOP filed by Rockland Trust after its 2015 acquisition: classed investor-owned
-EXCLUDED,STATE STREET CORPORATION,BOSTON,042456637,002,F_5500,24929.0,"State Street Corporation (NYSE: STT) - 'SALARY SAVINGS PROGRAM', 2O alongside 2J/2K"
-EXCLUDED,WELLESLEY BANK,WELLESLEY,041956610,003,F_5500,42.0,"Wellesley Bank ESOP: classed investor-owned (public bank, minority stake)"
-EXCLUDED,RAYTHEON COMPANY,WALTHAM,951778500,026,F_5500,87158.0,"Raytheon Company - 'RAYTHEON SAVINGS AND INVESTMENT PLAN', 2O alongside 2J/2K"
-EXCLUDED,NYPRO INC,CLINTON,042193872,003,F_5500,222.0,"Nypro Inc. Defined Contribution Plan: post-acquisition (Jabil, 2013) DC plan, not an employee-owned company"
-EXCLUDED,CABOT CORPORATION,BILLERICA,042271897,022,F_5500,2217.0,"Cabot Corporation (NYSE: CBT) - 'CABOT 401(K) PLAN', 2O alongside 2J/2K"
+EXCLUDED,STATE STREET CORPORATION,BOSTON,042456637,002,F_5500,22674.0,"State Street Corporation (NYSE: STT) - 'SALARY SAVINGS PROGRAM', 2O alongside 2J/2K"
+EXCLUDED,RAYTHEON COMPANY,WALTHAM,951778500,026,F_5500,83192.0,"Raytheon Company - 'RAYTHEON SAVINGS AND INVESTMENT PLAN', 2O alongside 2J/2K"
+EXCLUDED,NYPRO INC,CLINTON,042193872,003,F_5500,198.0,Nypro Inc. Defined Contribution Plan: not an ESOP - no employer securities on any return; 2P appears on the 2014 return only
+EXCLUDED,CABOT CORPORATION,BILLERICA,042271897,022,F_5500,2270.0,"Cabot Corporation (NYSE: CBT) - 'CABOT 401(K) PLAN', 2O alongside 2J/2K"
 EXCLUDED,RANELLA HIRSCH MD PC,CAMBRIDGE,352223136,001,F_5500,2.0,Ranella Hirsch MD PC 401(k): two-person 401(k); 2Q with no ESOP code
