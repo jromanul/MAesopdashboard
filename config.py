@@ -19,7 +19,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__) or ".", "data", "form5500_dashb
 # Single source of truth for the "as of" date shown across pages (the date the
 # database was last reconciled against DOL). Use everywhere instead of
 # hardcoding the date in individual captions.
-DATA_AS_OF = "October 26, 2026"
+DATA_AS_OF = "October 28, 2026"
 
 # Publication date of the DOL EFAST2 "Latest" bulk files that refresh used
 # (the Last-Modified date DOL serves for F_5500_<year>_Latest.zip).
@@ -155,10 +155,9 @@ All data in this section is derived from **DOL Form 5500 Annual Return/Report** 
 downloaded as bulk datasets from the U.S. Department of Labor.
 
 ### ESOP Identification Methodology
-A filing is treated as a Massachusetts ESOP when **both** of the following hold in the
-DOL bulk data:
+A filing is treated as a Massachusetts ESOP when **both** of the following hold:
 
-1. **Sponsor state** (SPONS_DFE_MAIL_US_STATE) = "MA" — see Geographic Filtering below.
+1. The employer it covers is **based in Massachusetts** — see Geographic Filtering below.
 2. **Type of Pension Benefit code** (TYPE_PENSION_BNFT_CODE) contains **2O** (ESOP),
    **2P** (leveraged ESOP — company stock acquired with borrowed funds), or **2Q**.
    2Q normally accompanies 2P on leveraged plans, but a plan winding down or restating
@@ -177,19 +176,28 @@ missing merely because its codes changed between years.
 Plans carrying both **2J** (401(k)) and **2K** (401(m)) alongside an ESOP code are flagged
 as **KSOPs** (included in ESOP counts but separately identified).
 
-**Deliberate exclusion — employer stock inside a conventional 401(k).** Some large,
-publicly traded employers attach an ESOP code to an ordinary savings plan that merely
-offers company stock as one investment option among many (e.g. a "401(K) PLAN" or
-"SAVINGS AND INVESTMENT PLAN" carrying 2O alongside 2J/2K). These are not closely held,
-employee-owned companies in the sense this dashboard tracks, and counting them would
-overstate Massachusetts employee ownership by thousands of participants apiece. Such
-filings are reviewed and excluded by hand; the exclusions are recorded in
+**Every ESOP counts.** A company either sponsors an ESOP or it does not; the dashboard
+draws no line by the share of the company the ESOP owns, by whether the company is closely
+held or publicly traded (bank ESOPs are counted like any other), or by whether the plan is
+being wound down after a sale.
+
+**Deliberate exclusion — plans that are not ESOPs.** Some large, publicly traded employers
+attach an ESOP code to an ordinary savings plan that merely offers company stock as one
+investment option among many (e.g. a "401(K) PLAN" or "SAVINGS AND INVESTMENT PLAN" carrying
+2O alongside 2J/2K). These are 401(k) plans, not ESOPs, and counting them would add thousands
+of participants apiece. Likewise, a profit-sharing or 401(k) plan at an employee-owned company
+is not an ESOP. Such filings are reviewed and excluded by hand; the exclusions are recorded in
 `scan_dol_filers.py` so they are not silently re-imported on a later refresh.
 
 ### Geographic Filtering
-Massachusetts plans are identified by the sponsor's mailing state (SPONS_DFE_MAIL_US_STATE = "MA"),
-with a Massachusetts ZIP code (010–027) where one is given, so a state typo on a return (an
-"MA" beside a Maryland ZIP) cannot bring an out-of-state plan in.
+Only **Massachusetts-based** ESOPs are counted: the employer the plan covers is headquartered
+in Massachusetts in that plan year. The sponsor's mailing address on the return
+(SPONS_DFE_MAIL_US_STATE = "MA", with a Massachusetts ZIP code, 010–027, where one is given)
+is the evidence, so a state typo on a return (an "MA" beside a Maryland ZIP) cannot bring an
+out-of-state plan in. Where the address is not the company's home, a reviewed list decides
+(`scan_dol_filers.MA_BASED_OVERRIDES`): a Massachusetts company whose parent or plan
+administrator files from another state is counted, and a company based elsewhere whose return
+carries a Massachusetts address (an acquirer's, lawyer's or administrator's) is not.
 
 ### Which returns are read
 DOL publishes each form year twice: a **Latest** file with one accepted return per EIN, plan
@@ -198,9 +206,12 @@ ESOP's return — when the sponsor later files a different plan under the same p
 when the newest version of the return is flagged FILING_ERROR — so both are read for every
 form year, and an accepted version is preferred to one flagged with errors.
 
-A plan catching up on missed years (for example through DOL's Delinquent Filer Voluntary
-Compliance program) files each overdue year on the form current when it files. Each form year
-therefore also includes returns on later forms whose plan year begins in it.
+Every return counts in the form year in which its plan year **begins**. A plan catching up on
+missed years (for example through DOL's Delinquent Filer Voluntary Compliance program) files
+each overdue year on the form current when it files, and a plan that ends early in a year
+files its short final return on the form then current, which is the previous year's. Each
+form year therefore also includes returns on later forms, and on the previous form, whose
+plan year begins in it.
 
 ### Financial Data
 Financial figures come from the schedule attached to each plan's own return, joined by
@@ -217,11 +228,13 @@ that began in the next calendar year), the row describes the return whose plan y
 the form year, and participants and dollars both come from that return.
 
 ### Participant counts
-"Participants" is the total at the **beginning** of the plan year (Form 5500 line 5) and
-"Active participants" the employees participating at the **end** of the year (line 6a). The
-form also reports an end-of-year total (line 6f); the dashboard uses line 5 in every year so the
-series stays comparable. Three plan-years whose line 5 reflects a plan year that began before
-the plan was populated carry their end-of-year count instead (see `scan_dol_filers.PARTICIPANT_OVERRIDES`).
+"Participants" is the plan's total at the **end** of the plan year (Form 5500 line 6f):
+current employees, retirees and former employees still owed a balance, and beneficiaries.
+"Active participants" are the current employees at the end of the year (line 6a). Both are
+measured on the same date as every dollar figure, so a plan never shows more active
+participants than total. (Line 5, the total at the start of the year, is not used: a plan
+that grows during the year adds members after it is measured, and a plan's first year can
+begin before it has any.)
 
 ### Years Covered
 Complete form years **2014–2024** drive the Overview, Trends, Industry and Geography pages.

@@ -107,14 +107,12 @@ def locate_returns(conn) -> dict:
             continue
         keys = {(dol_bulk.norm_ein(r["ein"]), dol_bulk.norm_pn(r["plan_num"]))
                 for r in by_year[y]}
-        returns = dol_bulk.returns_for_year(y, extra_keys=keys, open_year=OPEN_YEAR)
+        returns = dol_bulk.returns_for_year(y, extra_keys=keys)
         returns = drop_name_scoped_exclusions(y, returns)
         sched = dol_bulk.schedules_for_returns(returns)
         for r in by_year[y]:
             k = (dol_bulk.norm_ein(r["ein"]), dol_bulk.norm_pn(r["plan_num"]))
             cands = returns.get(k, [])
-            if y == OPEN_YEAR:
-                cands = [x for x in cands if x["plan_year_begin"][:4] == str(y)] or cands
             if not cands:
                 print(f"  {y} {r['sponsor_name']} EIN={r['ein']} PN={r['plan_num']}: "
                       f"no return in DOL bulk")

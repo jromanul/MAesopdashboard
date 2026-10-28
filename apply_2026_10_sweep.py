@@ -170,10 +170,11 @@ def import_missing_returns(conn, dry_run: bool) -> int:
 
 
 def remove_non_ma_rows(conn, located: dict, dry_run: bool) -> int:
-    """Drop rows whose own return is not addressed to Massachusetts."""
+    """Drop rows whose own return is not a Massachusetts-based company's
+    (the return's address, or a reviewed scan_dol_filers.MA_BASED_OVERRIDES entry)."""
     n = 0
     for row_id, (y, ret, _sched) in located.items():
-        if dol_bulk.is_ma_address(ret["state"], ret["sponsor_zip"]):
+        if scan.is_ma_based(ret["ein"], ret["pn"], y, ret):
             continue
         r = conn.execute("SELECT sponsor_name FROM form5500_filings WHERE id=?", (row_id,)).fetchone()
         if r is None:
@@ -225,7 +226,7 @@ def main():
     print("\n=== rows not addressed to Massachusetts ===")
     n_removed = remove_non_ma_rows(conn, located, dry_run)
     located = {k: v for k, v in located.items()
-               if dol_bulk.is_ma_address(v[1]["state"], v[1]["sponsor_zip"])}
+               if scan.is_ma_based(v[1]["ein"], v[1]["pn"], v[0], v[1])}
 
     print("\n=== financials re-derived for every row (new rows included) ===")
     stats = refetch.rederive(conn, located, dry_run)

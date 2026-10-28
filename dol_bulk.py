@@ -51,6 +51,18 @@ published figures before October 2026.
 5. A plan-year's only return can be filed years late on a later form (DOL's
    Delinquent Filer program): Econocorp filed plan years 2016-2019 on the 2022
    form. returns_for_year() also looks for those on every later form cached.
+
+6. A return can also arrive on the PREVIOUS year's form: a plan that ends early
+   in a year files its short final return on the form then current (Georgetown
+   Savings Bank's plan year 2018, on the 2017 form). Every return counts in the
+   form year its plan year begins, so returns_for_year() reads the previous
+   form for those too, in every year.
+
+7. Participants are the year-end total (line 6f), on the same date as the
+   active count (line 6a(2)) and the dollar figures. Line 5, the start-of-year
+   total, is kept on each record as participants_boy for reference: it is
+   blank-in-effect for a plan's first year and runs below the active count
+   whenever a plan grew during the year.
 """
 from __future__ import annotations
 
@@ -75,6 +87,11 @@ ESOP_CODES = ("2O", "2P", "2Q")
 # return, not a Massachusetts sponsor: The Severn Group's plan-year-2023 return
 # says "UPPER MARLBORO, MA 20774" (Maryland), the state on all its other returns.
 MA_ZIP3 = {f"{n:03d}" for n in range(10, 28)} | {"055"}
+
+# (EIN, plan number) keys whose returns are read on every form whatever their
+# address: Massachusetts companies whose plans are filed from another state.
+# Filled by scan_dol_filers from its reviewed MA_BASED_OVERRIDES.
+EXTRA_PLAN_KEYS: set = set()
 
 # Schedule H (large plans) — Part I asset/liability statement and Part II
 # income/expense lines, end-of-year values only.
@@ -190,10 +207,11 @@ def _main_record(r: dict, form_year: int | None = None, variant: str = "Latest")
         "type_plan_entity": r["TYPE_PLAN_ENTITY_CD"].strip(),
         "naics_code": r["BUSINESS_CODE"].strip(),
         "plan_eff_date": r["PLAN_EFF_DATE"].strip(),
-        # Line 5 (beginning of year) and line 6a(2) (active at end of year) —
-        # the pairing the dataset has used for every year.
-        "total_participants": to_num(r["TOT_PARTCP_BOY_CNT"]),
+        # Line 6f (total at end of year) and line 6a(2) (active at end of
+        # year): both on the date the dollar figures describe. See rule 7.
+        "total_participants": to_num(r["TOT_ACT_RTD_SEP_BENEF_CNT"]),
         "active_participants": to_num(r["TOT_ACTIVE_PARTCP_CNT"]),
+        "participants_boy": to_num(r["TOT_PARTCP_BOY_CNT"]),
         "date_received": r["DATE_RECEIVED"].strip(),
         "amended": r["AMENDED_IND"].strip(),
         "final": r["FINAL_FILING_IND"].strip(),
@@ -238,8 +256,9 @@ def ma_esop_returns(year: int, extra_keys: set | None = None,
             if ack in seen:
                 continue
             take = _is_ma_esop(r)
-            if not take and extra_keys:
-                take = (norm_ein(r.get("SPONS_DFE_EIN")), norm_pn(r.get("SPONS_DFE_PN"))) in extra_keys
+            if not take:
+                k = (norm_ein(r.get("SPONS_DFE_EIN")), norm_pn(r.get("SPONS_DFE_PN")))
+                take = k in EXTRA_PLAN_KEYS or bool(extra_keys and k in extra_keys)
             if not take:
                 continue
             rec = _main_record(r, year, variant)
@@ -259,8 +278,7 @@ def _ma_esop_returns_cached(form_year: int) -> dict:
     return _LATER_FORM_CACHE[form_year]
 
 
-def returns_for_year(year: int, extra_keys: set | None = None,
-                     open_year: int | None = None) -> dict:
+def returns_for_year(year: int, extra_keys: set | None = None) -> dict:
     """{(ein, pn): [return, ...]} for every return that can represent a plan in
     form year ``year``:
 
@@ -268,8 +286,8 @@ def returns_for_year(year: int, extra_keys: set | None = None,
     - MA ESOP returns on any LATER cached form whose plan year begins in ``year``
       (late and delinquent filings: Econocorp's 2016-2019 plan years arrived on
       the 2022 form);
-    - for the open form year only, returns on the previous form whose plan year
-      begins in ``year`` (short final years filed early; see scan_dol_filers).
+    - MA ESOP returns on the PREVIOUS form whose plan year begins in ``year``
+      (short final years filed early; rule 6).
     """
     out: dict = {}
     if has_zip(year, "F_5500") or has_zip(year, "F_5500", "All"):
@@ -277,7 +295,7 @@ def returns_for_year(year: int, extra_keys: set | None = None,
             out.setdefault(k, []).extend(lst)
     later = [f for f in cached_form_years() if f > year]
     sources = [(f, str(year)) for f in later]
-    if open_year is not None and year == open_year and (year - 1) in cached_form_years():
+    if (year - 1) in cached_form_years():
         sources.append((year - 1, str(year)))
     for form_year, pyb in sources:
         for k, lst in _ma_esop_returns_cached(form_year).items():

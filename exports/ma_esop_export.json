@@ -2,9 +2,9 @@
   "meta": {
     "title": "Massachusetts ESOPs — Form 5500",
     "form_year": 2024,
-    "data_as_of": "October 26, 2026",
+    "data_as_of": "October 28, 2026",
     "dol_release": "September 30, 2026",
-    "generated_utc": "2026-10-26T23:37:14+00:00",
+    "generated_utc": "2026-10-28T21:13:30+00:00",
     "source": "U.S. Department of Labor, EFAST2 Form 5500 bulk datasets",
     "source_url": "https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/public-disclosure/foia/form-5500-datasets",
     "dashboard_url": "https://maesopdashboard.streamlit.app",
@@ -14,66 +14,66 @@
       "filed": "Every ESOP that filed a Form 5500 for the year, including plans winding down. Use for year-over-year trend lines."
     },
     "caveats": [
-      "total_participants is the plan total at the BEGINNING of the plan year (Form 5500 line 5); active_participants is current employees at the END of the year (line 6a). The two sit on different dates, so a growing plan can show more active than total. Line 5 is used in every year so the series stays comparable.",
+      "total_participants is the plan total at the END of the plan year (Form 5500 line 6f: current employees, retirees, former employees still owed a balance, beneficiaries); active_participants is current employees on the same date (line 6a).",
       "employer_securities (company stock) is Schedule H line 1d(1) for large plans and Schedule I line 3d for small plans. null means the plan left the line blank, which is not the same as zero.",
       "Every dollar figure is the end-of-plan-year value from the plan's own Schedule H or I, as filed.",
       "A form year keeps growing for roughly 18 months as fiscal-year and extended filers arrive, so the most recent year is not final.",
-      "Ordinary 401(k)/savings plans at large public companies that merely offer employer stock are deliberately excluded; they are not employee-owned firms."
+      "Every ESOP of a Massachusetts-based employer is counted, closely held or publicly traded. 401(k)/savings plans that merely offer employer stock are not ESOPs and are excluded."
     ]
   },
   "headline": {
     "basis": "active",
-    "active_plans": 121,
-    "filed_plans": 134,
-    "excluded_inactive": 13,
-    "ksop_plans": 6,
-    "total_participants": 29953,
-    "total_active_participants": 19944,
-    "total_assets": 4024926501,
-    "mean_assets_per_plan": 33263855,
+    "active_plans": 119,
+    "filed_plans": 133,
+    "excluded_inactive": 14,
+    "ksop_plans": 5,
+    "total_participants": 27856,
+    "total_active_participants": 19764,
+    "total_assets": 3987805292,
+    "mean_assets_per_plan": 33510969,
     "median_assets_per_plan": 6458729,
-    "mean_participants_per_plan": 247.5,
-    "median_participants_per_plan": 74,
-    "aggregate_assets_per_participant": 134375,
-    "aggregate_assets_per_active_participant": 201811,
-    "median_assets_per_active_participant_per_plan": 117645,
-    "mean_assets_per_active_participant_per_plan": 226601,
-    "employer_securities": 3643465687,
-    "employer_securities_pct_of_assets": 90.5,
-    "plans_reporting_employer_securities": 114
+    "mean_participants_per_plan": 234.1,
+    "median_participants_per_plan": 70,
+    "aggregate_assets_per_participant": 143158,
+    "aggregate_assets_per_active_participant": 201771,
+    "median_assets_per_active_participant_per_plan": 116894,
+    "mean_assets_per_active_participant_per_plan": 227536,
+    "employer_securities": 3606344663,
+    "employer_securities_pct_of_assets": 90.4,
+    "plans_reporting_employer_securities": 112
   },
   "typical_plan": {
     "basis": "active",
-    "plans_described": 121,
+    "plans_described": 119,
     "rows": [
       {
         "metric": "ESOP age (years since plan start)",
         "median": 9,
-        "mean": 13.8,
+        "mean": 14,
         "unit": "years"
       },
       {
         "metric": "Total participants (incl. retirees/separated)",
-        "median": 74,
-        "mean": 248,
+        "median": 70,
+        "mean": 234,
         "unit": "people"
       },
       {
         "metric": "Active participants (current employees)",
         "median": 52,
-        "mean": 165,
+        "mean": 166,
         "unit": "people"
       },
       {
         "metric": "Plan assets",
         "median": 6458729,
-        "mean": 33263855,
+        "mean": 33510969,
         "unit": "usd"
       },
       {
         "metric": "Assets per active participant (per plan)",
-        "median": 117645,
-        "mean": 226601,
+        "median": 116894,
+        "mean": 227536,
         "unit": "usd"
       }
     ]
@@ -95,108 +95,108 @@
     ],
     "series": {
       "plan_count": [
-        121,
-        124,
+        126,
         129,
-        124,
-        121,
-        121,
-        127,
-        122,
+        132,
+        132,
+        128,
+        126,
+        131,
+        126,
         131,
         133,
-        134
+        133
       ],
       "total_participants": [
-        26343,
-        26309,
-        25768,
-        25373,
-        25559,
-        26166,
-        29367,
-        30442,
-        31546,
-        33359,
-        32231
+        25964,
+        25322,
+        26425,
+        26422,
+        26522,
+        27329,
+        29024,
+        29589,
+        29600,
+        30161,
+        28919
       ],
       "active_participants": [
-        17761,
-        17228,
-        17853,
-        17876,
-        18117,
-        17994,
-        20136,
-        19662,
-        19516,
-        21935,
-        19944
+        17883,
+        17287,
+        18250,
+        18454,
+        18416,
+        18421,
+        20346,
+        19642,
+        19496,
+        21921,
+        19764
       ],
       "total_assets": [
-        1835107704,
-        1868012123,
-        1777984495,
-        2016346133,
-        2219271862,
-        2679828104,
-        3455655769,
-        4644249406,
-        3859721492,
-        3975647417,
-        4087981082
+        1858589640,
+        1871882004,
+        2073581504,
+        2328294671,
+        2517730681,
+        3063136339,
+        3838638649,
+        4644543490,
+        3857945997,
+        3973764742,
+        4050859873
       ],
       "mean_plan_assets": [
-        15166179,
-        15064614,
-        13782826,
-        16260856,
-        18341090,
-        22147340,
-        27209888,
-        38067618,
-        29463523,
-        29892086,
-        30507322
+        14750711,
+        14510713,
+        15708951,
+        17638596,
+        19669771,
+        24310606,
+        29302585,
+        36861456,
+        29449969,
+        29877930,
+        30457593
       ],
       "employer_contributions": [
-        58451749,
-        61451551,
-        71332247,
-        72696454,
-        74866856,
-        79766057,
-        94976678,
+        58902918,
+        61597754,
+        71474984,
+        72835981,
+        75278883,
+        79980720,
+        94464032,
         110035619,
-        124981728,
-        136565459,
-        135340343
+        124754759,
+        136338687,
+        134752650
       ],
       "benefits_paid": [
-        167820359,
-        137723404,
-        189936274,
-        110671516,
-        273011783,
-        181920385,
-        111488848,
-        1033439573,
+        195625517,
+        151674103,
+        210498213,
+        143256186,
+        299805841,
+        220699048,
+        151480827,
+        1057369488,
         751453255,
         309591494,
         494934240
       ],
       "employer_securities": [
-        1615935697,
-        1659118036,
-        1516009410,
-        1748857236,
-        1939214474,
-        2267024311,
-        2523789155,
+        1632394954,
+        1662696124,
+        1808678257,
+        2056246758,
+        2242307394,
+        2646488416,
+        2898508216,
         3259845093,
-        3287681979,
-        3474461997,
-        3643465687
+        3287474767,
+        3472274196,
+        3606344663
       ]
     }
   },
@@ -209,7 +209,7 @@
       },
       {
         "label": "$1M - $5M",
-        "count": 41
+        "count": 40
       },
       {
         "label": "$5M - $10M",
@@ -217,7 +217,7 @@
       },
       {
         "label": "$10M - $50M",
-        "count": 35
+        "count": 34
       },
       {
         "label": "$50M - $100M",
@@ -239,7 +239,7 @@
     "participant_counts": [
       {
         "label": "< 50",
-        "count": 39
+        "count": 40
       },
       {
         "label": "50 - 100",
@@ -247,11 +247,11 @@
       },
       {
         "label": "100 - 250",
-        "count": 22
+        "count": 21
       },
       {
         "label": "250 - 500",
-        "count": 13
+        "count": 12
       },
       {
         "label": "500 - 1,000",
@@ -259,7 +259,7 @@
       },
       {
         "label": "1,000 - 5,000",
-        "count": 8
+        "count": 7
       },
       {
         "label": "5,000 - 10,000",
@@ -277,32 +277,32 @@
       {
         "era": "Before 1990",
         "plans": 13,
-        "participants": 6956,
+        "participants": 5630,
         "assets": 602752455
       },
       {
         "era": "1990-1999",
         "plans": 14,
-        "participants": 6312,
+        "participants": 6066,
         "assets": 851174780
       },
       {
         "era": "2000-2009",
         "plans": 19,
-        "participants": 2477,
+        "participants": 2413,
         "assets": 378041651
       },
       {
         "era": "2010-2019",
         "plans": 35,
-        "participants": 7328,
+        "participants": 7140,
         "assets": 1509231867
       },
       {
         "era": "2020-present",
-        "plans": 40,
-        "participants": 6880,
-        "assets": 683725748
+        "plans": 38,
+        "participants": 6607,
+        "assets": 646604539
       }
     ]
   },
@@ -317,27 +317,27 @@
       {
         "decade": "1980s",
         "plans": 10,
-        "pct_of_active": 8.3
+        "pct_of_active": 8.4
       },
       {
         "decade": "1990s",
         "plans": 14,
-        "pct_of_active": 11.6
+        "pct_of_active": 11.8
       },
       {
         "decade": "2000s",
         "plans": 19,
-        "pct_of_active": 15.7
+        "pct_of_active": 16.0
       },
       {
         "decade": "2010s",
         "plans": 35,
-        "pct_of_active": 28.9
+        "pct_of_active": 29.4
       },
       {
         "decade": "2020s",
-        "plans": 40,
-        "pct_of_active": 33.1
+        "plans": 38,
+        "pct_of_active": 31.9
       }
     ]
   },
@@ -347,57 +347,57 @@
       {
         "sector": "Professional & Technical Services",
         "plans": 27,
-        "participants": 7353,
+        "participants": 6050,
         "assets": 681202678,
-        "avg_account_balance": 92643,
+        "avg_account_balance": 112595,
         "include_in_balance_table": true
       },
       {
         "sector": "Manufacturing",
         "plans": 26,
-        "participants": 6241,
+        "participants": 6011,
         "assets": 1121200746,
-        "avg_account_balance": 179651,
+        "avg_account_balance": 186525,
         "include_in_balance_table": true
       },
       {
         "sector": "Construction",
-        "plans": 21,
-        "participants": 4674,
-        "assets": 1316793763,
-        "avg_account_balance": 281727,
-        "include_in_balance_table": true
-      },
-      {
-        "sector": "Finance & Insurance",
-        "plans": 13,
-        "participants": 5196,
-        "assets": 461554977,
-        "avg_account_balance": 88829,
+        "plans": 20,
+        "participants": 4517,
+        "assets": 1282073638,
+        "avg_account_balance": 283833,
         "include_in_balance_table": true
       },
       {
         "sector": "Wholesale Trade",
         "plans": 13,
-        "participants": 2092,
+        "participants": 1886,
         "assets": 190870476,
-        "avg_account_balance": 91238,
+        "avg_account_balance": 101204,
+        "include_in_balance_table": true
+      },
+      {
+        "sector": "Finance & Insurance",
+        "plans": 12,
+        "participants": 5238,
+        "assets": 459153893,
+        "avg_account_balance": 87658,
         "include_in_balance_table": true
       },
       {
         "sector": "Retail Trade",
         "plans": 9,
-        "participants": 1019,
+        "participants": 983,
         "assets": 67211661,
-        "avg_account_balance": 65958,
+        "avg_account_balance": 68374,
         "include_in_balance_table": true
       },
       {
         "sector": "Administrative & Waste Services",
         "plans": 5,
-        "participants": 861,
+        "participants": 860,
         "assets": 89486775,
-        "avg_account_balance": 103934,
+        "avg_account_balance": 104054,
         "include_in_balance_table": true
       },
       {
@@ -411,25 +411,25 @@
       {
         "sector": "Education",
         "plans": 1,
-        "participants": 15,
+        "participants": 13,
         "assets": 1000,
-        "avg_account_balance": 67,
+        "avg_account_balance": 77,
         "include_in_balance_table": false
       },
       {
         "sector": "Management of Companies",
         "plans": 1,
-        "participants": 209,
+        "participants": 199,
         "assets": 15110348,
-        "avg_account_balance": 72298,
+        "avg_account_balance": 75931,
         "include_in_balance_table": false
       },
       {
         "sector": "Mining, Oil & Gas",
         "plans": 1,
-        "participants": 48,
+        "participants": 47,
         "assets": 22482420,
-        "avg_account_balance": 468384,
+        "avg_account_balance": 478349,
         "include_in_balance_table": false
       },
       {
@@ -443,17 +443,17 @@
       {
         "sector": "Transportation & Warehousing",
         "plans": 1,
-        "participants": 1088,
+        "participants": 895,
         "assets": 34914019,
-        "avg_account_balance": 32090,
+        "avg_account_balance": 39010,
         "include_in_balance_table": false
       }
     ],
     "avg_account_balance_min_plans": 2,
     "totals": {
-      "plans": 121,
-      "participants": 29953,
-      "assets": 4024926501
+      "plans": 119,
+      "participants": 27856,
+      "assets": 3987805292
     }
   },
   "plans": [
@@ -464,7 +464,7 @@
       "industry": "Construction",
       "plan_year_started": 2017,
       "is_ksop": false,
-      "total_participants": 1959,
+      "total_participants": 1974,
       "active_participants": 1634,
       "total_assets": 729347060.0,
       "employer_securities": 729330000.0
@@ -476,7 +476,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 1990,
       "is_ksop": false,
-      "total_participants": 1219,
+      "total_participants": 1172,
       "active_participants": 121,
       "total_assets": 367792322.0,
       "employer_securities": 363563946.0
@@ -488,7 +488,7 @@
       "industry": "Construction",
       "plan_year_started": 1997,
       "is_ksop": false,
-      "total_participants": 1218,
+      "total_participants": 1217,
       "active_participants": 825,
       "total_assets": 322045611.0,
       "employer_securities": 313531188.0
@@ -500,7 +500,7 @@
       "industry": "Finance & Insurance",
       "plan_year_started": 2020,
       "is_ksop": false,
-      "total_participants": 2041,
+      "total_participants": 2190,
       "active_participants": 1773,
       "total_assets": 256509815.0,
       "employer_securities": 254895978.0
@@ -512,7 +512,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2014,
       "is_ksop": false,
-      "total_participants": 765,
+      "total_participants": 699,
       "active_participants": 560,
       "total_assets": 253372727.0,
       "employer_securities": 247360000.0
@@ -524,7 +524,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 2007,
       "is_ksop": false,
-      "total_participants": 256,
+      "total_participants": 249,
       "active_participants": 216,
       "total_assets": 182637500.0,
       "employer_securities": 182637500.0
@@ -536,7 +536,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 1985,
       "is_ksop": false,
-      "total_participants": 443,
+      "total_participants": 494,
       "active_participants": 482,
       "total_assets": 162974294.0,
       "employer_securities": null
@@ -548,7 +548,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 1975,
       "is_ksop": false,
-      "total_participants": 2628,
+      "total_participants": 1481,
       "active_participants": 1156,
       "total_assets": 116572494.0,
       "employer_securities": 114058866.0
@@ -560,7 +560,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 1988,
       "is_ksop": false,
-      "total_participants": 396,
+      "total_participants": 383,
       "active_participants": 249,
       "total_assets": 93245729.0,
       "employer_securities": 87832969.0
@@ -572,7 +572,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 1984,
       "is_ksop": false,
-      "total_participants": 836,
+      "total_participants": 710,
       "active_participants": 350,
       "total_assets": 90421806.0,
       "employer_securities": 89623298.0
@@ -584,7 +584,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 1986,
       "is_ksop": false,
-      "total_participants": 524,
+      "total_participants": 540,
       "active_participants": 414,
       "total_assets": 88602233.0,
       "employer_securities": 86706383.0
@@ -596,7 +596,7 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 2014,
       "is_ksop": false,
-      "total_participants": 101,
+      "total_participants": 94,
       "active_participants": 85,
       "total_assets": 81831673.0,
       "employer_securities": 81344000.0
@@ -608,7 +608,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 2021,
       "is_ksop": false,
-      "total_participants": 436,
+      "total_participants": 486,
       "active_participants": 482,
       "total_assets": 78571398.0,
       "employer_securities": null
@@ -620,7 +620,7 @@
       "industry": "Construction",
       "plan_year_started": 2017,
       "is_ksop": false,
-      "total_participants": 117,
+      "total_participants": 106,
       "active_participants": 63,
       "total_assets": 67579639.0,
       "employer_securities": 66994000.0
@@ -632,7 +632,7 @@
       "industry": "Finance & Insurance",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 284,
+      "total_participants": 287,
       "active_participants": 285,
       "total_assets": 61827355.0,
       "employer_securities": 61701231.0
@@ -644,7 +644,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2014,
       "is_ksop": false,
-      "total_participants": 815,
+      "total_participants": 842,
       "active_participants": 727,
       "total_assets": 52845386.0,
       "employer_securities": 44472920.0
@@ -656,7 +656,7 @@
       "industry": "Finance & Insurance",
       "plan_year_started": 2016,
       "is_ksop": false,
-      "total_participants": 492,
+      "total_participants": 483,
       "active_participants": 359,
       "total_assets": 52189959.0,
       "employer_securities": 52189959.0
@@ -668,7 +668,7 @@
       "industry": "Construction",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 203,
+      "total_participants": 189,
       "active_participants": 176,
       "total_assets": 51608000.0,
       "employer_securities": 51608000.0
@@ -680,7 +680,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 1999,
       "is_ksop": false,
-      "total_participants": 868,
+      "total_participants": 822,
       "active_participants": 597,
       "total_assets": 42276323.0,
       "employer_securities": 42199074.0
@@ -692,7 +692,7 @@
       "industry": "Retail Trade",
       "plan_year_started": 2000,
       "is_ksop": false,
-      "total_participants": 436,
+      "total_participants": 444,
       "active_participants": 311,
       "total_assets": 36587707.0,
       "employer_securities": 36395959.0
@@ -704,22 +704,10 @@
       "industry": "Transportation & Warehousing",
       "plan_year_started": 1995,
       "is_ksop": true,
-      "total_participants": 1088,
+      "total_participants": 895,
       "active_participants": 570,
       "total_assets": 34914019.0,
       "employer_securities": 2319885.0
-    },
-    {
-      "plan_name": "MANGANARO EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Manganaro North America, Inc.",
-      "city": "Woburn",
-      "industry": "Construction",
-      "plan_year_started": 2024,
-      "is_ksop": true,
-      "total_participants": 135,
-      "active_participants": 161,
-      "total_assets": 34720125.0,
-      "employer_securities": 34720125.0
     },
     {
       "plan_name": "TIGHE & BOND, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -728,7 +716,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 1997,
       "is_ksop": false,
-      "total_participants": 522,
+      "total_participants": 602,
       "active_participants": 549,
       "total_assets": 34102955.0,
       "employer_securities": 32304600.0
@@ -740,7 +728,7 @@
       "industry": "Administrative & Waste Services",
       "plan_year_started": 2019,
       "is_ksop": false,
-      "total_participants": 175,
+      "total_participants": 185,
       "active_participants": 163,
       "total_assets": 31500665.0,
       "employer_securities": 31500000.0
@@ -752,7 +740,7 @@
       "industry": "Administrative & Waste Services",
       "plan_year_started": 2007,
       "is_ksop": false,
-      "total_participants": 387,
+      "total_participants": 386,
       "active_participants": 240,
       "total_assets": 28888268.0,
       "employer_securities": 28776221.0
@@ -764,7 +752,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2012,
       "is_ksop": false,
-      "total_participants": 298,
+      "total_participants": 299,
       "active_participants": 132,
       "total_assets": 28850055.0,
       "employer_securities": 28850000.0
@@ -776,7 +764,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 2021,
       "is_ksop": false,
-      "total_participants": 57,
+      "total_participants": 56,
       "active_participants": 46,
       "total_assets": 27046434.0,
       "employer_securities": 27036677.0
@@ -788,7 +776,7 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 2015,
       "is_ksop": false,
-      "total_participants": 31,
+      "total_participants": 29,
       "active_participants": 13,
       "total_assets": 26153086.0,
       "employer_securities": 23096000.0
@@ -800,7 +788,7 @@
       "industry": "Mining, Oil & Gas",
       "plan_year_started": 2005,
       "is_ksop": false,
-      "total_participants": 48,
+      "total_participants": 47,
       "active_participants": 41,
       "total_assets": 22482420.0,
       "employer_securities": 16007525.0
@@ -812,7 +800,7 @@
       "industry": "Construction",
       "plan_year_started": 2019,
       "is_ksop": false,
-      "total_participants": 32,
+      "total_participants": 33,
       "active_participants": 21,
       "total_assets": 21670257.0,
       "employer_securities": 21375747.0
@@ -824,7 +812,7 @@
       "industry": "Administrative & Waste Services",
       "plan_year_started": 2013,
       "is_ksop": false,
-      "total_participants": 46,
+      "total_participants": 42,
       "active_participants": 35,
       "total_assets": 21617485.0,
       "employer_securities": 20260905.0
@@ -836,7 +824,7 @@
       "industry": "Construction",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 74,
+      "total_participants": 75,
       "active_participants": 72,
       "total_assets": 21496530.0,
       "employer_securities": 21216000.0
@@ -848,7 +836,7 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 2004,
       "is_ksop": false,
-      "total_participants": 42,
+      "total_participants": 44,
       "active_participants": 40,
       "total_assets": 20592589.0,
       "employer_securities": 20590532.0
@@ -860,7 +848,7 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 1997,
       "is_ksop": false,
-      "total_participants": 45,
+      "total_participants": 43,
       "active_participants": 30,
       "total_assets": 19761324.0,
       "employer_securities": 19731197.0
@@ -872,7 +860,7 @@
       "industry": "Finance & Insurance",
       "plan_year_started": 1986,
       "is_ksop": false,
-      "total_participants": 557,
+      "total_participants": 485,
       "active_participants": 361,
       "total_assets": 19573587.0,
       "employer_securities": 19572400.0
@@ -884,7 +872,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 1988,
       "is_ksop": false,
-      "total_participants": 236,
+      "total_participants": 206,
       "active_participants": 184,
       "total_assets": 17055350.0,
       "employer_securities": 16755309.0
@@ -896,7 +884,7 @@
       "industry": "Finance & Insurance",
       "plan_year_started": 2015,
       "is_ksop": false,
-      "total_participants": 270,
+      "total_participants": 256,
       "active_participants": 175,
       "total_assets": 15949029.0,
       "employer_securities": 15948048.0
@@ -920,7 +908,7 @@
       "industry": "Finance & Insurance",
       "plan_year_started": 2002,
       "is_ksop": false,
-      "total_participants": 17,
+      "total_participants": 18,
       "active_participants": 15,
       "total_assets": 15562198.0,
       "employer_securities": 12042725.0
@@ -932,7 +920,7 @@
       "industry": "Management of Companies",
       "plan_year_started": 2016,
       "is_ksop": false,
-      "total_participants": 209,
+      "total_participants": 199,
       "active_participants": 113,
       "total_assets": 15110348.0,
       "employer_securities": 13258050.0
@@ -944,7 +932,7 @@
       "industry": "Construction",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 51,
+      "total_participants": 46,
       "active_participants": 44,
       "total_assets": 14890205.0,
       "employer_securities": 14890000.0
@@ -956,7 +944,7 @@
       "industry": "Finance & Insurance",
       "plan_year_started": 2002,
       "is_ksop": false,
-      "total_participants": 433,
+      "total_participants": 447,
       "active_participants": 267,
       "total_assets": 14729782.0,
       "employer_securities": 13561509.0
@@ -968,7 +956,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2010,
       "is_ksop": false,
-      "total_participants": 148,
+      "total_participants": 155,
       "active_participants": 108,
       "total_assets": 14670376.0,
       "employer_securities": 14230620.0
@@ -980,7 +968,7 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 2021,
       "is_ksop": false,
-      "total_participants": 83,
+      "total_participants": 79,
       "active_participants": 71,
       "total_assets": 12732247.0,
       "employer_securities": 12732246.0
@@ -992,7 +980,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2017,
       "is_ksop": false,
-      "total_participants": 113,
+      "total_participants": 107,
       "active_participants": 75,
       "total_assets": 12477000.0,
       "employer_securities": 12477000.0
@@ -1004,7 +992,7 @@
       "industry": "Construction",
       "plan_year_started": 2020,
       "is_ksop": false,
-      "total_participants": 106,
+      "total_participants": 104,
       "active_participants": 88,
       "total_assets": 11680000.0,
       "employer_securities": 11680000.0
@@ -1016,7 +1004,7 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 1489,
+      "total_participants": 1315,
       "active_participants": 1235,
       "total_assets": 11305958.0,
       "employer_securities": 11305958.0
@@ -1028,7 +1016,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 239,
+      "total_participants": 200,
       "active_participants": 187,
       "total_assets": 10865913.0,
       "employer_securities": 10865913.0
@@ -1040,7 +1028,7 @@
       "industry": "Finance & Insurance",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 62,
+      "total_participants": 64,
       "active_participants": 59,
       "total_assets": 10849057.0,
       "employer_securities": 10848871.0
@@ -1052,7 +1040,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 2003,
       "is_ksop": false,
-      "total_participants": 67,
+      "total_participants": 64,
       "active_participants": 35,
       "total_assets": 10668229.0,
       "employer_securities": 9756802.0
@@ -1064,7 +1052,7 @@
       "industry": "Construction",
       "plan_year_started": 2018,
       "is_ksop": false,
-      "total_participants": 26,
+      "total_participants": 29,
       "active_participants": 24,
       "total_assets": 10567400.0,
       "employer_securities": 10436000.0
@@ -1076,7 +1064,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 67,
+      "total_participants": 66,
       "active_participants": 59,
       "total_assets": 10174947.0,
       "employer_securities": 10090713.0
@@ -1100,7 +1088,7 @@
       "industry": "Retail Trade",
       "plan_year_started": 1996,
       "is_ksop": false,
-      "total_participants": 188,
+      "total_participants": 176,
       "active_participants": 94,
       "total_assets": 8324682.0,
       "employer_securities": 8315986.0
@@ -1112,7 +1100,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 2004,
       "is_ksop": false,
-      "total_participants": 62,
+      "total_participants": 54,
       "active_participants": 53,
       "total_assets": 7447453.0,
       "employer_securities": 7447453.0
@@ -1124,7 +1112,7 @@
       "industry": "Finance & Insurance",
       "plan_year_started": 1997,
       "is_ksop": false,
-      "total_participants": 934,
+      "total_participants": 926,
       "active_participants": 63,
       "total_assets": 7225247.0,
       "employer_securities": 6837239.0
@@ -1136,7 +1124,7 @@
       "industry": "Administrative & Waste Services",
       "plan_year_started": 2015,
       "is_ksop": false,
-      "total_participants": 93,
+      "total_participants": 107,
       "active_participants": 51,
       "total_assets": 6981880.0,
       "employer_securities": 6980800.0
@@ -1148,7 +1136,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2015,
       "is_ksop": false,
-      "total_participants": 101,
+      "total_participants": 95,
       "active_participants": 68,
       "total_assets": 6583839.0,
       "employer_securities": 5009065.0
@@ -1160,7 +1148,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 1987,
       "is_ksop": false,
-      "total_participants": 101,
+      "total_participants": 100,
       "active_participants": 56,
       "total_assets": 6546042.0,
       "employer_securities": 6157040.0
@@ -1172,7 +1160,7 @@
       "industry": "Retail Trade",
       "plan_year_started": 2024,
       "is_ksop": false,
-      "total_participants": 25,
+      "total_participants": 37,
       "active_participants": 37,
       "total_assets": 6468002.0,
       "employer_securities": 92874.0
@@ -1184,7 +1172,7 @@
       "industry": "Construction",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 208,
+      "total_participants": 222,
       "active_participants": 208,
       "total_assets": 6458729.0,
       "employer_securities": 6450000.0
@@ -1196,7 +1184,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2009,
       "is_ksop": false,
-      "total_participants": 21,
+      "total_participants": 20,
       "active_participants": 14,
       "total_assets": 6200000.0,
       "employer_securities": 6200000.0
@@ -1208,7 +1196,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2014,
       "is_ksop": false,
-      "total_participants": 98,
+      "total_participants": 74,
       "active_participants": 46,
       "total_assets": 6154994.0,
       "employer_securities": 6150000.0
@@ -1220,7 +1208,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 2012,
       "is_ksop": false,
-      "total_participants": 50,
+      "total_participants": 41,
       "active_participants": 35,
       "total_assets": 5836000.0,
       "employer_securities": 3260137.0
@@ -1244,7 +1232,7 @@
       "industry": "Construction",
       "plan_year_started": 2019,
       "is_ksop": false,
-      "total_participants": 22,
+      "total_participants": 33,
       "active_participants": 31,
       "total_assets": 5234775.0,
       "employer_securities": null
@@ -1256,7 +1244,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 2001,
       "is_ksop": false,
-      "total_participants": 61,
+      "total_participants": 56,
       "active_participants": 27,
       "total_assets": 4893665.0,
       "employer_securities": 4882600.0
@@ -1268,7 +1256,7 @@
       "industry": "Retail Trade",
       "plan_year_started": 2019,
       "is_ksop": false,
-      "total_participants": 68,
+      "total_participants": 70,
       "active_participants": 60,
       "total_assets": 4865600.0,
       "employer_securities": 4865600.0
@@ -1280,7 +1268,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2006,
       "is_ksop": false,
-      "total_participants": 97,
+      "total_participants": 90,
       "active_participants": 48,
       "total_assets": 4811213.0,
       "employer_securities": 4344840.0
@@ -1292,7 +1280,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2016,
       "is_ksop": false,
-      "total_participants": 59,
+      "total_participants": 57,
       "active_participants": 35,
       "total_assets": 4366346.0,
       "employer_securities": 3583000.0
@@ -1316,7 +1304,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 1993,
       "is_ksop": false,
-      "total_participants": 46,
+      "total_participants": 42,
       "active_participants": 39,
       "total_assets": 4238039.0,
       "employer_securities": 4170899.0
@@ -1328,7 +1316,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 1998,
       "is_ksop": false,
-      "total_participants": 81,
+      "total_participants": 72,
       "active_participants": 38,
       "total_assets": 4078604.0,
       "employer_securities": 3793770.0
@@ -1340,7 +1328,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 2008,
       "is_ksop": false,
-      "total_participants": 73,
+      "total_participants": 70,
       "active_participants": 42,
       "total_assets": 4004083.0,
       "employer_securities": 399584.0
@@ -1352,7 +1340,7 @@
       "industry": "Construction",
       "plan_year_started": 2023,
       "is_ksop": true,
-      "total_participants": 22,
+      "total_participants": 20,
       "active_participants": 19,
       "total_assets": 3905745.0,
       "employer_securities": 2098000.0
@@ -1364,7 +1352,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 2010,
       "is_ksop": false,
-      "total_participants": 43,
+      "total_participants": 37,
       "active_participants": 21,
       "total_assets": 3824604.0,
       "employer_securities": 3609995.0
@@ -1376,7 +1364,7 @@
       "industry": "Retail Trade",
       "plan_year_started": 2009,
       "is_ksop": false,
-      "total_participants": 112,
+      "total_participants": 100,
       "active_participants": 68,
       "total_assets": 3688643.0,
       "employer_securities": 3688552.0
@@ -1388,7 +1376,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 2018,
       "is_ksop": false,
-      "total_participants": 68,
+      "total_participants": 65,
       "active_participants": 49,
       "total_assets": 3680000.0,
       "employer_securities": 3680000.0
@@ -1400,7 +1388,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 124,
+      "total_participants": 121,
       "active_participants": 109,
       "total_assets": 3589192.0,
       "employer_securities": 3152585.0
@@ -1412,7 +1400,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2019,
       "is_ksop": false,
-      "total_participants": 270,
+      "total_participants": 219,
       "active_participants": 175,
       "total_assets": 3483990.0,
       "employer_securities": 560000.0
@@ -1424,7 +1412,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 2015,
       "is_ksop": false,
-      "total_participants": 89,
+      "total_participants": 96,
       "active_participants": 56,
       "total_assets": 3439393.0,
       "employer_securities": 2869080.0
@@ -1436,7 +1424,7 @@
       "industry": "Construction",
       "plan_year_started": 2020,
       "is_ksop": false,
-      "total_participants": 35,
+      "total_participants": 36,
       "active_participants": 32,
       "total_assets": 3389100.0,
       "employer_securities": 3389100.0
@@ -1448,7 +1436,7 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 2008,
       "is_ksop": false,
-      "total_participants": 69,
+      "total_participants": 62,
       "active_participants": 35,
       "total_assets": 3231591.0,
       "employer_securities": 3211063.0
@@ -1460,7 +1448,7 @@
       "industry": "Construction",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 35,
+      "total_participants": 31,
       "active_participants": 27,
       "total_assets": 3216241.0,
       "employer_securities": 3215600.0
@@ -1472,7 +1460,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 2022,
       "is_ksop": true,
-      "total_participants": 23,
+      "total_participants": 24,
       "active_participants": 18,
       "total_assets": 3149295.0,
       "employer_securities": 1392849.0
@@ -1484,7 +1472,7 @@
       "industry": "Retail Trade",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 43,
+      "total_participants": 36,
       "active_participants": 32,
       "total_assets": 3012910.0,
       "employer_securities": 3012900.0
@@ -1508,7 +1496,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 1997,
       "is_ksop": false,
-      "total_participants": 21,
+      "total_participants": 17,
       "active_participants": 15,
       "total_assets": 2798182.0,
       "employer_securities": 2766664.0
@@ -1520,7 +1508,7 @@
       "industry": "Construction",
       "plan_year_started": 2003,
       "is_ksop": false,
-      "total_participants": 78,
+      "total_participants": 70,
       "active_participants": 47,
       "total_assets": 2616526.0,
       "employer_securities": 2610998.0
@@ -1532,22 +1520,10 @@
       "industry": "Manufacturing",
       "plan_year_started": 1991,
       "is_ksop": false,
-      "total_participants": 54,
+      "total_participants": 56,
       "active_participants": 37,
       "total_assets": 2438866.0,
       "employer_securities": 1709633.0
-    },
-    {
-      "plan_name": "FORGE GROUP, INC. ESOP",
-      "sponsor": "Forge Group, Inc.",
-      "city": "Worcester",
-      "industry": "Finance & Insurance",
-      "plan_year_started": 2021,
-      "is_ksop": false,
-      "total_participants": 25,
-      "active_participants": 19,
-      "total_assets": 2401084.0,
-      "employer_securities": 2400899.0
     },
     {
       "plan_name": "BAXTER EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1556,7 +1532,7 @@
       "industry": "Construction",
       "plan_year_started": 2020,
       "is_ksop": false,
-      "total_participants": 14,
+      "total_participants": 17,
       "active_participants": 15,
       "total_assets": 2375055.0,
       "employer_securities": 2375000.0
@@ -1568,7 +1544,7 @@
       "industry": "Retail Trade",
       "plan_year_started": 2024,
       "is_ksop": false,
-      "total_participants": 32,
+      "total_participants": 29,
       "active_participants": 29,
       "total_assets": 2260037.0,
       "employer_securities": 2260000.0
@@ -1580,7 +1556,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 2014,
       "is_ksop": false,
-      "total_participants": 314,
+      "total_participants": 304,
       "active_participants": 143,
       "total_assets": 2103826.0,
       "employer_securities": 0.0
@@ -1604,7 +1580,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2002,
       "is_ksop": false,
-      "total_participants": 135,
+      "total_participants": 115,
       "active_participants": 94,
       "total_assets": 1891451.0,
       "employer_securities": 1824300.0
@@ -1616,7 +1592,7 @@
       "industry": "Finance & Insurance",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 27,
+      "total_participants": 28,
       "active_participants": 25,
       "total_assets": 1720511.0,
       "employer_securities": 1720511.0
@@ -1628,7 +1604,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2001,
       "is_ksop": false,
-      "total_participants": 59,
+      "total_participants": 53,
       "active_participants": 39,
       "total_assets": 1640008.0,
       "employer_securities": 1228000.0
@@ -1640,7 +1616,7 @@
       "industry": "Construction",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 127,
+      "total_participants": 148,
       "active_participants": 129,
       "total_assets": 1536000.0,
       "employer_securities": 1536000.0
@@ -1676,7 +1652,7 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 14,
+      "total_participants": 13,
       "active_participants": 11,
       "total_assets": 1378528.0,
       "employer_securities": 1273000.0
@@ -1688,7 +1664,7 @@
       "industry": "Construction",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 117,
+      "total_participants": 81,
       "active_participants": 70,
       "total_assets": 1268092.0,
       "employer_securities": 1115040.0
@@ -1700,7 +1676,7 @@
       "industry": "Retail Trade",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 76,
+      "total_participants": 51,
       "active_participants": 43,
       "total_assets": 1194080.0,
       "employer_securities": 428632.0
@@ -1712,7 +1688,7 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 1997,
       "is_ksop": false,
-      "total_participants": 16,
+      "total_participants": 15,
       "active_participants": 14,
       "total_assets": 1064068.0,
       "employer_securities": 1064068.0
@@ -1724,7 +1700,7 @@
       "industry": "Construction",
       "plan_year_started": 2020,
       "is_ksop": false,
-      "total_participants": 64,
+      "total_participants": 58,
       "active_participants": 41,
       "total_assets": 1043428.0,
       "employer_securities": 930000.0
@@ -1736,7 +1712,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2020,
       "is_ksop": false,
-      "total_participants": 31,
+      "total_participants": 24,
       "active_participants": 21,
       "total_assets": 1031367.0,
       "employer_securities": 1016000.0
@@ -1748,7 +1724,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2015,
       "is_ksop": true,
-      "total_participants": 85,
+      "total_participants": 51,
       "active_participants": 51,
       "total_assets": 893543.0,
       "employer_securities": 687353.0
@@ -1760,7 +1736,7 @@
       "industry": "Retail Trade",
       "plan_year_started": 2020,
       "is_ksop": false,
-      "total_participants": 39,
+      "total_participants": 40,
       "active_participants": 25,
       "total_assets": 810000.0,
       "employer_securities": 810000.0
@@ -1772,7 +1748,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 1986,
       "is_ksop": false,
-      "total_participants": 36,
+      "total_participants": 34,
       "active_participants": 20,
       "total_assets": 779311.0,
       "employer_securities": 565119.0
@@ -1784,7 +1760,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2024,
       "is_ksop": false,
-      "total_participants": 29,
+      "total_participants": 32,
       "active_participants": 32,
       "total_assets": 704824.0,
       "employer_securities": 368321.0
@@ -1808,7 +1784,7 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 63,
+      "total_participants": 54,
       "active_participants": 52,
       "total_assets": 624528.0,
       "employer_securities": 624358.0
@@ -1820,7 +1796,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 57,
+      "total_participants": 53,
       "active_participants": 43,
       "total_assets": 561263.0,
       "employer_securities": 293707.0
@@ -1832,7 +1808,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 1988,
       "is_ksop": false,
-      "total_participants": 5,
+      "total_participants": 3,
       "active_participants": 3,
       "total_assets": 504065.0,
       "employer_securities": 504065.0
@@ -1844,7 +1820,7 @@
       "industry": "Administrative & Waste Services",
       "plan_year_started": 2019,
       "is_ksop": false,
-      "total_participants": 160,
+      "total_participants": 140,
       "active_participants": 89,
       "total_assets": 498477.0,
       "employer_securities": 58000.0
@@ -1856,7 +1832,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2010,
       "is_ksop": false,
-      "total_participants": 34,
+      "total_participants": 45,
       "active_participants": 35,
       "total_assets": 350549.0,
       "employer_securities": 296938.0
@@ -1868,7 +1844,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 249,
+      "total_participants": 223,
       "active_participants": 204,
       "total_assets": 192000.0,
       "employer_securities": 192000.0
@@ -1880,7 +1856,7 @@
       "industry": "Construction",
       "plan_year_started": 2015,
       "is_ksop": false,
-      "total_participants": 31,
+      "total_participants": 28,
       "active_participants": 19,
       "total_assets": 145245.0,
       "employer_securities": null
@@ -1892,7 +1868,7 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 1990,
       "is_ksop": false,
-      "total_participants": 12,
+      "total_participants": 11,
       "active_participants": 10,
       "total_assets": 114538.0,
       "employer_securities": 114538.0
@@ -1904,7 +1880,7 @@
       "industry": "Education",
       "plan_year_started": 2024,
       "is_ksop": true,
-      "total_participants": 15,
+      "total_participants": 13,
       "active_participants": 13,
       "total_assets": 1000.0,
       "employer_securities": 1000.0

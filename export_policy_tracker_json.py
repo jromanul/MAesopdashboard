@@ -224,11 +224,10 @@ def build():
                           "winding down. Use for year-over-year trend lines."),
             },
             "caveats": [
-                ("total_participants is the plan total at the BEGINNING of the plan year "
-                 "(Form 5500 line 5); active_participants is current employees at the END "
-                 "of the year (line 6a). The two sit on different dates, so a growing plan "
-                 "can show more active than total. Line 5 is used in every year so the "
-                 "series stays comparable."),
+                ("total_participants is the plan total at the END of the plan year "
+                 "(Form 5500 line 6f: current employees, retirees, former employees still "
+                 "owed a balance, beneficiaries); active_participants is current employees "
+                 "on the same date (line 6a)."),
                 ("employer_securities (company stock) is Schedule H line 1d(1) for large "
                  "plans and Schedule I line 3d for small plans. null means the plan left "
                  "the line blank, which is not the same as zero."),
@@ -236,8 +235,9 @@ def build():
                  "Schedule H or I, as filed."),
                 ("A form year keeps growing for roughly 18 months as fiscal-year and extended "
                  "filers arrive, so the most recent year is not final."),
-                ("Ordinary 401(k)/savings plans at large public companies that merely offer "
-                 "employer stock are deliberately excluded; they are not employee-owned firms."),
+                ("Every ESOP of a Massachusetts-based employer is counted, closely held or "
+                 "publicly traded. 401(k)/savings plans that merely offer employer stock are "
+                 "not ESOPs and are excluded."),
             ],
         },
         "headline": headline,

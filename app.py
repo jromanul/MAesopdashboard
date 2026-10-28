@@ -627,13 +627,11 @@ if f5500_summaries:
                 f"winding down) or are on a short list of known wind-down plans. "
                 f"Click a numeric column heading to sort; the table scrolls sideways.")
             st.caption(
-                "**Participants** is the plan's total at the *beginning* of the plan "
-                "year (Form 5500 line 5) and includes retirees and former employees still "
-                "owed a balance; **Active Participants** counts current employees at the "
-                "*end* of the year (line 6a). The two sit on different dates, so a plan "
-                "that grew during the year can show more active participants than total. "
-                "Dollar figures are end-of-year values as filed; — means the plan did "
-                "not report the item.")
+                "**Participants** is the plan's total at the *end* of the plan year "
+                "(Form 5500 line 6f) and includes retirees, former employees still owed "
+                "a balance and beneficiaries; **Active Participants** counts current "
+                "employees on the same date (line 6a). Dollar figures are end-of-year "
+                "values as filed; — means the plan did not report the item.")
         else:
             st.info("No filing-level data available.")
 
@@ -977,9 +975,10 @@ if f5500_summaries:
         _page_head(
             f"Form year {latest_year}",
             "Geography",
-            "Where Massachusetts ESOP sponsors are based, by the city on each plan's "
-            "Form 5500 mailing address. Villages and neighborhoods are rolled into their "
-            "municipality (e.g. Hyannis → Barnstable, Allston → Boston).")
+            "Where Massachusetts ESOP sponsors are based, by the city of each "
+            "sponsor's Massachusetts headquarters (normally the mailing address on its "
+            "Form 5500). Villages and neighborhoods are rolled into their municipality "
+            "(e.g. Hyannis → Barnstable, Allston → Boston).")
 
         _basis = st.radio(
             "Plans shown",
@@ -1025,9 +1024,8 @@ if f5500_summaries:
             else:
                 _chart(charts.build_f5500_city_map(city_data))
             st.caption("Hover over a municipality for its plans, participants and assets. "
-                       "Location is the sponsor's mailing address on the return, which for "
-                       "a few companies is a headquarters or administrator rather than "
-                       "where most employees work.")
+                       "Location is the sponsor's headquarters, which for some companies "
+                       "is not where most employees work.")
         else:
             st.info("No geographic data available.")
 
@@ -1086,7 +1084,7 @@ if f5500_summaries:
             _render_metric(mcol2, f"{_n_new:,}", "Sponsors new to the dataset",
                            "No earlier ESOP return under their EIN or name", ma=True)
             _render_metric(mcol3, f"{_tot_p:,}", "Participants (returns so far)",
-                           "Beginning-of-year totals", ma=True)
+                           "Year-end totals (line 6f)", ma=True)
             _render_metric(mcol4,
                            _money(sum(_assets_known), 2) if _assets_known else "N/A",
                            "Plan assets (returns so far)",
@@ -1158,10 +1156,10 @@ if f5500_summaries:
         f'{config.DOL_RELEASE_DATE}). Individual filings are public at '
         f'<a href="{config.DOL_FORM_5500_URL}" target="_blank" rel="noopener">efast.dol.gov</a>.'
         f'</p></div>'
-        f'<div><h6>Which plans are counted</h6><p>A plan is included when its sponsor\'s '
-        f'mailing address is in Massachusetts and its return carries an ESOP feature code '
-        f'(2O, 2P or 2Q). 401(k) plans at large public companies that merely offer '
-        f'company stock are excluded. <b>Active</b> plans report at least one current '
+        f'<div><h6>Which plans are counted</h6><p>Every ESOP of a Massachusetts-based '
+        f'employer: the return carries an ESOP feature code (2O, 2P or 2Q) and the company '
+        f'is headquartered in Massachusetts. 401(k) plans that merely offer company stock '
+        f'are not ESOPs and are excluded. <b>Active</b> plans report at least one current '
         f'employee as a participant.</p></div>'
         f'<div><h6>Timeliness</h6><p>Plans file up to 9½ months after their plan year '
         f'ends, so the newest form year keeps growing. This edition reflects every return '

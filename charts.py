@@ -429,7 +429,7 @@ def build_f5500_participant_histogram(partcp_values: list[int]) -> go.Figure:
         hovertemplate="%{x}: %{y} plans<extra></extra>",
     ))
     _apply_layout(fig, title="Active Plans by Number of Participants",
-                  y_title="Active plans", x_title="Participants (beginning of plan year)",
+                  y_title="Active plans", x_title="Participants (end of plan year)",
                   source="U.S. DOL Form 5500 (EFAST2 bulk data)",
                   height=config.CHART_HEIGHT_MD + 30, bottom=128)
     fig.update_xaxes(tickangle=-35)

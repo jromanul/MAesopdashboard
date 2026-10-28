@@ -87,28 +87,23 @@ KNOWN_NOT_TRACKED: dict[tuple[str, str], tuple] = {
     ("352223136", "1"): (None, "Ranella Hirsch MD PC 401(k): two-person 401(k); 2Q with no ESOP code"),
     ("42765092", "1"): (None, "Berman Donovan Stern & Wood, LLP profit-sharing plan: a partnership "
                               "has no stock for an ESOP to hold; 2P is a coding error"),
-    ("42193872", "3"): (None, "Nypro Inc. Defined Contribution Plan: post-acquisition (Jabil, 2013) "
-                              "DC plan, not an employee-owned company"),
+    ("42193872", "3"): (None, "Nypro Inc. Defined Contribution Plan: not an ESOP - no employer "
+                              "securities on any return; 2P appears on the 2014 return only"),
     ("41782600", "2"): (None, "Rockland Trust 'EE Savings PS and Stock Ownership Plan': a 401(k) "
                               "savings plan with no ESOP code at a public bank (surfaces only in "
                               "the name-based coverage check)"),
-    ("42079638", "1"): ({2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025},
-                        "Haberman Insurance: plan renamed from '401(K) AND ESOP' to '401(K) PROFIT "
-                        "SHARING' for 2017 and reports $0 employer securities; ESOP component ended"),
-    ("50309452", "2"): (None, "Gripnail Corporation: Rhode Island company; MA mailing address only "
-                              "from 2019, by which point it had no active participants"),
-    # Bank ESOPs at publicly traded or acquired banks, classed as investor-owned
-    # on 2026-05-30 (commit 0d3403e). Open question for the dashboard's owner,
-    # raised in the October 2026 refresh: several other public-bank ESOPs
-    # (Brookline, Eastern, Western New England, HarborOne, ...) ARE tracked, so
-    # the two treatments should be reconciled one way or the other.
-    ("41956610", "3"): (None, "Wellesley Bank ESOP: classed investor-owned (public bank, minority stake)"),
-    ("41782600", "1"): (None, "Peoples Federal Savings Bank ESOP filed by Rockland Trust after its "
-                              "2015 acquisition: classed investor-owned"),
-    ("41174490", "3"): ({2017}, "Chicopee Savings Bank ESOP final return after the 2016 acquisition "
-                                "by Westfield Financial: classed investor-owned"),
+    ("42079638", "1"): ({2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025},
+                        "Haberman Insurance: the 401(k) and ESOP was renamed '401(K) PROFIT SHARING' "
+                        "and sold its company stock during 2017 (counted for 2017); from 2018 it is "
+                        "an ordinary 401(k)"),
+    # Bank ESOPs at publicly traded or acquired banks are counted like every
+    # other ESOP (owner's decision, 2026-10-28): Wellesley Bank, Peoples Federal
+    # and Chicopee's 2017 final return, once excluded here as "investor-owned",
+    # are tracked.
     # The same plan filed under a second EIN or plan number in a transition
     # year. The copy already tracked carries identical figures.
+    ("41366970", "7"): ({2021}, "The Gillette Company: original 2021 return under the old EIN; the "
+                                "plan year is tracked from its amended re-filing under EIN 813268325"),
     ("42401206", "2"): ({2020}, "Northern Tree Holdco: duplicate of the EIN 851665706 return"),
     ("884313116", "2"): ({2022}, "Feinmann, Inc.: duplicate of the EIN 043104386 return"),
     ("42606179", "2"): ({2022}, "Erland Construction, Inc.: duplicate of the EIN 043579044 return"),
@@ -124,21 +119,34 @@ KNOWN_NOT_TRACKED: dict[tuple[str, str], tuple] = {
                                  "is tracked as PN 002"),
 }
 
-# Plan-years whose stored participant counts deliberately differ from the
-# filed line-5 figure. Each filing reports a beginning-of-year total far below
-# its own active count because the plan year began before the plan was
-# populated (a new plan, or a restructured fiscal year), so the dataset carries
-# the end-of-year count instead. Verification reports them as overrides, not
-# mismatches, and nothing re-derives them away.
-PARTICIPANT_OVERRIDES: dict[tuple[int, str, str], dict] = {
-    (2017, "813645861", "2"): {"total_participants": 789},    # Shawmut Group: BOY 256, active 789
-    (2022, "880825163", "3"): {"total_participants": 20},     # Forge Group: BOY 5, active 20
-    (2023, "42682840", "2"): {"total_participants": 1276},    # Sullivan Investment (859 US ESOP): new plan 2023-02-01, BOY 124
+# Plans confirmed to be a different plan from the one already tracked under the
+# same EIN, so a return is not held back as a possible duplicate merely because
+# its EIN files another tracked plan that year. Keyed by (EIN, plan number).
+DISTINCT_PLANS: dict[tuple[str, str], str] = {
+    ("41782600", "1"): "Peoples Federal Savings Bank ESOP, filed by Rockland Trust after the 2015 "
+                       "acquisition; Rockland's plan 004 is the Central Co-operative Bank ESOP",
+    ("43130808", "4"): "Meetinghouse Bank ESOP, filed by East Boston Savings Bank after the 2017 "
+                       "acquisition; EBSB's own ESOP is plan 003",
+    ("41858810", "4"): "United Bank's own ESOP (effective 2005); plan 003 under the same EIN is the "
+                       "New England Bank ESOP it acquired in 2012",
 }
 
+# Plan-years whose stored participant counts deliberately differ from the
+# return. Empty since the dataset moved to the year-end total (line 6f): the
+# three entries it held (Shawmut Group 2017, Forge Group 2022, Sullivan
+# Investment 2023) substituted a year-end count for a start-of-year line 5 that
+# predated the plan's population, and line 6f now gives those counts directly.
+PARTICIPANT_OVERRIDES: dict[tuple[int, str, str], dict] = {}
+
 # Companies new to the dataset have no prior row to inherit casing from, and
-# .title() mangles initialisms ("FE" -> "Fe") and camel-cased brands.
-NEW_COMPANY_NAMES: dict[str, tuple[str, str]] = {
+# .title() mangles initialisms ("FE" -> "Fe") and camel-cased brands. Keyed by
+# EIN, or by (EIN, plan number) where one EIN files more than one company's plan.
+NEW_COMPANY_NAMES: dict = {
+    ("41782600", "1"): ("Peoples Federal Savings Bank", "Rockland"),  # filed by Rockland Trust
+    ("41858810", "4"): ("United Bank (United Financial Bancorp)", "West Springfield"),
+    ("208447891", "5"): ("LSB Corporation (RiverBank)", "North Andover"),  # filed by People's United
+    ("113431358", "5"): ("Essex County Gas Company (National Grid)", "Amesbury"),  # filed by KeySpan
+    ("41663150", "20"): ("Essex County Gas Company (National Grid)", "Amesbury"),
     "43444078": ("BostonBean Coffee Company, Inc.", "Woburn"),
     "364615460": ("Helical Drilling, Inc.", "Braintree"),
     "200508239": ("Wildlife Acoustics, Inc.", "Maynard"),
@@ -153,12 +161,92 @@ CITY_SPELLINGS: dict[str, str] = {
     "RANDDOLPH": "Randolph",               # Econocorp 2022
     "SO. LANCASTER": "South Lancaster",    # James Monroe Corp. 2020-2023
     "W. SPRINGFIELD": "West Springfield",  # New England Bank 2014
+    "WODBURN": "Woburn",                   # Atlantic Plywood, plan-year-2019 final return
+}
+
+# Plans whose return address is not where the covered company is based. Only
+# Massachusetts-based ESOPs are counted (owner's decision, 2026-10-28), and
+# "based" means the headquarters of the employer the plan covers - normally,
+# but not always, the address on its Form 5500. Keyed by (EIN, plan number):
+# (years or None, Massachusetts-based?, home city or None, reason). A True entry
+# counts a Massachusetts company whose parent or administrator files from
+# another state; a False entry leaves out a company based elsewhere whose
+# return carries a Massachusetts address (an acquirer's, lawyer's or
+# administrator's). Each entry was researched and independently reviewed.
+MA_BASED_OVERRIDES: dict[tuple[str, str], tuple] = {
+    # Massachusetts companies whose ESOP returns are filed from another state.
+    ("41366970", "7"): (None, True, "Boston",
+                        "The Gillette Company: 2016-2021 returns are mailed from Procter & Gamble's "
+                        "Cincinnati benefits office; Gillette stayed at 1 Gillette Park, Boston, "
+                        "where the same EIN's other plan files"),
+    ("41549430", "3"): (None, True, "Plympton",
+                        "Litecontrol Corporation, a Plympton lighting maker bought by Hubbell in "
+                        "2014; its 2014 return is mailed c/o Hubbell, Shelton, CT"),
+    ("455266171", "3"): (None, True, "Plympton",
+                         "Litecontrol's ESOP, final 2015 return filed by Hubbell's Newco Lighting "
+                         "from Shelton, CT"),
+    ("43050515", "2"): (None, True, "Agawam",
+                        "Environmental Compliance Services (Agawam): ESOP wound down in 2017-2018 by "
+                        "ECS Holdco from West Hartford, CT after the company's sale"),
+    ("41858810", "4"): ({2014}, True, "West Springfield",
+                        "United Bank's own ESOP: the bank was in West Springfield until its April "
+                        "2014 merger with Rockville Financial; the return is filed from Glastonbury, CT"),
+    ("61213065", "19"): (None, True, "Belmont",
+                         "Belmont Savings Bank's ESOP, wound down 2018-2020 by People's United "
+                         "(Bridgeport, CT) after it acquired BSB Bancorp"),
+    ("208447891", "5"): (None, True, "North Andover",
+                         "LSB Corporation / RiverBank's ESOP, final 2014 return filed by People's "
+                         "United from Bridgeport, CT"),
+    ("113431358", "5"): (None, True, "Amesbury",
+                         "Essex County Gas Company's legacy ESOP (Amesbury), filed by its parent "
+                         "KeySpan from New York"),
+    ("41663150", "20"): (None, True, "Amesbury",
+                         "the same Essex County Gas Company ESOP, filed by National Grid USA "
+                         "Service Company from 2018"),
+    # Companies based elsewhere whose returns carry a Massachusetts address.
+    ("461710155", "3"): (None, False, None,
+                         "Coastway Community Bank was based in Warwick, RI; HarborOne wound its "
+                         "ESOP down from Brockton in 2018-2019"),
+    ("41858810", "3"): ({2014}, False, None,
+                        "New England Bank's ESOP: New England Bancshares was an Enfield, CT bank; "
+                        "United Bank wound the plan down from West Springfield"),
+    ("20452307", "2"): (None, False, None,
+                        "Dynamic Air Corporation is in West Kennebunk, ME; its 2020 and 2023 "
+                        "returns use a Boston mail-forwarding box"),
+    ("880825163", "3"): (None, False, None,
+                         "Forge Group, Inc. is a Maryland/DC insurance holding company (Chevy "
+                         "Chase / Bethesda); its returns use a Worcester P.O. box"),
+    ("842403043", "3"): (None, False, None,
+                         "Manganaro North America is run from Beltsville, MD (its executives, back "
+                         "office and the same EIN's 401(k) all file from there); the ESOP's Woburn "
+                         "address is its Manganaro Northeast subsidiary's office"),
+    ("50309452", "2"): (None, False, None,
+                        "Gripnail Corporation is in East Providence, RI; its returns use a Taunton "
+                        "address only during the 2019-2022 wind-down"),
 }
 
 
 def city_spelling(city: str) -> str:
     c = (city or "").strip()
     return CITY_SPELLINGS.get(c.upper(), c)
+
+
+dol_bulk.EXTRA_PLAN_KEYS.update(k for k, v in MA_BASED_OVERRIDES.items() if v[1])
+
+
+def _ma_override(ein: str, pn: str, year: int):
+    hit = MA_BASED_OVERRIDES.get((ein, pn))
+    return hit if hit and (hit[0] is None or year in hit[0]) else None
+
+
+def is_ma_based(ein: str, pn: str, year: int, rec: dict) -> bool:
+    """Is this plan-year's covered company based in Massachusetts? The return's
+    mailing address decides (dol_bulk.is_ma_address) unless MA_BASED_OVERRIDES
+    holds a reviewed answer for the plan and year."""
+    hit = _ma_override(ein, pn, year)
+    if hit:
+        return hit[1]
+    return dol_bulk.is_ma_address(rec["state"], rec["sponsor_zip"])
 
 
 def not_tracked_reason(ein: str, pn: str, year: int, plan_name: str = "") -> str | None:
@@ -244,15 +332,19 @@ def sf_esop_returns(year: int) -> dict:
     return out
 
 
-def _prior_row(conn, ein: str, year: int):
-    """The EIN's most recent earlier row; failing that, its nearest later one, so
-    a year recovered before a plan's first tracked year (a late or dropped
-    return) still reads like the plan's other years."""
+def _prior_row(conn, ein: str, year: int, pn: str | None = None):
+    """The most recent earlier row of the EIN (of the plan, when ``pn`` is given);
+    failing that, its nearest later one, so a year recovered before a plan's
+    first tracked year (a late or dropped return) still reads like the plan's
+    other years."""
     cols = "SELECT sponsor_name, sponsor_city, naics_code, industry_sector FROM form5500_filings "
-    return (conn.execute(cols + "WHERE ltrim(ein,'0')=? AND filing_year<? "
-                         "ORDER BY filing_year DESC LIMIT 1", (ein, year)).fetchone()
-            or conn.execute(cols + "WHERE ltrim(ein,'0')=? AND filing_year>? "
-                            "ORDER BY filing_year LIMIT 1", (ein, year)).fetchone())
+    where, args = "WHERE ltrim(ein,'0')=? ", [ein]
+    if pn is not None:
+        where, args = where + "AND ltrim(plan_num,'0')=? ", args + [pn]
+    return (conn.execute(cols + where + "AND filing_year<? ORDER BY filing_year DESC LIMIT 1",
+                         args + [year]).fetchone()
+            or conn.execute(cols + where + "AND filing_year>? ORDER BY filing_year LIMIT 1",
+                            args + [year]).fetchone())
 
 
 def inherit_city(prior_city: str | None, filed_city: str) -> str:
@@ -270,20 +362,29 @@ def inherit_city(prior_city: str | None, filed_city: str) -> str:
 def build_record(conn, year: int, ret: dict, sched: dict, now: str) -> dict:
     """A form5500_filings row for one return, with inherited casing/industry."""
     money, _src = dol_bulk.financials(sched)
-    prior = _prior_row(conn, ret["ein"], year)
-    if not prior and ret.get("last_rpt_ein"):
-        prior = _prior_row(conn, ret["last_rpt_ein"], year)
+    # The plan's own rows first; then a name reviewed for the plan; then the
+    # EIN's other rows (one EIN can file several companies' plans: Rockland
+    # Trust files acquired banks' ESOPs) and the prior sponsor's.
+    prior = _prior_row(conn, ret["ein"], year, ret["pn"])
+    named = NEW_COMPANY_NAMES.get((ret["ein"], ret["pn"]))
+    if not prior and not named:
+        prior = _prior_row(conn, ret["ein"], year)
+        if not prior and ret.get("last_rpt_ein"):
+            prior = _prior_row(conn, ret["last_rpt_ein"], year)
+    hit = _ma_override(ret["ein"], ret["pn"], year)
     if prior:
         sponsor, naics, sector = prior["sponsor_name"], prior["naics_code"], prior["industry_sector"]
         city = inherit_city(prior["sponsor_city"], ret["sponsor_city"])
     else:
-        sponsor, city = NEW_COMPANY_NAMES.get(
+        sponsor, city = named or NEW_COMPANY_NAMES.get(
             ret["ein"], (ret["sponsor_name"].title(), city_spelling(ret["sponsor_city"]).title()))
         naics = ret["naics_code"]
         sector = fa.NAICS_SECTORS.get(naics[:2], "") if naics else ""
     if not naics:
         naics = ret["naics_code"]
         sector = sector or (fa.NAICS_SECTORS.get(naics[:2], "") if naics else "")
+    if hit and hit[1] and hit[2]:
+        city = hit[2]   # filed from another state; the row carries the company's home
     codes = ret["codes"]
     return {
         "filing_year": year, "ein": ret["ein"], "plan_num": ret["pn"],
@@ -302,13 +403,14 @@ def build_record(conn, year: int, ret: dict, sched: dict, now: str) -> dict:
 def gather(year: int, db_keys: set | None = None):
     """Every return that can represent a plan in the form year, and their schedules.
 
-    Reads the year's Latest and All files, later forms for late returns, and for
-    the open year the previous form's short final years (dol_bulk.returns_for_year).
+    Reads the year's Latest and All files, later forms for late returns, and the
+    previous form for short final years (dol_bulk.returns_for_year).
     ``db_keys`` pulls in the returns of plans already tracked even when their
     latest return dropped its ESOP code, so they are verified, not lost.
+    Massachusetts-based plans that file from another state are always read
+    (dol_bulk.EXTRA_PLAN_KEYS).
     """
-    returns = dol_bulk.returns_for_year(year, extra_keys=db_keys,
-                                        open_year=config.FORM5500_OPEN_FORM_YEAR)
+    returns = dol_bulk.returns_for_year(year, extra_keys=db_keys)
     returns = drop_name_scoped_exclusions(year, returns)
     return returns, dol_bulk.schedules_for_returns(returns)
 
@@ -326,8 +428,7 @@ def classify(conn, year: int, returns: dict):
         if key in db_year:
             continue
         rec = dol_bulk.canonical_return(year, lst)
-        if not dol_bulk.is_ma_address(rec["state"], rec["sponsor_zip"]) or \
-                not dol_bulk.has_esop_code(rec["codes"]):
+        if not is_ma_based(key[0], key[1], year, rec) or not dol_bulk.has_esop_code(rec["codes"]):
             continue
         if rec["plan_year_begin"][:4] != str(year):
             continue  # a next-year return filed early on this form; belongs to that year
@@ -340,7 +441,7 @@ def classify(conn, year: int, returns: dict):
             dupes.append((key, rec, f"LAST_RPT_SPONS_EIN {rec['last_rpt_ein']} already tracked for {year}"))
         elif same_name and same_name != key[0]:
             dupes.append((key, rec, f"name matches existing {year} EIN {same_name}"))
-        elif key[0] in db_eins_year:
+        elif key[0] in db_eins_year and key not in DISTINCT_PLANS:
             dupes.append((key, rec, f"EIN already tracked for {year} under another plan number"))
         elif key[0] in db_eins_all:
             returning.append((key, rec))
@@ -356,8 +457,6 @@ def verify(year: int, db_year: dict, returns: dict, sched: dict):
         lst = returns.get(key)
         if not lst:
             continue
-        if year == config.FORM5500_OPEN_FORM_YEAR:
-            lst = [x for x in lst if x["plan_year_begin"][:4] == str(year)] or lst
         ret = dol_bulk.canonical_return(year, lst)
         label = f"{row['sponsor_name']} (EIN {row['ein']})"
         ov = PARTICIPANT_OVERRIDES.get((year, key[0], key[1]), {})
@@ -367,7 +466,8 @@ def verify(year: int, db_year: dict, returns: dict, sched: dict):
                 continue
             (overrides if fld in ov else mismatches).append(
                 (label, fld, dbv, int(dolv), "F_5500"))
-        if ret["sponsor_city"] and row["sponsor_city"] and \
+        filed_elsewhere = not dol_bulk.is_ma_address(ret["state"], ret["sponsor_zip"])
+        if ret["sponsor_city"] and row["sponsor_city"] and not filed_elsewhere and \
                 city_spelling(ret["sponsor_city"]).lower() != str(row["sponsor_city"]).strip().lower():
             mismatches.append((label, "sponsor_city", row["sponsor_city"], ret["sponsor_city"], "F_5500"))
         money, src = dol_bulk.financials(sched.get(ret["ack_id"], {}))
