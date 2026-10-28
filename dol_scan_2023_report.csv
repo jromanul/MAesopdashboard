@@ -1,4 +1,6 @@
 bucket,sponsor_name,city,ein,plan_num,source,participants,detail
 EXCLUDED,WATERS TECHNOLOGIES CORPORATION,MILFORD,043234558,002,F_5500,4380.0,Waters Technologies (NYSE: WAT) - 'THE WATERS EMPLOYEE INVESTMENT PLAN'
 EXCLUDED,"CRANE NXT, CO.",WALTHAM,880706021,001,F_5500,2071.0,"Crane NXT, Co. (NYSE: CXT) - 'CRANE NXT, CO. SAVINGS AND INVESTMENT PLAN'"
+EXCLUDED,"FORGE GROUP, INC.",WORCESTER,880825163,003,F_5500,20.0,"not Massachusetts-based: Forge Group, Inc. is a Maryland/DC insurance holding company (Chevy Chase / Bethesda); its returns use a Worcester P.O. box"
 EXCLUDED,CABOT CORPORATION,BILLERICA,042271897,022,F_5500,1910.0,"Cabot Corporation (NYSE: CBT) - 'CABOT 401(K) PLAN', 2O alongside 2J/2K"
+EXCLUDED,DYNAMIC AIR CORP.,BOSTON,020452307,002,F_5500,0.0,"not Massachusetts-based: Dynamic Air Corporation is in West Kennebunk, ME; its 2020 and 2023 returns use a Boston mail-forwarding box"

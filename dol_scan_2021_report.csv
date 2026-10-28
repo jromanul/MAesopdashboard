@@ -2,6 +2,8 @@ bucket,sponsor_name,city,ein,plan_num,source,participants,detail
 EXCLUDED,THE GILLETTE COMPANY,CINCINNATI,041366970,007,F_5500,1354.0,The Gillette Company: original 2021 return under the old EIN; the plan year is tracked from its amended re-filing under EIN 813268325
 EXCLUDED,RAYTHEON TECHNOLOGIES CORPORATION,WALTHAM,060570975,017,F_5500,112933.0,"RTX / United Technologies - 'EMPLOYEE SAVINGS PLAN', 2P alongside 2J/2K"
 EXCLUDED,RAYTHEON COMPANY,WALTHAM,951778500,026,F_5500,90333.0,"Raytheon Company - 'RAYTHEON SAVINGS AND INVESTMENT PLAN', 2O alongside 2J/2K"
+EXCLUDED,"FORGE GROUP, INC.",WORCESTER,880825163,003,F_5500,20.0,"not Massachusetts-based: Forge Group, Inc. is a Maryland/DC insurance holding company (Chevy Chase / Bethesda); its returns use a Worcester P.O. box"
 EXCLUDED,CABOT CORPORATION,BILLERICA,042271897,022,F_5500,2053.0,"Cabot Corporation (NYSE: CBT) - 'CABOT 401(K) PLAN', 2O alongside 2J/2K"
 EXCLUDED,STATE STREET CORPORATION,BOSTON,042456637,002,F_5500,20990.0,"State Street Corporation (NYSE: STT) - 'SALARY SAVINGS PROGRAM', 2O alongside 2J/2K"
 EXCLUDED,"BERMAN DONOVAN STERN & WOOD, LLP",BOSTON,042765092,001,F_5500,56.0,"Berman Donovan Stern & Wood, LLP profit-sharing plan: a partnership has no stock for an ESOP to hold; 2P is a coding error"
+EXCLUDED,GRIPNAIL CORPORATION,TAUNTON,050309452,002,F_5500,1.0,"not Massachusetts-based: Gripnail Corporation is in East Providence, RI; its returns use a Taunton address only during the 2019-2022 wind-down"

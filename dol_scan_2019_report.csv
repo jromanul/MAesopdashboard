@@ -1,5 +1,7 @@
 bucket,sponsor_name,city,ein,plan_num,source,participants,detail
+EXCLUDED,COASTWAY COMMUNITY BANK,BROCKTON,461710155,003,F_5500,0.0,"not Massachusetts-based: Coastway Community Bank was based in Warwick, RI; HarborOne wound its ESOP down from Brockton in 2018-2019"
 EXCLUDED,RANELLA HIRSCH MD PC,CAMBRIDGE,352223136,001,F_5500,0.0,Ranella Hirsch MD PC 401(k): two-person 401(k); 2Q with no ESOP code
 EXCLUDED,RAYTHEON COMPANY,WALTHAM,951778500,026,F_5500,91450.0,"Raytheon Company - 'RAYTHEON SAVINGS AND INVESTMENT PLAN', 2O alongside 2J/2K"
+EXCLUDED,GRIPNAIL CORPORATION,TAUNTON,050309452,002,F_5500,39.0,"not Massachusetts-based: Gripnail Corporation is in East Providence, RI; its returns use a Taunton address only during the 2019-2022 wind-down"
 EXCLUDED,CABOT CORPORATION,BILLERICA,042271897,022,F_5500,2183.0,"Cabot Corporation (NYSE: CBT) - 'CABOT 401(K) PLAN', 2O alongside 2J/2K"
 EXCLUDED,STATE STREET CORPORATION,BOSTON,042456637,002,F_5500,23944.0,"State Street Corporation (NYSE: STT) - 'SALARY SAVINGS PROGRAM', 2O alongside 2J/2K"

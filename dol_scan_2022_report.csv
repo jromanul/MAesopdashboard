@@ -1,6 +1,8 @@
 bucket,sponsor_name,city,ein,plan_num,source,participants,detail
 EXCLUDED,CABOT CORPORATION,BILLERICA,042271897,022,F_5500,1974.0,"Cabot Corporation (NYSE: CBT) - 'CABOT 401(K) PLAN', 2O alongside 2J/2K"
+EXCLUDED,"FORGE GROUP, INC.",WORCESTER,880825163,003,F_5500,20.0,"not Massachusetts-based: Forge Group, Inc. is a Maryland/DC insurance holding company (Chevy Chase / Bethesda); its returns use a Worcester P.O. box"
 EXCLUDED,"FEINMANN, INC.",LEXINGTON,884313116,002,F_5500,23.0,"Feinmann, Inc.: duplicate of the EIN 043104386 return"
 EXCLUDED,WATERS TECHNOLOGIES CORPORATION,MILFORD,043234558,002,F_5500,4378.0,Waters Technologies (NYSE: WAT) - 'THE WATERS EMPLOYEE INVESTMENT PLAN'
 EXCLUDED,STATE STREET CORPORATION,BOSTON,042456637,002,F_5500,22027.0,"State Street Corporation (NYSE: STT) - 'SALARY SAVINGS PROGRAM', 2O alongside 2J/2K"
 EXCLUDED,"ERLAND CONSTRUCTION, INC.",BURLINGTON,042606179,002,F_5500,103.0,"Erland Construction, Inc.: duplicate of the EIN 043579044 return"
+EXCLUDED,GRIPNAIL CORPORATION,TAUNTON,050309452,002,F_5500,0.0,"not Massachusetts-based: Gripnail Corporation is in East Providence, RI; its returns use a Taunton address only during the 2019-2022 wind-down"

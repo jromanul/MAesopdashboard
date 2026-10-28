@@ -1,3 +1,5 @@
 bucket,sponsor_name,city,ein,plan_num,source,participants,detail
 POSSIBLE_DUPE,AVIDIA BANK,HUDSON,043395834,002,F_5500,235.0,EIN already tracked for 2025 under another plan number
 EXCLUDED,"CRANE NXT, CO.",WALTHAM,880706021,001,F_5500,2528.0,"Crane NXT, Co. (NYSE: CXT) - 'CRANE NXT, CO. SAVINGS AND INVESTMENT PLAN'"
+EXCLUDED,"MANGANARO NORTH AMERICA, INC.",WOBURN,842403043,003,F_5500,203.0,"not Massachusetts-based: Manganaro North America is run from Beltsville, MD (its executives, back office and the same EIN's 401(k) all file from there); the ESOP's Woburn address is its Manganaro Northeast subsidiary's office"
+EXCLUDED,"FORGE GROUP, INC.",WORCESTER,880825163,003,F_5500,26.0,"not Massachusetts-based: Forge Group, Inc. is a Maryland/DC insurance holding company (Chevy Chase / Bethesda); its returns use a Worcester P.O. box"
