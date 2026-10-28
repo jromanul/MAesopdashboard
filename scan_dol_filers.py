@@ -428,10 +428,15 @@ def classify(conn, year: int, returns: dict):
         if key in db_year:
             continue
         rec = dol_bulk.canonical_return(year, lst)
-        if not is_ma_based(key[0], key[1], year, rec) or not dol_bulk.has_esop_code(rec["codes"]):
+        if not dol_bulk.has_esop_code(rec["codes"]):
             continue
         if rec["plan_year_begin"][:4] != str(year):
             continue  # a next-year return filed early on this form; belongs to that year
+        if not is_ma_based(key[0], key[1], year, rec):
+            hit = _ma_override(key[0], key[1], year)
+            if hit:  # reviewed: a company based elsewhere, with a Massachusetts address
+                excluded.append((key, rec, f"not Massachusetts-based: {hit[3]}"))
+            continue
         why = not_tracked_reason(key[0], key[1], year, rec["plan_name"])
         if why:
             excluded.append((key, rec, why))
