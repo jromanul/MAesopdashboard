@@ -7,3 +7,13 @@ EXCLUDED,CABOT CORPORATION,BILLERICA,042271897,022,F_5500,2053.0,"Cabot Corporat
 EXCLUDED,STATE STREET CORPORATION,BOSTON,042456637,002,F_5500,20990.0,"State Street Corporation (NYSE: STT) - 'SALARY SAVINGS PROGRAM', 2O alongside 2J/2K"
 EXCLUDED,"BERMAN DONOVAN STERN & WOOD, LLP",BOSTON,042765092,001,F_5500,56.0,"Berman Donovan Stern & Wood, LLP profit-sharing plan: a partnership has no stock for an ESOP to hold; 2P is a coding error"
 EXCLUDED,GRIPNAIL CORPORATION,TAUNTON,050309452,002,F_5500,1.0,"not Massachusetts-based: Gripnail Corporation is in East Providence, RI; its returns use a Taunton address only during the 2019-2022 wind-down"
+FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,F_5500,,total_participants: DB=53 DOL=60
+FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,F_5500,,active_participants: DB=45 DOL=47
+FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,F_5500,,sponsor_city: DB=Holliston DOL=MASHPEE
+FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,F_5500,,sponsor_zip: DB=01746 DOL=02649
+FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,SCH_I,,total_assets: DB=2152000.0 DOL=2670400.0
+FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,SCH_I,,total_liabilities: DB=10867162.0 DOL=10995688.0
+FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,SCH_I,,employer_securities: DB=2152000.0 DOL=2670400.0
+FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,SCH_I,,employer_contributions: DB=374937.0 DOL=108004.0
+FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,SCH_I,,benefits_paid: DB=8904.0 DOL=None
+FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,SCH_I,,net_income: DB=-389874.0 DOL=1130703.0
