@@ -63,6 +63,13 @@ published figures before October 2026.
    total, is kept on each record as participants_boy for reference: it is
    blank-in-effect for a plan's first year and runs below the active count
    whenever a plan grew during the year.
+
+8. A plan year that begins in the last week of December counts in the
+   following year (plan_year()). Those are 52/53-week fiscal years, or a final
+   return starting on December 31: New England Discount Retailers' plan year of
+   December 26, 2022 to December 31, 2023 is its 2023 year, and counting it in
+   2022 left the ESOP out of 2023 altogether. Savogran's final return from
+   December 31, 2024 covers January-April 2025.
 """
 from __future__ import annotations
 
@@ -196,6 +203,15 @@ def iter_rows(year: int, kind: str, variant: str = "Latest"):
     inner = next(n for n in zf.namelist() if n.lower().endswith(".csv"))
     return csv.DictReader(io.TextIOWrapper(zf.open(inner), encoding="utf-8-sig",
                                            errors="replace"))
+
+
+def plan_year(plan_year_begin: str) -> str:
+    """The year a return counts in: the year its plan year begins, except that
+    a plan year beginning December 25-31 counts in the next year (rule 8)."""
+    d = (plan_year_begin or "").strip()
+    if len(d) >= 10 and d[5:7] == "12" and d[8:10] >= "25" and d[:4].isdigit():
+        return str(int(d[:4]) + 1)
+    return d[:4]
 
 
 def has_esop_code(codes: str) -> bool:
@@ -343,11 +359,12 @@ def returns_for_year(year: int, extra_keys: set | None = None) -> dict:
     form year ``year``:
 
     - every return on the year's own form (Latest and All versions);
-    - MA ESOP returns on any LATER cached form whose plan year begins in ``year``
+    - MA ESOP returns on any LATER cached form whose plan year counts in ``year``
       (late and delinquent filings: Econocorp's 2016-2019 plan years arrived on
       the 2022 form);
-    - MA ESOP returns on the PREVIOUS form whose plan year begins in ``year``
-      (short final years filed early; rule 6).
+    - MA ESOP returns on the PREVIOUS form whose plan year counts in ``year``
+      (short final years filed early, rule 6; plan years beginning in the last
+      week of December, rule 8).
     """
     out: dict = {}
     if has_zip(year, "F_5500") or has_zip(year, "F_5500", "All"):
@@ -359,7 +376,7 @@ def returns_for_year(year: int, extra_keys: set | None = None) -> dict:
         sources.append((year - 1, str(year)))
     for form_year, pyb in sources:
         for k, lst in _ma_esop_returns_cached(form_year).items():
-            hits = [x for x in lst if x["plan_year_begin"][:4] == pyb]
+            hits = [x for x in lst if plan_year(x["plan_year_begin"]) == pyb]
             if hits:
                 have = {x["ack_id"] for x in out.get(k, [])}
                 out.setdefault(k, []).extend(x for x in hits if x["ack_id"] not in have)
@@ -452,7 +469,7 @@ def canonical_return(form_year: int, returns: list[dict]) -> dict:
     the later receipt date.
     """
     def rank(x):
-        return (x["plan_year_begin"][:4] == str(form_year),
+        return (plan_year(x["plan_year_begin"]) == str(form_year),
                 has_esop_code(x["codes"]),
                 STATUS_RANK.get(x.get("filing_status", ""), 0),
                 x["short_year"] != "1",

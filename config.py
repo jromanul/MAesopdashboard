@@ -213,13 +213,15 @@ missed years (for example through DOL's Delinquent Filer Voluntary Compliance pr
 each overdue year on the form current when it files, and a plan that ends early in a year
 files its short final return on the form then current, which is the previous year's. Each
 form year therefore also includes returns on later forms, and on the previous form, whose
-plan year begins in it.
+plan year begins in it. One refinement: a plan year that begins in the last week of December
+(a 52/53-week fiscal year, or a final return starting December 31) counts in the following
+year, the year it covers, so such a plan is not missing from the year it was active.
 
 ### Financial Data
 Financial figures come from the schedule attached to each plan's own return, joined by
 DOL's filing identifier (ACK_ID): **Schedule H** for large plans (generally 100+ participants)
-and **Schedule I** for small plans. Every dollar figure is the **end-of-plan-year** value as
-filed; a blank on the schedule is stored as "not reported" and shown as "—", never "$0".
+and **Schedule I** for small plans. Balances (assets, liabilities, employer securities) are **end-of-plan-year**
+values and contributions, benefits and net income are totals for the plan year, as filed; a blank on the schedule is stored as "not reported" and shown as "—", never "$0".
 
 **Employer securities** (company stock held in the ESOP trust) is Schedule H line 1d(1) for
 large plans and Schedule I line 3d for small plans. A value above the plan's total assets is

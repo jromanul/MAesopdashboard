@@ -548,8 +548,8 @@ def classify(conn, year: int, returns: dict):
         rec = dol_bulk.canonical_return(year, lst)
         if not dol_bulk.has_esop_code(rec["codes"]) and not is_reviewed_esop(key[0], key[1], year):
             continue
-        if rec["plan_year_begin"][:4] != str(year):
-            continue  # a next-year return filed early on this form; belongs to that year
+        if dol_bulk.plan_year(rec["plan_year_begin"]) != str(year):
+            continue  # a return that counts in another year (dol_bulk rules 6 and 8)
         if not is_ma_based(key[0], key[1], year, rec):
             hit = _ma_override(key[0], key[1], year)
             if hit:  # reviewed: a company based elsewhere, with a Massachusetts address
@@ -687,7 +687,7 @@ def main():
                                                   lst[0]["plan_name"] if lst else ""):
             continue
         rec = dol_bulk.canonical_return(y, lst)
-        if rec["plan_year_begin"][:4] == str(y):
+        if dol_bulk.plan_year(rec["plan_year_begin"]) == str(y):
             named.append((key, rec))
     print(f"\n=== {y} name-based coverage check ===")
     if named:

@@ -227,7 +227,9 @@ home (a parent or administrator filing from another state, or an
 out-of-state company using a Massachusetts mailing address); those cases
 are reviewed one by one. No line is drawn by how much of the company the
 ESOP owns, or by whether the company is closely held or publicly traded.
-Each return counts in the form year in which its plan year begins.
+Each return counts in the form year in which its plan year begins (a plan year
+that begins in the last week of December, as a 52/53-week fiscal year can,
+counts in the following year, which it covers).
 
 Deliberately excluded: plans that are not ESOPs - ordinary 401(k)/savings
 plans that carry an ESOP code only because company stock is one investment
