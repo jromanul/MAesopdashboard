@@ -119,6 +119,35 @@ KNOWN_NOT_TRACKED: dict[tuple[str, str], tuple] = {
                                  "is tracked as PN 002"),
 }
 
+# ESOP plan-years whose return carries no ESOP code (2O/2P/2Q), reviewed one by
+# one. The code test would otherwise skip them. Keyed by (EIN, plan number):
+# (years, filed on the 5500-SF?, reason). The 5500-SF cannot carry an ESOP
+# code, so an ESOP that files it is invisible to the code test.
+ESOP_WITHOUT_CODE: dict[tuple[str, str], tuple] = {
+    ("412126830", "2"): ({2014, 2015, 2016, 2017, 2018, 2019}, True,
+                         "BBN Technologies ESOP: the residual plan of BBN's ESOP after Raytheon's "
+                         "2009 acquisition, coded 2E3H; its 2019 final return is on the 2018 5500-SF"),
+    ("43221989", "2"): ({2015}, False, "RCM Services ESOP: its 2015 return is coded 2E only"),
+    ("42318619", "2"): ({2017}, False, "TRO ESOP: its 2017 return is coded 2E only"),
+    ("843556185", "2"): ({2023}, False, "Needham Bank ESOP: its 2023 return carries only 2I; "
+                                        "2I2P3I from 2024"),
+    ("43490470", "2"): ({2019}, True,
+                        "New England Discount Retailers ESOP: its first return (plan year from "
+                        "September 30, 2019) was filed on the 5500-SF, coded 2E"),
+    ("364375169", "3"): ({2014}, True,
+                         "Picis's ESOP (Medical Systems Management, Inc. ESOP; Wakefield): its "
+                         "final return, for January-April 2014, was filed on the 2013 5500-SF"),
+    ("471084653", "2"): ({2015}, False,
+                         "MIS Training Institute ESOP: the plan held company stock into 2015, "
+                         "repaid its ESOP loan, and was renamed a profit-sharing plan (coded 2E)"),
+}
+
+
+def is_reviewed_esop(ein: str, pn: str, year: int) -> bool:
+    hit = ESOP_WITHOUT_CODE.get((ein, pn))
+    return bool(hit and year in hit[0])
+
+
 # Plans confirmed to be a different plan from the one already tracked under the
 # same EIN, so a return is not held back as a possible duplicate merely because
 # its EIN files another tracked plan that year. Keyed by (EIN, plan number).
@@ -143,6 +172,7 @@ PARTICIPANT_OVERRIDES: dict[tuple[int, str, str], dict] = {}
 # EIN, or by (EIN, plan number) where one EIN files more than one company's plan.
 NEW_COMPANY_NAMES: dict = {
     ("41782600", "1"): ("Peoples Federal Savings Bank", "Rockland"),  # filed by Rockland Trust
+    ("364375169", "3"): ("Picis, Inc. (Optum Clinical Solutions)", "Wakefield"),
     ("41858810", "4"): ("United Bank (United Financial Bancorp)", "West Springfield"),
     ("208447891", "5"): ("LSB Corporation (RiverBank)", "North Andover"),  # filed by People's United
     ("113431358", "5"): ("Essex County Gas Company (National Grid)", "Amesbury"),  # filed by KeySpan
@@ -220,6 +250,9 @@ MA_BASED_OVERRIDES: dict[tuple[str, str], tuple] = {
                          "Manganaro North America is run from Beltsville, MD (its executives, back "
                          "office and the same EIN's 401(k) all file from there); the ESOP's Woburn "
                          "address is its Manganaro Northeast subsidiary's office"),
+    ("43312097", "5"): (None, False, None,
+                        "Beacon Federal's ESOP: an East Syracuse, NY bank's plan, wound down by "
+                        "Berkshire Bank from Pittsfield after the 2012 acquisition"),
     ("50309452", "2"): (None, False, None,
                         "Gripnail Corporation is in East Providence, RI; its returns use a Taunton "
                         "address only during the 2019-2022 wind-down"),
@@ -240,6 +273,8 @@ def city_spelling(city: str) -> str:
 
 
 dol_bulk.EXTRA_PLAN_KEYS.update(k for k, v in MA_BASED_OVERRIDES.items() if v[1])
+dol_bulk.SF_PLAN_KEYS.update(k for k, v in ESOP_WITHOUT_CODE.items() if v[1])
+dol_bulk.EXTRA_PLAN_KEYS.update(ESOP_WITHOUT_CODE)  # read although their codes fail the test
 
 
 def _ma_override(ein: str, pn: str, year: int):
@@ -437,7 +472,7 @@ def classify(conn, year: int, returns: dict):
         if key in db_year:
             continue
         rec = dol_bulk.canonical_return(year, lst)
-        if not dol_bulk.has_esop_code(rec["codes"]):
+        if not dol_bulk.has_esop_code(rec["codes"]) and not is_reviewed_esop(key[0], key[1], year):
             continue
         if rec["plan_year_begin"][:4] != str(year):
             continue  # a next-year return filed early on this form; belongs to that year

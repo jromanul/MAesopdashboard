@@ -78,13 +78,19 @@ def _download(url: str, dest: str) -> bool:
 ALL_VERSION_YEARS = YEARS
 
 
+# The 2013 form is read too, for plan-year-2014 short final returns filed on it,
+# and the 5500-SF of every year, for the reviewed ESOPs that (wrongly) file it
+# (scan_dol_filers.ESOP_WITHOUT_CODE).
+FORM_YEARS = [YEARS[0] - 1] + YEARS
+
+
 def fetch_bulk(download: bool = True):
     os.makedirs(dol_bulk.CACHE_DIR, exist_ok=True)
-    for y in YEARS:
+    for y in FORM_YEARS:
         for variant in dol_bulk.VARIANTS:
-            if variant == "All" and y not in ALL_VERSION_YEARS:
+            if variant == "All" and y not in ALL_VERSION_YEARS + [YEARS[0] - 1]:
                 continue
-            for kind in KINDS:
+            for kind in KINDS + ("F_5500_SF",):
                 if dol_bulk.has_zip(y, kind, variant) or not download:
                     continue
                 url = dol_bulk.zip_url(y, kind, variant)
@@ -123,7 +129,7 @@ def locate_returns(conn) -> dict:
 
 
 def rederive(conn, located: dict, dry_run: bool = False) -> dict:
-    stats = {"SCH_H": 0, "SCH_I": 0, "none": 0, "changed": 0}
+    stats = {"SCH_H": 0, "SCH_I": 0, "SF": 0, "none": 0, "changed": 0}
     count_diffs = []
     for row_id, (y, ret, sched) in located.items():
         r = conn.execute("SELECT * FROM form5500_filings WHERE id=?", (row_id,)).fetchone()

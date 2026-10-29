@@ -118,6 +118,24 @@ SCH_I_FIELDS = {
 
 MONEY_FIELDS = list(SCH_H_FIELDS)
 
+# Form 5500-SF (short form): the financial lines are on the return itself. A
+# plan that files the SF certifies it holds no employer securities, so that
+# field has no SF line.
+SF_FIELDS = {
+    "total_assets": "SF_TOT_ASSETS_EOY_AMT",                # line 7a(c)
+    "total_liabilities": "SF_TOT_LIABILITIES_EOY_AMT",      # line 7b(c)
+    "employer_contributions": "SF_EMPLR_CONTRIB_INCOME_AMT",  # line 8a(1)
+    "participant_contributions": "SF_PARTICIP_CONTRIB_INCOME_AMT",  # line 8a(2)
+    "benefits_paid": "SF_TOT_DISTRIB_BNFT_AMT",             # line 8d
+    "net_income": "SF_NET_INCOME_AMT",                      # line 8h
+}
+
+# (EIN, plan number) keys of ESOPs whose returns are (wrongly) on the 5500-SF,
+# which cannot carry an ESOP code. Their SF returns are read like main-form
+# returns. Filled by scan_dol_filers from its reviewed ESOP_WITHOUT_CODE list.
+SF_PLAN_KEYS: set = set()
+_SF_MONEY: dict = {}
+
 
 def norm_ein(v) -> str:
     return re.sub(r"\D", "", str(v or "")).lstrip("0")
@@ -229,6 +247,33 @@ def is_ma_address(state: str | None, zip_code: str | None) -> bool:
     return len(z) < 3 or not z.isdigit() or z in MA_ZIP3
 
 
+def _sf_record(r: dict, form_year: int | None = None, variant: str = "Latest") -> dict:
+    """A Form 5500-SF return in the shape of _main_record()."""
+    g = lambda k: str(r.get(k) or "").strip()
+    rec = {
+        "form": "F_5500_SF", "form_year": form_year, "variant": variant,
+        "filing_status": g("FILING_STATUS").upper(), "ack_id": r["ACK_ID"],
+        "ein": norm_ein(r.get("SF_SPONS_EIN")), "pn": norm_pn(r.get("SF_PLAN_NUM")),
+        "ein_raw": g("SF_SPONS_EIN"), "pn_raw": g("SF_PLAN_NUM"),
+        "plan_year_begin": g("SF_PLAN_YEAR_BEGIN_DATE"), "plan_year_end": "",
+        "state": g("SF_SPONS_US_STATE").upper(), "codes": g("SF_TYPE_PENSION_BNFT_CODE").upper(),
+        "sponsor_name": g("SF_SPONSOR_NAME"), "sponsor_city": g("SF_SPONS_US_CITY"),
+        "sponsor_zip": g("SF_SPONS_US_ZIP"), "plan_name": g("SF_PLAN_NAME"),
+        "type_plan_entity": g("SF_PLAN_ENTITY_CD"), "naics_code": g("SF_BUSINESS_CODE"),
+        "plan_eff_date": g("SF_PLAN_EFF_DATE"),
+        "total_participants": to_num(r.get("SF_TOT_ACT_RTD_SEP_BENEF_CNT")),
+        "active_participants": to_num(r.get("SF_TOT_ACT_PARTCP_EOY_CNT")),
+        "participants_boy": to_num(r.get("SF_TOT_PARTCP_BOY_CNT")),
+        "date_received": g("DATE_RECEIVED"), "amended": g("SF_AMENDED_IND"),
+        "final": g("SF_FINAL_FILING_IND"), "short_year": g("SF_SHORT_PLAN_YR_IND"),
+        "last_rpt_ein": norm_ein(r.get("SF_LAST_RPT_SPONS_EIN")), "last_rpt_pn": g("SF_LAST_RPT_PLAN_NUM"),
+    }
+    money = {f: to_num(r.get(col)) for f, col in SF_FIELDS.items()}
+    money["employer_securities"] = None
+    _SF_MONEY[rec["ack_id"]] = money
+    return rec
+
+
 def _is_ma_esop(r: dict) -> bool:
     return (is_ma_address(r.get("SPONS_DFE_MAIL_US_STATE"), r.get("SPONS_DFE_MAIL_US_ZIP"))
             and has_esop_code(r.get("TYPE_PENSION_BNFT_CODE")))
@@ -236,7 +281,8 @@ def _is_ma_esop(r: dict) -> bool:
 
 def ma_esop_returns(year: int, extra_keys: set | None = None,
                     all_versions: bool = True) -> dict:
-    """{(ein, pn): [return, ...]} for MA ESOP-coded main-form returns on one form.
+    """{(ein, pn): [return, ...]} for MA ESOP-coded main-form returns on one form,
+    plus the 5500-SF returns of the reviewed SF_PLAN_KEYS plans.
 
     Reads the Latest file and, when it is cached and ``all_versions`` is set, the
     All file too (deduplicated by ACK_ID), so a filing Latest dropped is still
@@ -266,6 +312,20 @@ def ma_esop_returns(year: int, extra_keys: set | None = None,
                 continue
             seen.add(ack)
             out.setdefault((rec["ein"], rec["pn"]), []).append(rec)
+    if SF_PLAN_KEYS:
+        for variant in [v for v in VARIANTS if all_versions or v == "Latest"]:
+            if not has_zip(year, "F_5500_SF", variant):
+                continue
+            for r in iter_rows(year, "F_5500_SF", variant):
+                ack = r.get("ACK_ID")
+                k = (norm_ein(r.get("SF_SPONS_EIN")), norm_pn(r.get("SF_PLAN_NUM")))
+                if ack in seen or k not in SF_PLAN_KEYS:
+                    continue
+                rec = _sf_record(r, year, variant)
+                if rec["filing_status"] not in STATUS_RANK:
+                    continue
+                seen.add(ack)
+                out.setdefault(k, []).append(rec)
     return out
 
 
@@ -373,6 +433,10 @@ def schedules_for_returns(returns: dict) -> dict:
             continue
         for ack, sched in schedules_by_ack(form_year, acks).items():
             out.setdefault(ack, {}).update(sched)
+    for lst in returns.values():
+        for x in lst:
+            if x.get("form") == "F_5500_SF" and x["ack_id"] in _SF_MONEY:
+                out.setdefault(x["ack_id"], {})["SF"] = _SF_MONEY[x["ack_id"]]
     return out
 
 
@@ -408,6 +472,8 @@ def financials(sched: dict) -> tuple[dict, str | None]:
         src, rec = "SCH_H", sched["SCH_H"]
     elif "SCH_I" in sched:
         src, rec = "SCH_I", sched["SCH_I"]
+    elif "SF" in sched:
+        src, rec = "SF", sched["SF"]
     else:
         return {}, None
     money = {f: rec.get(f) for f in MONEY_FIELDS}
