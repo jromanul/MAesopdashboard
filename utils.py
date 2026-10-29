@@ -53,7 +53,7 @@ _EXPORT_COLUMNS = [
     ("industry_sector", "Industry"),
     ("naics_code", "NAICS Code"),
     ("plan_eff_date", "Plan Effective Date"),
-    ("is_ksop", "KSOP (401k+ESOP)"),
+    ("is_ksop", "KSOP (ESOP with 401(k) feature)"),
     ("total_participants", "Total Participants (end of year)"),
     ("active_participants", "Active Participants (end of year)"),
     ("total_assets", "Total Assets"),
@@ -89,6 +89,11 @@ def _export_frame(rows: list[dict]) -> pd.DataFrame:
         col = df[src]
         if src == "is_ksop":
             col = col.map(lambda v: "Yes" if v else "No")
+        elif src in ("ein", "plan_num"):
+            # As DOL and efast.dol.gov show them: a 9-digit EIN, a 3-digit plan number.
+            width = 9 if src == "ein" else 3
+            col = col.map(lambda v, w=width: str(v).strip().zfill(w)
+                          if pd.notna(v) and str(v).strip() else v)
         elif src in _WHOLE_NUMBER_COLUMNS:
             col = pd.to_numeric(col, errors="coerce").round().astype("Int64")
         out[label] = col
@@ -117,15 +122,17 @@ def build_share_package(year: int, all_rows: list[dict], active_rows: list[dict]
     sum_df = pd.DataFrame([{
         "Form Year": s["filing_year"],
         "Plans Filed": s["ma_plan_count"],
-        "ESOPs": s.get("ma_esop_count"),
-        "KSOPs": s.get("ma_ksop_count"),
-        "Total Participants": s.get("ma_total_participants"),
-        "Active Participants": s.get("ma_active_participants"),
+        "ESOPs without 401(k) feature": s.get("ma_esop_count"),
+        "KSOPs (ESOP with 401(k) feature)": s.get("ma_ksop_count"),
+        "Total Participants (end of year)": s.get("ma_total_participants"),
+        "Active Participants (end of year)": s.get("ma_active_participants"),
         "Total Assets": s.get("ma_total_assets"),
         "Employer Contributions": s.get("ma_total_contributions"),
         "Benefits Paid": s.get("ma_total_benefits_paid"),
         "Employer Securities": s.get("ma_total_employer_securities"),
     } for s in sum_rows])
+    for c in sum_df.columns:  # whole dollars and people, as in the plan CSVs
+        sum_df[c] = pd.to_numeric(sum_df[c], errors="coerce").round().astype("Int64")
 
     n_all, n_act = len(all_rows), len(active_rows)
     n_excl = n_all - n_act
@@ -173,7 +180,7 @@ HEADLINE FIGURES FOR {year}
   Plans filed                {n_all:>18,}
   Active plans               {n_act:>18,}
     (excluded as inactive)   {n_excl:>18,}
-  KSOPs (401(k)+ESOP)        {ksops:>18,}
+  KSOPs (ESOP with 401(k))   {ksops:>18,}
   Participants, all filed    {part_all:>18,}
   Participants, active plans {part_act:>18,}
   Assets, all filed          {'$' + format(assets_all, ',.0f'):>18}
@@ -184,8 +191,14 @@ HOW TO READ THE COLUMNS
 -----------------------
 Total Participants is the plan's total at the END of the plan year (Form
 5500, line 6f). Active Participants is the count of currently employed
-participants on the same date (line 6a). Every dollar figure is also an
-end-of-year value, so all figures for a plan describe the same day.
+participants on the same date (line 6a). Total Assets, Total Liabilities and
+Employer Securities are balances on that same day; Employer Contributions,
+Participant Contributions, Benefits Paid and Net Income are totals for the
+whole plan year.
+
+KSOP marks an ESOP with a 401(k) feature (Form 5500 code 2J). KSOPs are
+ESOPs and are counted as such; in the annual summary, the "ESOPs without
+401(k) feature" and "KSOPs" columns add up to Plans Filed.
 
 "Total Participants" counts everyone owed a balance, including retirees and
 former employees who have not yet been paid out. It is not a headcount of
@@ -197,16 +210,18 @@ plans. {stock_rep} of the {n_act} active plans report a positive value; the
 rest report $0 (for example, a plan that has sold its shares) or leave the
 line blank.
 
-Dollar figures are end-of-year values from each plan's own Schedule H or I,
-as filed with DOL. Blank means the plan did not report that item, which is
-not the same as zero.
+Dollar figures come from each plan's own Schedule H or I (or, for the few
+reviewed ESOPs that filed it, the Form 5500-SF), as filed with DOL. Blank
+means the plan did not report that item, which is not the same as zero.
 
 
 HOW PLANS WERE IDENTIFIED
 -------------------------
 Every ESOP of a Massachusetts-based employer is included: the Form 5500
 "type of pension benefit" codes include 2O (ESOP), 2P (leveraged ESOP) or
-2Q, and the company the plan covers is headquartered in Massachusetts. The
+2Q, and the company the plan covers is headquartered in Massachusetts. A few
+returns filed without the code (among them short final returns on the Form
+5500-SF, which cannot carry it) were confirmed to be ESOPs one by one. The
 return's mailing address is the evidence unless it is not the company's
 home (a parent or administrator filing from another state, or an
 out-of-state company using a Massachusetts mailing address); those cases
@@ -218,10 +233,13 @@ Deliberately excluded: plans that are not ESOPs - ordinary 401(k)/savings
 plans that carry an ESOP code only because company stock is one investment
 option among many, and profit-sharing or 401(k) plans at employee-owned
 companies. Counting the large public-company savings plans would add
-thousands of participants each.
+thousands of participants each. An ESOP renamed while it is wound down after
+a sale (Brockway-Smith's, now called a profit-sharing plan, for example)
+stays counted while it is still an ESOP.
 
-Because plans may file up to roughly 18 months after a plan year begins,
-a recent form year keeps growing as late filers arrive. Figures for {year}
+Because plans may file up to 9.5 months after a plan year ends (about 21.5
+months after it begins), a recent form year keeps growing as late filers
+arrive. Figures for {year}
 reflect every return in DOL's {dol_release or "latest"} bulk release, reconciled
 against this dataset on {data_as_of}.
 

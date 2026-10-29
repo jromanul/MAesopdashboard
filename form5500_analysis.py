@@ -53,37 +53,6 @@ ZOMBIE_PLAN_EINS: set[str] = {
     "42501424",   # B&B Engineering Corporation (0 active)
 }
 
-FIELD_MAPPINGS = {
-    "sponsor_name": ["SPONSOR_DFE_NAME", "SPONS_DFE_NAME", "SPONS_SIGNED_NAME",
-                     "SPONS_DFE_MAIL_US_ADDRESS"],
-    "sponsor_state": ["SPONS_DFE_MAIL_US_STATE", "SPONS_DFE_LOC_US_STATE",
-                      "SPONSOR_DFE_MAIL_US_STATE"],
-    "sponsor_city": ["SPONS_DFE_MAIL_US_CITY", "SPONS_DFE_LOC_US_CITY",
-                     "SPONSOR_DFE_MAIL_US_CITY"],
-    "sponsor_zip": ["SPONS_DFE_MAIL_US_ZIP", "SPONS_DFE_LOC_US_ZIP",
-                    "SPONSOR_DFE_MAIL_US_ZIP"],
-    "plan_name": ["PLAN_NAME", "PLAN_NM"],
-    "plan_eff_date": ["PLAN_EFF_DATE", "PLAN_EFFECTIVE_DT"],
-    "ein": ["SPONS_DFE_EIN", "SPONSOR_DFE_EIN", "EIN"],
-    "plan_num": ["PLAN_NUM", "PN"],
-    "type_plan_entity": ["TYPE_PLAN_ENTITY_CD", "TYPE_PLAN_ENTITY"],
-    "type_pension_bnft": ["TYPE_PENSION_BNFT_CD", "TYPE_PENSION_BENEFIT_CD"],
-    "total_participants": ["TOT_PARTCP_BOY_CNT", "TOTAL_PARTCP_BOY_CNT",
-                           "TOT_PARTCP_EOY_CNT"],
-    "active_participants": ["TOT_ACTIVE_PARTCP_CNT", "TOTAL_ACTIVE_PARTCP_CNT",
-                            "ACTIVE_PARTCP_CNT"],
-    "naics_code": ["BUSINESS_CD", "NAICS_CD", "SIC_CD"],
-    "total_assets": ["TOT_ASSETS_BOY_AMT", "TOT_ASSETS_EOY_AMT",
-                     "TOTAL_ASSETS_BOY_AMT", "NET_ASSETS_EOY_AMT"],
-    "total_liabilities": ["TOT_LIABILITIES_BOY_AMT", "TOT_LIABILITIES_EOY_AMT",
-                          "TOTAL_LIABILITIES_BOY_AMT"],
-    "employer_contributions": ["EMPLOYER_CONTRIB_AMT", "EMPLR_CONTRIB_AMT",
-                               "EMPLR_CONTRIB_CUR_YR_AMT"],
-    "participant_contributions": ["PARTCP_CONTRIB_AMT", "PARTCPNT_CONTRIB_AMT"],
-    "benefits_paid": ["TOT_DISTRIB_BNFT_AMT", "BENEFIT_PAYMENT_AMT"],
-    "net_income": ["NET_INCOME_AMT", "NET_INCM_AMT"],
-}
-
 NAICS_SECTORS = {
     "11": "Agriculture, Forestry, Fishing",
     "21": "Mining, Oil & Gas",
@@ -376,7 +345,7 @@ def get_ma_filings_by_city(year: int | None = None, *,
         params.append(year)
     if exclude_zombie:
         query += _zombie_clause()
-    query += " GROUP BY sponsor_city ORDER BY plan_count DESC"
+    query += " GROUP BY sponsor_city ORDER BY plan_count DESC, sponsor_city"
     rows = _get_conn().execute(query, params).fetchall()
     return [dict(r) for r in rows]
 
@@ -397,7 +366,7 @@ def get_ma_filings_by_industry(year: int | None = None, *,
         params.append(year)
     if exclude_zombie:
         query += _zombie_clause()
-    query += " GROUP BY industry_sector ORDER BY plan_count DESC"
+    query += " GROUP BY industry_sector ORDER BY plan_count DESC, industry_sector"
     rows = _get_conn().execute(query, params).fetchall()
     return [dict(r) for r in rows]
 

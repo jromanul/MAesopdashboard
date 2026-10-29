@@ -883,6 +883,13 @@ button[data-testid="stBaseButton-secondary"] span,
     text-align: right;
     font-variant-numeric: tabular-nums;
 }
+/* Long names (sponsor, plan) wrap rather than pushing the figures off-screen */
+.data-table td.wrap {
+    white-space: normal;
+    min-width: 12rem;
+    max-width: 16rem;
+    overflow-wrap: anywhere;
+}
 .data-table td.row-num {
     text-align: center;
     color: var(--ink-3) !important;
@@ -913,6 +920,30 @@ button[data-testid="stBaseButton-secondary"] span,
 }
 .data-table.numbered thead th:nth-child(2) { z-index: 4 !important; }
 .data-table.numbered tfoot td:nth-child(2) { z-index: 3 !important; }
+
+/* Phones and narrow tablets: tighter cells, wrapping labels and headers, and a
+   narrow frozen name column, so the figures come into view (or into reach of a
+   sideways scroll) instead of sitting behind the frozen columns. */
+@media (max-width: 768px) {
+    .data-table th,
+    .data-table td,
+    .data-table tfoot td { padding-left: 8px; padding-right: 8px; }
+    .data-table th { white-space: normal; letter-spacing: .04em; min-width: 4.5rem; }
+    .data-table th.sortable { padding-right: 20px; }
+    .data-table:not(.numbered) th:first-child,
+    .data-table:not(.numbered) td:first-child {
+        white-space: normal;
+        min-width: 6rem;
+        max-width: 10rem;
+    }
+    .data-table.numbered th:nth-child(2),
+    .data-table.numbered td:nth-child(2) {
+        white-space: normal;
+        min-width: 8.5rem;
+        max-width: 8.5rem;
+    }
+    .data-table td.wrap { min-width: 11rem; max-width: 14rem; }
+}
 
 /* Totals footer */
 .data-table tfoot { position: sticky; bottom: 0; z-index: 2; }
@@ -948,6 +979,18 @@ button[data-testid="stBaseButton-secondary"] span,
 }
 .data-table th.sortable.sort-asc::after  { content: '\\25B2'; opacity: 1; color: var(--ma-gold); }
 .data-table th.sortable.sort-desc::after { content: '\\25BC'; opacity: 1; color: var(--ma-gold); }
+
+/* On a touch screen Plotly shows its toolbar permanently, over the chart
+   title; there is no hover to reveal it, so it is hidden there. */
+@media (hover: none) {
+    [data-testid="stPlotlyChart"] .modebar-container { display: none !important; }
+}
+
+/* Help tooltips wrap inside the screen on a phone */
+[data-testid="stTooltipContent"] {
+    max-width: min(28rem, calc(100vw - 32px)) !important;
+    white-space: normal !important;
+}
 
 /* ══════════════════════════════════════════════════════════════
    st.dataframe (glide-data-grid)

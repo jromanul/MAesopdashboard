@@ -116,7 +116,7 @@ def _md_safe(text: str) -> str:
 
 def _render_html_table(df, money_cols=None, number_cols=None, height=600,
                        numbered=False, sortable_cols=None, show_totals=False,
-                       caption=None):
+                       caption=None, wrap_cols=None):
     """Render a DataFrame as a styled HTML table.
 
     - Money columns: show '$X' for values, '$0' for zero, '—' for NULL/missing.
@@ -126,11 +126,13 @@ def _render_html_table(df, money_cols=None, number_cols=None, height=600,
     - sortable_cols: list of column names that can be sorted by clicking the header.
     - show_totals: if True, adds a Total row at the bottom summing numeric columns.
     - caption: visually hidden table caption for screen readers.
+    - wrap_cols: long text columns (names) that wrap instead of widening the table.
     """
     import hashlib
     money_cols = money_cols or []
     number_cols = number_cols or []
     sortable_cols = sortable_cols or []
+    wrap_cols = wrap_cols or []
 
     table_id = "tbl_" + hashlib.md5(
         (str(df.columns.tolist()) + str(caption)).encode()).hexdigest()[:8]
@@ -207,7 +209,8 @@ def _render_html_table(df, money_cols=None, number_cols=None, height=600,
                     else:
                         html += na_cell
                 else:
-                    html += f'<td{sort_attr}>{_html.escape(str(val))}</td>'
+                    _cls = ' class="wrap"' if col in wrap_cols else ""
+                    html += f'<td{_cls}{sort_attr}>{_html.escape(str(val))}</td>'
         html += '</tr>'
     html += '</tbody>'
 
@@ -435,7 +438,8 @@ with f5500_c0:
 with f5500_c2:
     if _dl_year:
         st.markdown(
-            f'<div class="data-status">Most recent complete form year: <b>{_dl_year}</b>. '
+            f'<div class="data-status">Latest form year: <b>{_dl_year}</b> (a few late returns '
+            f'may still arrive). '
             f'Reconciled filing by filing against the U.S. Department of Labor EFAST2 '
             f'bulk release of <b>{config.DOL_RELEASE_DATE}</b> on '
             f'<b>{config.DATA_AS_OF}</b>. Form year {_open_year} is still being filed and '
@@ -483,7 +487,7 @@ if f5500_summaries:
         _page_head(
             f"Form year {latest_year}",
             "Overview",
-            f"How many Massachusetts companies sponsor an employee stock ownership plan, "
+            f"How many employee stock ownership plans Massachusetts companies sponsor, "
             f"how many people those plans cover, and what they hold. Headline figures "
             f"describe the <b>active</b> plans: those reporting at least one current "
             f"employee as a participant.")
@@ -551,7 +555,8 @@ if f5500_summaries:
         st.markdown("---")
         st.markdown(f"#### Active MA ESOP Plans, {latest_year}")
 
-        f5500_search = st.text_input("Search by plan name, sponsor, or city", key="f5500_search",
+        f5500_search = st.text_input("Search by plan name, sponsor, city or industry",
+                                     key="f5500_search",
                                      placeholder="e.g. Worcester, construction, Tighe")
 
         filings = _ov_rows
@@ -565,18 +570,20 @@ if f5500_summaries:
                 ).lower(), axis=1)
                 f_df = f_df[mask]
 
+            # The headline figures sit next to the sponsor, so they are in view
+            # without scrolling sideways; descriptive columns follow.
             display_cols = {
                 "sponsor_name": "Sponsor",
-                "plan_name": "Plan Name",
-                "sponsor_city": "City",
-                "industry_sector": "Industry",
-                "plan_eff_date": "Plan Year Started",
-                "is_ksop": "KSOP?",
                 "total_participants": "Participants",
                 "active_participants": "Active Participants",
                 "total_assets": "Total Assets",
-                "total_liabilities": "Total Liabilities",
                 "employer_securities": "Employer Securities",
+                "sponsor_city": "City",
+                "industry_sector": "Industry",
+                "plan_name": "Plan Name",
+                "plan_eff_date": "Plan Effective",
+                "is_ksop": "KSOP?",
+                "total_liabilities": "Total Liabilities",
                 "employer_contributions": "Employer Contributions",
                 "benefits_paid": "Benefits Paid",
                 "net_income": "Net Income",
@@ -585,8 +592,8 @@ if f5500_summaries:
             show_df = f_df[avail].copy()
             show_df.columns = [display_cols[c] for c in avail]
 
-            if "Plan Year Started" in show_df.columns:
-                show_df["Plan Year Started"] = show_df["Plan Year Started"].apply(
+            if "Plan Effective" in show_df.columns:
+                show_df["Plan Effective"] = show_df["Plan Effective"].apply(
                     lambda x: str(x)[:4] if pd.notna(x) and x and str(x)[:4] != "1900" else "")
             if "KSOP?" in show_df.columns:
                 show_df["KSOP?"] = show_df["KSOP?"].apply(lambda x: "Yes" if x else "No")
@@ -604,22 +611,26 @@ if f5500_summaries:
                     return None
                 show_df["Assets/Participant"] = show_df.apply(_calc_app, axis=1)
 
-            _sortable = ["Plan Year Started", "Participants", "Active Participants",
+            _sortable = ["Plan Effective", "Participants", "Active Participants",
                          "Total Assets", "Total Liabilities", "Employer Securities",
                          "Employer Contributions", "Benefits Paid", "Net Income",
                          "Assets/Participant"]
-            _render_html_table(show_df,
-                               money_cols=["Total Assets", "Total Liabilities",
-                                           "Employer Securities", "Employer Contributions",
-                                           "Benefits Paid", "Net Income",
-                                           "Assets/Participant"],
-                               number_cols=["Participants", "Active Participants"],
-                               height=600,
-                               numbered=True,
-                               sortable_cols=_sortable,
-                               show_totals=True,
-                               caption=f"Active Massachusetts ESOP plans, form year {latest_year}")
             _excluded_n = _ov_filed - len(filings)
+            if show_df.empty:
+                st.info(f"No active {latest_year} plan matches that search.")
+            else:
+                _render_html_table(show_df,
+                                   money_cols=["Total Assets", "Total Liabilities",
+                                               "Employer Securities", "Employer Contributions",
+                                               "Benefits Paid", "Net Income",
+                                               "Assets/Participant"],
+                                   number_cols=["Participants", "Active Participants"],
+                                   height=600,
+                                   numbered=True,
+                                   sortable_cols=_sortable,
+                                   show_totals=True,
+                                   wrap_cols=["Sponsor", "Plan Name"],
+                                   caption=f"Active Massachusetts ESOP plans, form year {latest_year}")
             st.caption(
                 f"Showing {len(show_df)} of {len(filings)} active plans. "
                 f"{_excluded_n} of the {_ov_filed} plans that filed for {latest_year} are "
@@ -630,8 +641,12 @@ if f5500_summaries:
                 "**Participants** is the plan's total at the *end* of the plan year "
                 "(Form 5500 line 6f) and includes retirees, former employees still owed "
                 "a balance and beneficiaries; **Active Participants** counts current "
-                "employees on the same date (line 6a). Dollar figures are end-of-year "
-                "values as filed; — means the plan did not report the item.")
+                "employees on the same date (line 6a). Total assets, liabilities and "
+                "employer securities are end-of-year balances; employer contributions, "
+                "benefits paid and net income are totals for the plan year, all as "
+                "filed; — means the plan did not report the item. **Plan Effective** is "
+                "the year the plan took effect. **KSOP?** marks an ESOP with a 401(k) "
+                "feature (Form 5500 code 2J); KSOPs are counted as ESOPs.")
         else:
             st.info("No filing-level data available.")
 
@@ -652,7 +667,7 @@ if f5500_summaries:
                 _top_assets = _ov_df.sort_values("total_assets", ascending=False).head(5)[
                     ["sponsor_name", "sponsor_city", "total_assets"]].copy()
                 _top_assets.columns = ["Company", "City", "Total Assets"]
-                _render_html_table(_top_assets, money_cols=["Total Assets"], height=260,
+                _render_html_table(_top_assets, money_cols=["Total Assets"], height=360,
                                    caption="Top 5 plans by total assets")
             with _lc2:
                 st.markdown("**Top 5 by assets per active participant**")
@@ -660,7 +675,7 @@ if f5500_summaries:
                     ["sponsor_name", "_per", "active_participants"]].copy()
                 _byper.columns = ["Company", "Assets / Active", "Active"]
                 _render_html_table(_byper, money_cols=["Assets / Active"],
-                                   number_cols=["Active"], height=260,
+                                   number_cols=["Active"], height=360,
                                    caption="Top 5 plans by assets per active participant")
             st.caption("Assets per active participant divides each plan's total assets by "
                        "its active participants. Plans whose balances belong mostly to "
@@ -679,11 +694,27 @@ if f5500_summaries:
             f"way; the {latest_year} distributions and profiles describe the "
             f"<b>active</b> plans shown on the Overview.")
 
+        # Year-over-year change in participants, split between plans that filed in
+        # both years and plans that filed in only one, so the note follows the data.
+        def _ptcp_by_plan(y):
+            return {(str(r["ein"]).lstrip("0"), str(r["plan_num"]).lstrip("0")):
+                    r["total_participants"] or 0
+                    for r in form5500_analysis.get_ma_filings(y)}
+        _cur_p, _prv_p = _ptcp_by_plan(latest_year), _ptcp_by_plan(latest_year - 1)
+        _yoy = ""
+        if _prv_p:
+            _d_all = sum(_cur_p.values()) - sum(_prv_p.values())
+            _d_both = sum(_cur_p[k] - _prv_p[k] for k in _cur_p.keys() & _prv_p.keys())
+            _yoy = (f" {latest_year} counts {len(_cur_p):,} filed plans against "
+                    f"{len(_prv_p):,} in {latest_year - 1}, and participants "
+                    f"{'rose' if _d_all >= 0 else 'fell'} by {abs(_d_all):,}. Plans that "
+                    f"filed in both years account for {_d_both:+,} of that change, and "
+                    f"plans that filed in only one of the two years for "
+                    f"{_d_all - _d_both:+,}.")
         _note(
             f"<p>The most recent year can read low until late filers arrive: returns are "
             f"due 7 months after a plan year ends (9½ with an extension), and fiscal-year "
-            f"plans end months after December. A drop in {latest_year} is largely plans "
-            f"leaving the dataset or not yet filed, not shrinkage at continuing plans.</p>",
+            f"plans end months after December.{_yoy}</p>",
             title="Reading the latest year")
 
         st.markdown(f"#### Plan Size Distribution, {latest_year}")
@@ -773,7 +804,7 @@ if f5500_summaries:
                  "Median": f"${_appp['_per'].median():,.0f}",
                  "Mean": f"${_appp['_per'].mean():,.0f}"},
             ]
-            _render_html_table(pd.DataFrame(_profile_rows), height=280,
+            _render_html_table(pd.DataFrame(_profile_rows), height=420,
                                caption="Typical plan profile, median and mean")
             st.caption(_md_safe(
                 f"Aggregate assets per active participant: {_money(_agg_assets, 2)} in "
@@ -863,7 +894,8 @@ if f5500_summaries:
                         list(_ddf["Decade"]), list(_ddf["% of Active ESOPs"]),
                         title="Share of Active Plans by Decade Established",
                         y_title="% of active ESOPs",
-                        text=[f"{v:.1f}%" for v in _ddf["% of Active ESOPs"]]),
+                        text=[f"{v:.1f}%" for v in _ddf["% of Active ESOPs"]])
+                    .update_yaxes(ticksuffix="%"),
                     key="ov_decade",
                     alt="Bar chart: share of active plans by decade established, "
                         + ", ".join(f"{d}: {v:.1f}%" for d, v in
@@ -872,7 +904,7 @@ if f5500_summaries:
                 _ddf_disp = _ddf.copy()
                 _ddf_disp["% of Active ESOPs"] = _ddf_disp["% of Active ESOPs"].apply(
                     lambda x: f"{x:.1f}%" if pd.notna(x) else "")
-                _render_html_table(_ddf_disp, number_cols=["Plans"], height=340,
+                _render_html_table(_ddf_disp, number_cols=["Plans"], height=420,
                                    caption="Share of active plans by decade established")
 
     # ────────────────────────────────────
@@ -883,7 +915,8 @@ if f5500_summaries:
             f"Form year {latest_year}",
             "Industry",
             "Which industries Massachusetts ESOPs operate in, classified by each "
-            "sponsor's NAICS business code (verified against company websites). "
+            "sponsor's NAICS business code (as filed, with corrections checked against "
+            "company websites). "
             f"All figures describe the {latest_year} <b>active</b> plans.")
 
         industry_data = form5500_analysis.get_ma_filings_by_industry(
@@ -902,8 +935,10 @@ if f5500_summaries:
 
             # ===== Average account balance by industry =====
             st.markdown("##### Average Account Balance by Industry")
-            st.caption("Assets per participant by industry, a proxy for per-worker "
-                       "wealth accumulation. Weighted: sector assets ÷ sector participants.")
+            st.caption("Assets per participant by industry, a proxy for the wealth "
+                       "employee owners accumulate. Weighted: sector assets ÷ sector "
+                       "participants (year-end totals, including retirees and former "
+                       "employees still owed a balance).")
             _ind = _adf[_adf["total_participants"].fillna(0) > 0].copy()
             _grp = _ind.groupby(_ind["industry_sector"].fillna("(Unclassified)")).agg(
                 Plans=("ein", "count"),
@@ -917,8 +952,9 @@ if f5500_summaries:
             # row, so it does not also need to drive the ordering.
             _grp = _grp[_grp["Plans"] >= 2].sort_values(
                 ["Plans", "Avg Account Balance"], ascending=[False, False])
-            _gdisp = _grp[["Industry", "Plans", "Participants", "Total Assets",
-                           "Avg Account Balance"]].copy()
+            # The balance leads, so it stays in view on a phone without scrolling.
+            _gdisp = _grp[["Industry", "Avg Account Balance", "Plans", "Participants",
+                           "Total Assets"]].copy()
             _render_html_table(_gdisp, money_cols=["Total Assets", "Avg Account Balance"],
                                number_cols=["Plans", "Participants"], height=460,
                                caption="Average account balance by industry")
@@ -1004,7 +1040,7 @@ if f5500_summaries:
             _render_metric(gm2, f"{len(_by_town):,}", "Municipalities with an ESOP sponsor",
                            "Of Massachusetts' 351 cities and towns", ma=True)
             _render_metric(gm3, _top_towns.split(" (")[0] if _top_towns else "N/A",
-                           "Most ESOP sponsors", _top_towns, ma=True)
+                           "Most ESOP plans", _top_towns, ma=True)
 
             _esop_choropleth = map_utils.create_choropleth_map(
                 _city_df.drop(columns=["_town"]), value_col="plan_count",
@@ -1012,7 +1048,8 @@ if f5500_summaries:
                 color_scale=[[0, "#9DC3E6"], [0.25, "#5B9BD5"], [0.5, "#2E75B6"],
                              [0.75, "#1A5490"], [1, "#0A2E52"]],
                 legend_title="Plans",
-                source="U.S. DOL Form 5500 (sponsor headquarters city); MassGIS town boundaries",
+                source="U.S. DOL Form 5500 (sponsor headquarters city);<br>"
+                       "MassGIS town boundaries",
                 hover_fields=[("Plans", "plan_count", ",d"),
                               ("Participants", "total_partcp", ",.0f"),
                               ("Plan assets", "total_assets", "$,.0f")],
@@ -1020,10 +1057,11 @@ if f5500_summaries:
             if _esop_choropleth is not None:
                 _chart(_esop_choropleth,
                        alt=f"Map of Massachusetts shading each municipality by its number of "
-                           f"ESOP sponsors. Most: {_top_towns}.")
+                           f"ESOP plans. Most: {_top_towns}.")
             else:
                 _chart(charts.build_f5500_city_map(city_data))
-            st.caption("Hover over a municipality for its plans, participants and assets. "
+            st.caption("Hover over (or tap) a municipality for its plans, participants and "
+                       "assets. "
                        "Location is the sponsor's headquarters, which for some companies "
                        "is not where most employees work.")
         else:
@@ -1091,7 +1129,7 @@ if f5500_summaries:
                            f"{len(_assets_known)} of {len(_f25)} returns report assets", ma=True)
 
             st.markdown(f"#### {_yr} Returns Received")
-            f25_search = st.text_input("Search by plan name, sponsor, or city",
+            f25_search = st.text_input("Search by plan name, sponsor, city or industry",
                                        key="f5500_2025_search",
                                        placeholder="e.g. Boston, Consigli")
             f25_df = pd.DataFrame(_f25)
@@ -1100,21 +1138,21 @@ if f5500_summaries:
                 _sl = f25_search.lower()
                 _mask = f25_df.apply(lambda r: _sl in (
                     str(r.get("plan_name", "")) + " " + str(r.get("sponsor_name", "")) + " " +
-                    str(r.get("sponsor_city", ""))
+                    str(r.get("sponsor_city", "")) + " " + str(r.get("industry_sector", ""))
                 ).lower(), axis=1)
                 f25_df = f25_df[_mask]
 
             _f25_cols = {
                 "sponsor_name": "Sponsor",
-                "plan_name": "Plan Name",
-                "sponsor_city": "City",
-                "industry_sector": "Industry",
-                "new_to_dataset": "New Sponsor?",
-                "is_ksop": "KSOP?",
                 "total_participants": "Participants",
                 "active_participants": "Active Participants",
                 "total_assets": "Total Assets",
                 "employer_securities": "Employer Securities",
+                "sponsor_city": "City",
+                "industry_sector": "Industry",
+                "new_to_dataset": "New Sponsor?",
+                "plan_name": "Plan Name",
+                "is_ksop": "KSOP?",
                 "employer_contributions": "Employer Contributions",
                 "benefits_paid": "Benefits Paid",
             }
@@ -1123,22 +1161,30 @@ if f5500_summaries:
             _show25.columns = [_f25_cols[c] for c in _avail25]
             if "KSOP?" in _show25.columns:
                 _show25["KSOP?"] = _show25["KSOP?"].apply(lambda x: "Yes" if x else "No")
-            _render_html_table(_show25,
-                               money_cols=["Total Assets", "Employer Securities",
-                                           "Employer Contributions", "Benefits Paid"],
-                               number_cols=["Participants", "Active Participants"],
-                               height=520,
-                               numbered=True,
-                               sortable_cols=["Participants", "Active Participants",
-                                              "Total Assets", "Employer Securities",
-                                              "Employer Contributions", "Benefits Paid"],
-                               show_totals=True,
-                               caption=f"Massachusetts ESOP returns received for form year {_yr}")
+            if _show25.empty:
+                st.info(f"No {_yr} return matches that search.")
+            else:
+                _render_html_table(_show25,
+                                   money_cols=["Total Assets", "Employer Securities",
+                                               "Employer Contributions", "Benefits Paid"],
+                                   number_cols=["Participants", "Active Participants"],
+                                   height=520,
+                                   numbered=True,
+                                   sortable_cols=["Participants", "Active Participants",
+                                                  "Total Assets", "Employer Securities",
+                                                  "Employer Contributions", "Benefits Paid"],
+                                   show_totals=True,
+                                   wrap_cols=["Sponsor", "Plan Name"],
+                                   caption=f"Massachusetts ESOP returns received for form year {_yr}")
             st.caption(
                 f"Showing {len(_show25)} of {len(_f25)} MA ESOP returns received for form "
                 f"year {_yr}, including final returns from plans that are winding down "
-                f"(0 active participants). Financial figures are end-of-year values from "
-                f"each return's Schedule H or I.")
+                f"(0 active participants). **Participants** are year-end totals (line 6f). "
+                f"Total assets and employer securities are end-of-year balances; employer "
+                f"contributions and benefits paid are totals for the plan year, all from "
+                f"each return's Schedule H or I. **KSOP?** marks an ESOP with a 401(k) "
+                f"feature (code 2J); KSOPs are counted as ESOPs. The download holds every "
+                f"{_yr} return received, whatever the search.")
             st.download_button(f"Download {_yr} returns (CSV)",
                                utils.export_csv_bytes(_f25),
                                f"MA_ESOP_Form5500_{_yr}_received_so_far.csv", "text/csv")
@@ -1157,9 +1203,11 @@ if f5500_summaries:
         f'<a href="{config.DOL_FORM_5500_URL}" target="_blank" rel="noopener">efast.dol.gov</a>.'
         f'</p></div>'
         f'<div><h6>Which plans are counted</h6><p>Every ESOP of a Massachusetts-based '
-        f'employer: the return carries an ESOP feature code (2O, 2P or 2Q) and the company '
-        f'is headquartered in Massachusetts. 401(k) plans that merely offer company stock '
-        f'are not ESOPs and are excluded. <b>Active</b> plans report at least one current '
+        f'employer. The company is headquartered in Massachusetts, normally shown by the '
+        f'address on its return, with reviewed exceptions. The return identifies the plan '
+        f'as an ESOP (feature code 2O, 2P or 2Q); a few returns filed without the code '
+        f'were confirmed one by one. 401(k) plans that merely offer company stock are not '
+        f'ESOPs and are excluded. <b>Active</b> plans report at least one current '
         f'employee as a participant.</p></div>'
         f'<div><h6>Timeliness</h6><p>Plans file up to 9½ months after their plan year '
         f'ends, so the newest form year keeps growing. This edition reflects every return '

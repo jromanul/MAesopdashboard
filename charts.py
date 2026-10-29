@@ -60,6 +60,11 @@ def _apply_layout(fig: go.Figure, title: str = "", height: int | None = None,
                         font=dict(family=_FONT, color="#FFFFFF", size=11.5)),
         separators=".,",
     )
+    if len(fig.data) > 1:
+        # A legend under the plot collides with year labels that Plotly turns on a
+        # narrow (phone) screen, so a multi-series chart puts it under the title.
+        fig.update_layout(legend=dict(yanchor="bottom", y=1.0, xanchor="left", x=0),
+                          margin=dict(t=72))
     fig.update_xaxes(
         showgrid=False, showline=True, linecolor=_AXIS, linewidth=1, ticks="",
         title=dict(text=x_title, font=dict(size=10.5, color=_TEXT_DARK)),
@@ -85,9 +90,11 @@ def _apply_layout(fig: go.Figure, title: str = "", height: int | None = None,
 
 
 def _year_axis(fig: go.Figure, years: list) -> go.Figure:
-    """Whole-year ticks with half a year of padding, so neither end is clipped."""
+    """Whole-year ticks with half a year of padding, so neither end is clipped.
+    Labels turn at most 45 degrees when crowded (a phone), never 90."""
     if years:
-        fig.update_xaxes(dtick=1, range=[min(years) - 0.5, max(years) + 0.5])
+        fig.update_xaxes(dtick=1, range=[min(years) - 0.5, max(years) + 0.5],
+                         autotickangles=[0, -45])
     return fig
 
 
@@ -211,7 +218,9 @@ def build_f5500_contributions_bar(summaries: list[dict]) -> go.Figure:
     fig.update_yaxes(tickprefix="$", ticksuffix="M",
                      range=[0, max(contribs_m or [0]) * 1.15 or 1])
     _year_axis(fig, years)
-    fig.update_layout(bargap=0.35, uniformtext=dict(minsize=9, mode="show"))
+    # On a narrow screen a label wider than its bar is hidden rather than
+    # overprinting its neighbour; hover still gives every value.
+    fig.update_layout(bargap=0.35, uniformtext=dict(minsize=8, mode="hide"))
     return fig
 
 
@@ -314,15 +323,20 @@ def build_f5500_industry_bar(industry_data: list[dict], top_n: int = 15) -> go.F
         marker_color=[sector_color(s) for s in sectors],
         text=[f"{c}" for c in counts], textposition="outside", cliponaxis=False,
         textfont=dict(size=11, color=_TEXT_BLACK, family=_FONT),
-        customdata=[c / total * 100 if total else 0 for c in counts],
-        hovertemplate="%{y}: %{x} plans (%{customdata:.1f}%)<extra></extra>",
+        customdata=[[c / total * 100 if total else 0, "plan" if c == 1 else "plans"]
+                    for c in counts],
+        hovertemplate="%{y}: %{x} %{customdata[1]} (%{customdata[0]:.1f}%)<extra></extra>",
     ))
     _apply_layout(fig, title="Active MA ESOPs by Industry Sector",
                   x_title="Active plans", source="U.S. DOL Form 5500; sector from NAICS business code",
-                  height=max(320, len(top) * 30 + 120), bottom=64)
-    fig.update_layout(hovermode="closest", showlegend=False, margin=dict(l=210, r=40))
+                  height=max(320, len(top) * 30 + 140), bottom=84)
+    # A fixed left margin wide enough for the longest sector name, so the source
+    # line can start at the figure's edge rather than the plot's.
+    fig.update_layout(hovermode="closest", showlegend=False, margin=dict(l=244, r=40))
+    fig.update_annotations(xshift=-232)
     fig.update_xaxes(showgrid=True, gridcolor=_GRID, range=[0, max(counts) * 1.12])
-    fig.update_yaxes(showgrid=False, zeroline=False, tickfont=dict(color=_TEXT_BLACK, size=11.5))
+    fig.update_yaxes(showgrid=False, zeroline=False, automargin=False,
+                     tickfont=dict(color=_TEXT_BLACK, size=11.5))
     return fig
 
 
@@ -369,8 +383,9 @@ def build_f5500_category_bar(categories: list[str], values: list[float], title: 
         hovertemplate="%{x}: %{text}<extra></extra>",
     ))
     _apply_layout(fig, title=title, y_title=y_title, source=source,
-                  height=config.CHART_HEIGHT_SM + 60, bottom=70)
+                  height=config.CHART_HEIGHT_SM + 90, bottom=110)
     fig.update_layout(hovermode="closest", bargap=0.3, showlegend=False)
+    fig.update_xaxes(automargin=True, autotickangles=[0, -45])
     fig.update_yaxes(range=[0, (max(values) if values else 1) * 1.18])
     return fig
 
@@ -568,7 +583,7 @@ def build_f5500_contributions_vs_distributions(summaries: list) -> go.Figure:
     _apply_layout(fig, title="Employer Contributions In vs. Benefits Paid Out",
                   y_title="Amount ($ millions)", source="U.S. DOL Form 5500, Schedules H and I",
                   height=config.CHART_HEIGHT_MD)
-    fig.update_yaxes(tickprefix="$", ticksuffix="M", rangemode="tozero")
+    fig.update_yaxes(tickprefix="$", ticksuffix="M", tickformat=",", rangemode="tozero")
     _year_axis(fig, years)
     fig.update_layout(barmode="group", bargap=0.25, bargroupgap=0.1)
     return fig

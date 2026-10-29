@@ -12,11 +12,11 @@ numbers are identical by construction.
 Two population bases appear in the output, and mixing them up is the single
 easiest way to publish a wrong number, so each block states which one it uses:
 
-  active (115 for 2024) - plans reporting at least one active participant, minus
+  active (119 for 2024) - plans reporting at least one active participant, minus
       a short list of known defunct/wind-down plans. Answers "how many working
       Massachusetts ESOPs are there". Every per-plan average and the whole
       industry section uses this.
-  filed (128 for 2024) - every ESOP that filed a Form 5500 for the year,
+  filed (133 for 2024) - every ESOP that filed a Form 5500 for the year,
       including plans winding down. Answers "how many ESOPs filed". The
       year-over-year trend series uses this, because a trend line has to count
       the same way in every year and prior years cannot be re-adjudicated.
@@ -231,10 +231,12 @@ def build():
                 ("employer_securities (company stock) is Schedule H line 1d(1) for large "
                  "plans and Schedule I line 3d for small plans. null means the plan left "
                  "the line blank, which is not the same as zero."),
-                ("Every dollar figure is the end-of-plan-year value from the plan's own "
-                 "Schedule H or I, as filed."),
-                ("A form year keeps growing for roughly 18 months as fiscal-year and extended "
-                 "filers arrive, so the most recent year is not final."),
+                ("total_assets and employer_securities are end-of-plan-year balances; "
+                 "employer_contributions and benefits_paid are totals for the plan year. "
+                 "All come from the plan's own Schedule H or I, as filed."),
+                ("Plans may file up to 9.5 months after a plan year ends (about 21.5 months "
+                 "after it begins), so the most recent form year keeps growing as fiscal-year "
+                 "and extended filers arrive and is not final."),
                 ("Every ESOP of a Massachusetts-based employer is counted, closely held or "
                  "publicly traded. 401(k)/savings plans that merely offer employer stock are "
                  "not ESOPs and are excluded."),

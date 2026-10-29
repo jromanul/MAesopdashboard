@@ -1,9 +1,8 @@
 """
 Form 5500 ESOP Dashboard — Municipal Choropleth Map Utilities
 
-Provides reusable choropleth map functions using Plotly's px.choropleth_map
-(MapLibre-based, no API key required). Requires a MassGIS town boundary
-GeoJSON file at data/geo/ma_towns.geojson.
+Provides a municipal choropleth drawn from a MassGIS town boundary GeoJSON
+file at data/geo/ma_towns.geojson (Plotly geo, no basemap tiles or API key).
 
 All functions return None when the GeoJSON file is not present, enabling
 graceful degradation to existing scatter maps.
@@ -17,7 +16,6 @@ from pathlib import Path
 from typing import Optional
 
 import streamlit as st
-import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 
@@ -30,9 +28,6 @@ _GEOJSON_PATH = Path(__file__).parent / "data" / "geo" / "ma_towns.geojson"
 _NAVY = config.CHART_COLORS["navy"]
 _GOLD = config.CHART_COLORS["gold"]
 _FONT = config.CHART_FONT_FAMILY
-
-_MA_CENTER = {"lat": 42.10, "lon": -71.80}
-_DEFAULT_ZOOM = 7.3
 
 # Light-but-visible blue at the low end so towns with only 1–2 ESOPs are not
 # washed out against the basemap, deepening to navy at the high end.
@@ -50,8 +45,8 @@ _NAME_OVERRIDES = {
 
 # Villages, neighborhoods, abbreviations, and common misspellings that are NOT
 # MassGIS towns, mapped to their parent municipality (keyed by UPPER-cased input).
-# Without this, these filings silently drop off the choropleth (e.g. Hyannis —
-# the 6th-largest ESOP city — and every Boston neighborhood). Values are matched
+# Without this, these filings silently drop off the choropleth (e.g. Hyannis
+# and every Boston neighborhood). Values are matched
 # against GeoJSON properties.TOWN (all confirmed present in data/geo/ma_towns.geojson).
 _VILLAGE_TO_TOWN = {
     # Boston neighborhoods
@@ -87,12 +82,44 @@ def has_geojson() -> bool:
     return _GEOJSON_PATH.exists()
 
 
+def _ring_area(ring: list) -> float:
+    """Signed planar area of a ring: positive when it runs counterclockwise."""
+    return sum(x1 * y2 - x2 * y1 for (x1, y1, *_), (x2, y2, *_) in zip(ring, ring[1:] + ring[:1])) / 2
+
+
+def _rewind_for_d3(data: dict) -> dict:
+    """Wind outer rings clockwise and holes counterclockwise, as Plotly's geo
+    (d3) renderer expects. MassGIS publishes the opposite (the GeoJSON
+    standard's winding), which d3 reads as "everything but the town" and
+    paints over the whole map."""
+    for feat in data.get("features", []):
+        geom = feat.get("geometry") or {}
+        polys = ([geom["coordinates"]] if geom.get("type") == "Polygon"
+                 else geom.get("coordinates", []) if geom.get("type") == "MultiPolygon" else [])
+        for poly in polys:
+            for i, ring in enumerate(poly):
+                if (_ring_area(ring) > 0) == (i == 0):
+                    ring.reverse()
+    return data
+
+
 @st.cache_data(ttl=None)
 def _load_geojson_cached(_mtime: float) -> dict | None:
     try:
         with open(_GEOJSON_PATH, "r") as f:
             data = json.load(f)
-        return data
+        if "bbox" not in data:
+            xs, ys = [], []
+            for feat in data.get("features", []):
+                geom = feat.get("geometry") or {}
+                polys = ([geom["coordinates"]] if geom.get("type") == "Polygon"
+                         else geom.get("coordinates", []))
+                for poly in polys:
+                    for x, y, *_ in poly[0]:
+                        xs.append(x)
+                        ys.append(y)
+            data["bbox"] = [min(xs), min(ys), max(xs), max(ys)]
+        return _rewind_for_d3(data)
     except Exception as e:
         _log.error("Failed to load GeoJSON: %s", e)
         return None
@@ -110,7 +137,6 @@ def create_choropleth_map(
     value_col: str,
     title: str = "",
     color_scale=None,
-    hover_cols: list[str] | None = None,
     legend_title: str = "",
     height: int = 600,
     source: str = "",
@@ -144,54 +170,55 @@ def create_choropleth_map(
     if color_scale is None:
         color_scale = _DEFAULT_SCALE
 
-    hover_data_dict = {}
-    if hover_cols:
-        for col in hover_cols:
-            if col in plot_df.columns:
-                hover_data_dict[col] = True
-    hover_data_dict["_town_match"] = False
+    # Every town is drawn, those without a sponsor in a neutral grey, so the
+    # state's outline reads at any width. A flat outline map (no basemap tiles)
+    # framed on the state shows all of Massachusetts on first load, phone
+    # included; a tiled map opens at one zoom and crops the state on a phone.
+    towns = sorted({f["properties"]["TOWN"] for f in geojson["features"]})
+    full = pd.DataFrame({"_town_match": towns}).merge(plot_df, on="_town_match", how="left")
+    full[municipality_col] = full["_town_match"].str.title()
+    z = full[value_col].fillna(0)
+    zmax = float(range_color[1]) if range_color else float(z.max() or 1)
+    zmin = float(range_color[0]) if range_color else 0.0
+    # Zero gets its own grey step below the scale's lightest blue.
+    cut = min(0.5 / zmax, 0.5) if zmax > 0 else 0.5
+    scale = [[0.0, "#EEF2F7"], [cut, "#EEF2F7"]] + [
+        [cut + (1 - cut) * stop, color] for stop, color in color_scale]
 
-    fig = px.choropleth_map(
-        plot_df,
-        geojson=geojson,
-        locations="_town_match",
-        featureidkey="properties.TOWN",
-        color=value_col,
-        hover_name=municipality_col,
-        hover_data=hover_data_dict if hover_data_dict else None,
-        color_continuous_scale=color_scale,
-        range_color=range_color,
-        opacity=1.0,
-        zoom=_DEFAULT_ZOOM,
-        center=_MA_CENTER,
-        map_style="carto-positron",
-        height=height,
-        title=title,
-    )
-
-    fig.update_traces(marker_line_width=0.4, marker_line_color="rgba(255,255,255,.7)")
-    if hover_fields:
-        cols = [c for _l, c, _f in hover_fields if c in plot_df.columns]
-        fig.update_traces(
-            customdata=plot_df[cols].fillna(0).to_numpy(),
-            hovertemplate="<b>%{hovertext}</b><br>" + "<br>".join(
-                f"{label}: %{{customdata[{i}]:{fmt}}}"
-                for i, (label, _c, fmt) in enumerate(
-                    [h for h in hover_fields if h[1] in plot_df.columns]))
-            + "<extra></extra>")
-
-    fig.update_layout(
-        font=dict(family=_FONT, color="#0F1E2E", size=12),
-        title=dict(font=dict(size=14, family=_FONT, color="#0F1E2E", weight=700), x=0.01),
-        paper_bgcolor="rgba(0,0,0,0)",
-        margin=dict(l=0, r=0, t=50 if title else 10, b=34 if source else 0),
-        coloraxis_colorbar=dict(
+    hover = hover_fields or [(legend_title or value_col, value_col, ",d")]
+    hover = [h for h in hover if h[1] in full.columns]
+    fig = go.Figure(go.Choropleth(
+        geojson=geojson, featureidkey="properties.TOWN",
+        locations=full["_town_match"], z=z, zmin=zmin, zmax=zmax,
+        colorscale=scale, marker_line_width=0.4, marker_line_color="#FFFFFF",
+        text=full[municipality_col],
+        customdata=full[[c for _l, c, _f in hover]].fillna(0).to_numpy(),
+        hovertemplate="<b>%{text}</b><br>" + "<br>".join(
+            f"{label}: %{{customdata[{i}]:{fmt}}}" for i, (label, _c, fmt) in enumerate(hover))
+        + "<extra></extra>",
+        colorbar=dict(
             title=dict(text=legend_title or value_col.replace("_", " ").title(),
-                       font=dict(size=11, color="#3D4E60")),
-            thickness=14,
-            len=0.7,
-            tickfont=dict(size=10.5, color="#55667A"),
-        ),
+                       side="top", font=dict(size=11, color="#3D4E60")),
+            orientation="h", x=0.5, xanchor="center", y=0, yanchor="top",
+            len=0.6, thickness=12, tickfont=dict(size=10.5, color="#55667A"),
+            tick0=0, dtick=max(1, round(zmax / 5)) if zmax >= 5 else 1),
+    ))
+    # The state's own extent (not fitbounds, which leaves the map at a fraction
+    # of the card on a wide screen).
+    x0, y0, x1, y1 = geojson["bbox"]
+    fig.update_geos(lonaxis_range=[x0 - 0.04, x1 + 0.04], lataxis_range=[y0 - 0.04, y1 + 0.04],
+                    visible=False, projection_type="mercator", bgcolor="rgba(0,0,0,0)")
+    fig.update_layout(
+        height=height,
+        font=dict(family=_FONT, color="#0F1E2E", size=12),
+        # The title sits just above the map, below the band the toolbar takes on a
+        # touch screen, so the toolbar never covers it.
+        title=dict(text=title, font=dict(size=14, family=_FONT, color="#0F1E2E", weight=700),
+                   x=0.01, xanchor="left", yref="paper", y=1, yanchor="bottom",
+                   pad=dict(b=6)),
+        paper_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=0, r=0, t=72 if title else 10, b=(104 if "<br>" in source else 90)
+                    if source else 70),
         hoverlabel=dict(bgcolor="#0A2E52", bordercolor="#0A2E52",
                         font=dict(family=_FONT, color="#FFFFFF", size=12)),
     )
@@ -199,8 +226,8 @@ def create_choropleth_map(
     if source:
         fig.add_annotation(
             text=f"Source: {source}",
-            xref="paper", yref="paper",
-            x=0, y=0, yanchor="top", yshift=-8, showarrow=False,
+            xref="paper", yref="paper", x=0, xanchor="left",
+            y=0, yanchor="top", yshift=-62, showarrow=False, align="left",
             font=dict(size=10, color="#55667A", family=_FONT),
         )
 

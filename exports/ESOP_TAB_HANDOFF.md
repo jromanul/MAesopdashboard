@@ -71,9 +71,11 @@ row is `years`, `people` or `usd` so you can format without parsing the label.
 - Total assets — `total_assets`
 - Contributions vs distributions — `employer_contributions` and `benefits_paid` as grouped bars
 
-Note that 2024's participant series dip against 2023. That is mostly companies leaving
-the dataset, not shrinkage at continuing plans, and part of it is filing lag that
-will fill in. Do not annotate it as a decline in employee ownership.
+Note that 2024's participant series dip against 2023 (by 1,242 total and 2,157
+active). Nearly all of the dip is at plans that filed in both years, chiefly a few
+plans shrinking or winding down (Abt Global, Harpoon Brewery, both L.S. Starrett
+plans); plans entering and leaving the dataset add participants on net. Do not
+annotate it as a statewide decline in employee ownership.
 
 ### 4. Distributions — from `distributions`
 
@@ -95,9 +97,9 @@ Already sorted by plan count descending, which is the order to render. Each entr
 has `sector`, `plans`, `participants`, `assets`, `avg_account_balance` and
 `include_in_balance_table`.
 
-- Sector bar chart — `plans` (all 13 sectors, sums to 119)
+- Sector bar chart — `plans` (all 11 sectors, sums to 119)
 - Average account balance table — `avg_account_balance`, filtered to rows where
-  `include_in_balance_table` is true (8 of the 13 sectors). A one-plan sector's
+  `include_in_balance_table` is true (8 of the 11 sectors). A one-plan sector's
   "average" is just that plan and reads as a sector characteristic when it is
   not, so the flag is precomputed rather than left to you to remember.
 - Share charts by plans / participants / assets — group the small sectors into an
@@ -116,10 +118,12 @@ Carry these into any tooltip, footnote or methodology blurb:
 1. **Participants are year-end counts.** `total_participants` is the plan total
    at the *end* of the plan year (Form 5500 line 6f): current employees, retirees,
    former employees still owed a balance, and beneficiaries. `active_participants`
-   is current employees on the same date (line 6a). Every dollar figure is also a
-   year-end value. Label participants "at year end" wherever a date is shown. (If
-   you cached an export from before November 2026, re-fetch it: earlier files used
-   the start-of-year total, line 5.)
+   is current employees on the same date (line 6a). `total_assets` and
+   `employer_securities` are year-end balances; `employer_contributions` and
+   `benefits_paid` are totals for the plan year. Label participants "at year end"
+   wherever a date is shown. (If your cached export's `meta.generated_utc` is
+   earlier than 2026-10-28, or its first caveat says "BEGINNING of the plan year",
+   re-fetch it: earlier files used the start-of-year total, line 5.)
 
 2. **`employer_securities`: null is not zero.** Company stock comes from Schedule H
    line 1d(1) for large plans and Schedule I line 3d for small plans. 112 of the
@@ -127,8 +131,9 @@ Carry these into any tooltip, footnote or methodology blurb:
    blank (`null`). Before the October 2026 refresh only Schedule H was read, so
    only 34 plans carried a figure — if you cached the old file, re-fetch it.
 
-3. **The most recent form year is not final.** Plans may file up to ~18 months
-   after a plan year begins, so 2024 will keep growing. Show the "as of" date from
+3. **The most recent form year is not final.** Plans may file up to 9½ months
+   after a plan year ends (about 21½ months after it begins), so 2024 will keep
+   growing. Show the "as of" date from
    `meta.data_as_of`.
 
 4. **Form year 2025 is deliberately absent.** It is still open (`meta.open_form_year`)
@@ -150,8 +155,10 @@ median plan assets       $6,458,729
 median $/active participant $116,894
 employer securities  $3,606,344,663   (112 of 119 plans)
 trend years               2014–2024   (11 points)
-industry sectors                 13   (plans sum to 119)
+industry sectors                 11   (plans sum to 119)
 ```
 
-Top three sectors by plan count: Professional & Technical Services (27),
-Manufacturing (26), Construction (20).
+Top three sectors by plan count: Manufacturing (29), Professional & Technical
+Services (23), Construction (20). (Exports generated before October 29, 2026 carried
+the industry codes as filed for 2024 rather than the website-checked ones, and
+showed 13 sectors; re-fetch.)

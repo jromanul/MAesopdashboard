@@ -194,6 +194,77 @@ CITY_SPELLINGS: dict[str, str] = {
     "WODBURN": "Woburn",                   # Atlantic Plywood, plan-year-2019 final return
 }
 
+# Industry codes checked against each company's website (the owner's May 31, 2026
+# review of every active company, commit 2d5ab22), wherever the code differs from
+# the one the return carries. The June 2026 refresh wrote the returns' codes back
+# over them; this list keeps the reviewed code in the form year it was reviewed
+# for and every later year. Keyed by EIN; the sector follows the code.
+VERIFIED_NAICS_FROM = 2024
+VERIFIED_NAICS: dict[str, str] = {
+    "934368162": "541910",  # Abt Global, Inc. (Abt Associates)
+    "332601261": "551112",  # ASC Management Holdings, Inc.
+    "364488912": "333248",  # Ashworth International, Inc.
+    "42501424": "561621",   # B&B Engineering Corporation
+    "260743647": "561730",  # Barrett Tree Service East, Inc.
+    "43026692": "238990",   # Baxter
+    "43521482": "339999",   # Blue Q
+    "41110170": "423720",   # Bourneuf Corporation
+    "43200597": "236220",   # Brait Builders Corporation
+    "43402944": "522110",   # Brookline Bancorp, Inc.
+    "42831820": "339992",   # Burkart
+    "825377573": "459991",  # Canna Provisions, Inc.
+    "43005476": "481111",   # Cape Air / Nantucket Airlines (Hyannis Air Service)
+    "42272126": "444110",   # Cape Cod Lumber Co., Inc.
+    "43401502": "561311",   # Carney, Sandoe & Associates
+    "42514329": "332812",   # Central Coating Technologies, Inc.
+    "42803764": "541511",   # Charles River Analytics, Inc.
+    "473752261": "531390",  # CHMWarnick, Inc.
+    "43152864": "238290",   # Colonial Systems, Inc.
+    "42482120": "444110",   # Concord Lumber Corp.
+    "471008886": "561300",  # Creative Financial Staffing, Inc.
+    "43067724": "522110",   # Eastern Bank
+    "42993095": "541620",   # Environmental Health & Engineering, Inc.
+    "43041248": "238110",   # G&C Concrete Construction
+    "42348065": "334516",   # Janis Research
+    "41866480": "333515",   # The L.S. Starrett Company
+    "42941854": "523930",   # Middleton & Company, Inc.
+    "843556185": "522110",  # Needham Bank
+    "42389826": "423830",   # New England Controls, Inc.
+    "43490470": "445120",   # New England Discount Retailers, Inc.
+    "43298009": "237310",   # Northern Construction Holding, Inc.
+    "42587894": "238220",   # Notch
+    "43223296": "423420",   # OEM Connect, Ltd.
+    "42517090": "541700",   # Physical Sciences Inc.
+    "42760904": "333415",   # Process Cooling Systems, Inc.
+    "42637381": "335929",   # Quirk Wire Co., Inc.
+    "208818800": "238110",  # Raycon Construction
+    "42804642": "327910",   # Rex Cut Products, Inc.
+    "43130236": "236220",   # The Richmond Group, Inc.
+    "41810570": "325510",   # Savogran Company
+    "43053085": "541715",   # Scientific Systems Company, Inc.
+    "651174540": "333914",  # Seal-Ryt Corp.
+    "43027262": "339950",   # Sign Design, Inc.
+    "41203530": "423320",   # Spaulding Brick
+    "42718570": "541715",   # Spectral Sciences, Inc.
+    "42741165": "237310",   # SPS New England, Inc.
+    "204734036": "327991",  # Stonetek Imports, Inc.
+    "42682840": "441300",   # Sullivan Investment Co., Inc. (Sullivan Tire)
+    "42943867": "332721",   # Swissturn/USA, Inc.
+    "42745179": "541310",   # Symmes Maini & McKee Associates, Inc.
+    "42324804": "332813",   # Tech-Etch, Inc.
+    "475615911": "459991",  # Theory Wellness, Inc.
+    "42630303": "238160",   # Titan Roofing
+    "43484613": "237130",   # Tri-Wire Engineering Solutions, Inc.
+    "832236376": "459991",  # The Vault
+    "42942412": "423720",   # Washburn-Garfield Corporation
+    "42044378": "327991",   # Williams Stone Co., Inc.
+    "208135911": "236220",  # Windover Construction, Inc.
+    "42188202": "332618",   # Wirefab, Inc.
+    "43531186": "424490",   # Woodland Partners, Inc.
+    "42895731": "332119",   # Worcester Manufacturing, Inc.
+    "43038026": "337212",   # Wright Architectural Millwork Corporation
+}
+
 # Plans whose return address is not where the covered company is based. Only
 # Massachusetts-based ESOPs are counted (owner's decision, 2026-10-28), and
 # "based" means the headquarters of the employer the plan covers - normally,
@@ -371,7 +442,7 @@ def sf_esop_returns(year: int) -> dict:
             "form": "5500-SF", "ack_id": r["ACK_ID"], "sponsor_name": r["SF_SPONSOR_NAME"],
             "sponsor_city": r["SF_SPONS_US_CITY"], "ein_raw": r["SF_SPONS_EIN"],
             "pn_raw": r["SF_PLAN_NUM"], "plan_year_begin": r["SF_PLAN_YEAR_BEGIN_DATE"],
-            "total_participants": dol_bulk.to_num(r.get("SF_TOT_PARTCP_BOY_CNT"))})
+            "total_participants": dol_bulk.to_num(r.get("SF_TOT_ACT_RTD_SEP_BENEF_CNT"))})
     return out
 
 
@@ -426,6 +497,9 @@ def build_record(conn, year: int, ret: dict, sched: dict, now: str) -> dict:
     if not naics:
         naics = ret["naics_code"]
         sector = sector or (fa.NAICS_SECTORS.get(naics[:2], "") if naics else "")
+    if year >= VERIFIED_NAICS_FROM and ret["ein"] in VERIFIED_NAICS:
+        naics = VERIFIED_NAICS[ret["ein"]]
+        sector = fa.NAICS_SECTORS.get(naics[:2], "")
     zip_code = ret["sponsor_zip"]
     if hit and hit[1] and hit[2]:
         city, zip_code = hit[2]   # filed from another state; the row carries the company's home

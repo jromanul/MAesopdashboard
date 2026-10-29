@@ -100,7 +100,9 @@ FORM5500_YEARS = list(range(2014, 2026))
 
 # The form year DOL is still receiving filings for. Plans file 7 months after
 # their plan year ends (9.5 with an extension), so a year keeps trickling in for
-# roughly 18 months — see the "2025 Filers" page, which tracks this year on its
+# about two years (a calendar-year plan can file 21.5 months after its plan year
+# begins; a fiscal year that begins late in the year, later still) — see the
+# "2025 Filers" page, which tracks this year on its
 # own. It is deliberately EXCLUDED from form5500_annual_summary, which drives the
 # complete-year Overview / Trends / Year-over-Year analyses; see
 # form5500_analysis.recompute_annual_summaries(). Bump once a year is
@@ -273,7 +275,7 @@ DOL's bulk zips are cached in the folder named by the `DOL_CACHE_DIR` environmen
    refresh the CSV copies of the database and the Policy Tracker export, then update
    `DATA_AS_OF` and `DOL_RELEASE_DATE` above.
 
-A form year keeps growing for roughly 18 months after it opens, because plans may file up
+A form year keeps growing for about two years after it opens, because plans may file up
 to 9.5 months after a plan year ends and many run on a fiscal year, so a completed year
 should be re-scanned periodically rather than assumed final. An empty database is
 auto-seeded from `form5500_ma_esops.csv` if that file is present in the project root.
