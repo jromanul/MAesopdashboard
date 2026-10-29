@@ -173,8 +173,8 @@ Massachusetts filing by **plan name** (ESOP / "employee stock" / "stock ownershi
 "stock bonus") and reconciles the result against the code-based set, so a plan cannot go
 missing merely because its codes changed between years.
 
-Plans carrying both **2J** (401(k)) and **2K** (401(m)) alongside an ESOP code are flagged
-as **KSOPs** (included in ESOP counts but separately identified).
+Plans carrying **2J** (a 401(k) feature) alongside an ESOP code are flagged as **KSOPs**
+(included in ESOP counts but separately identified).
 
 **Every ESOP counts.** A company either sponsors an ESOP or it does not; the dashboard
 draws no line by the share of the company the ESOP owns, by whether the company is closely

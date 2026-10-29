@@ -1012,7 +1012,7 @@ if f5500_summaries:
                 color_scale=[[0, "#9DC3E6"], [0.25, "#5B9BD5"], [0.5, "#2E75B6"],
                              [0.75, "#1A5490"], [1, "#0A2E52"]],
                 legend_title="Plans",
-                source="U.S. DOL Form 5500 (sponsor mailing address); MassGIS town boundaries",
+                source="U.S. DOL Form 5500 (sponsor headquarters city); MassGIS town boundaries",
                 hover_fields=[("Plans", "plan_count", ",d"),
                               ("Participants", "total_partcp", ",.0f"),
                               ("Plan assets", "total_assets", "$,.0f")],

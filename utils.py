@@ -54,7 +54,7 @@ _EXPORT_COLUMNS = [
     ("naics_code", "NAICS Code"),
     ("plan_eff_date", "Plan Effective Date"),
     ("is_ksop", "KSOP (401k+ESOP)"),
-    ("total_participants", "Total Participants (beginning of year)"),
+    ("total_participants", "Total Participants (end of year)"),
     ("active_participants", "Active Participants (end of year)"),
     ("total_assets", "Total Assets"),
     ("total_liabilities", "Total Liabilities"),
@@ -182,13 +182,10 @@ HEADLINE FIGURES FOR {year}
 
 HOW TO READ THE COLUMNS
 -----------------------
-Total Participants is the plan's total at the BEGINNING of the plan year
-(Form 5500, line 5). Active Participants is the count of currently employed
-participants at the END of the year (line 6a). The two figures are measured
-on different dates -- a plan that grew during the year can show more active
-participants than the beginning-of-year total. Form 5500 also reports an
-end-of-year total (line 6f); this dataset uses line 5 in every year so the
-series stays comparable over time.
+Total Participants is the plan's total at the END of the plan year (Form
+5500, line 6f). Active Participants is the count of currently employed
+participants on the same date (line 6a). Every dollar figure is also an
+end-of-year value, so all figures for a plan describe the same day.
 
 "Total Participants" counts everyone owed a balance, including retirees and
 former employees who have not yet been paid out. It is not a headcount of
@@ -207,16 +204,21 @@ not the same as zero.
 
 HOW PLANS WERE IDENTIFIED
 -------------------------
-A filing is included when the sponsor's mailing state is MA and the Form
-5500 "type of pension benefit" codes include 2O (ESOP), 2P (leveraged ESOP)
-or 2Q. No keyword or plan-name matching is used, so plans are counted on
-what the sponsor certified to DOL rather than on how the plan is named.
+Every ESOP of a Massachusetts-based employer is included: the Form 5500
+"type of pension benefit" codes include 2O (ESOP), 2P (leveraged ESOP) or
+2Q, and the company the plan covers is headquartered in Massachusetts. The
+return's mailing address is the evidence unless it is not the company's
+home (a parent or administrator filing from another state, or an
+out-of-state company using a Massachusetts mailing address); those cases
+are reviewed one by one. No line is drawn by how much of the company the
+ESOP owns, or by whether the company is closely held or publicly traded.
+Each return counts in the form year in which its plan year begins.
 
-Deliberately excluded: ordinary 401(k)/savings plans at large publicly
-traded employers that carry an ESOP code only because company stock is one
-investment option among many. These are not closely held employee-owned
-companies, and including them would overstate Massachusetts employee
-ownership by thousands of participants each.
+Deliberately excluded: plans that are not ESOPs - ordinary 401(k)/savings
+plans that carry an ESOP code only because company stock is one investment
+option among many, and profit-sharing or 401(k) plans at employee-owned
+companies. Counting the large public-company savings plans would add
+thousands of participants each.
 
 Because plans may file up to roughly 18 months after a plan year begins,
 a recent form year keeps growing as late filers arrive. Figures for {year}

@@ -699,6 +699,13 @@ def get_asset_per_participant_distribution(year: int = None) -> list:
 
 # ── Data Processing Logic ─────────────────────────
 
+def _text(val) -> str:
+    """A CSV cell as text, with a missing value (pandas NaN) as ""."""
+    if val is None or (isinstance(val, float) and val != val):
+        return ""
+    return str(val).strip()
+
+
 def _safe_int(val) -> int | None:
     if val is None:
         return None
@@ -802,7 +809,9 @@ def _normalize_pn(pn_raw: str) -> str:
 # ── Import from pre-processed CSV ────────────────
 
 def import_from_csv(csv_path: str):
-    df = pd.read_csv(csv_path)
+    # ZIPs and codes are text: read as numbers, "02114" would lose its zero.
+    df = pd.read_csv(csv_path, dtype={"sponsor_zip": str, "type_pension_bnft": str,
+                                      "naics_code": str, "plan_eff_date": str})
     logger.info("Importing %d records from %s", len(df), csv_path)
 
     records = []
@@ -827,11 +836,11 @@ def import_from_csv(csv_path: str):
             "plan_num": plan_num if plan_num != "nan" else "",
             "plan_name": plan_name if plan_name != "nan" else "",
             "sponsor_name": sponsor_name,
-            "sponsor_city": str(row.get("sponsor_city", "")).replace("nan", ""),
-            "sponsor_state": str(row.get("sponsor_state", "")).replace("nan", ""),
-            "sponsor_zip": str(row.get("sponsor_zip", "")).replace("nan", ""),
-            "type_plan_entity": str(row.get("type_plan_entity", "")).replace("nan", ""),
-            "type_pension_bnft": str(row.get("type_pension_bnft", "")).replace("nan", ""),
+            "sponsor_city": _text(row.get("sponsor_city")),
+            "sponsor_state": _text(row.get("sponsor_state")),
+            "sponsor_zip": _text(row.get("sponsor_zip")),
+            "type_plan_entity": _text(row.get("type_plan_entity")),
+            "type_pension_bnft": _text(row.get("type_pension_bnft")),
             "is_esop": int(row.get("is_esop", 0)),
             "is_ksop": int(row.get("is_ksop", 0)),
             "total_participants": _safe_int(row.get("total_participants")),
@@ -843,27 +852,25 @@ def import_from_csv(csv_path: str):
             "benefits_paid": _safe_money(row.get("benefits_paid")),
             "net_income": _safe_money(row.get("net_income")),
             "employer_securities": _safe_money(row.get("employer_securities")),
-            "naics_code": str(row.get("naics_code", "")).replace("nan", ""),
-            "industry_sector": str(row.get("industry_sector", "")).replace("nan", ""),
-            "plan_eff_date": str(row.get("plan_eff_date", "")).replace("nan", ""),
+            "naics_code": _text(row.get("naics_code")),
+            "industry_sector": _text(row.get("industry_sector")),
+            "plan_eff_date": _text(row.get("plan_eff_date")),
         })
 
     insert_filings(records)
-
     years = sorted(set(r["filing_year"] for r in records))
-    for yr in years:
-        yr_records = [r for r in records if r["filing_year"] == yr]
-        us_summary = {
-            "us_total_esop_count": 0,
-            "us_total_participants": 0,
-            "us_total_assets": 0.0,
-        }
-        summary = compute_annual_summary(yr, yr_records, us_summary)
-        insert_annual_summary(summary)
+
+    # The U.S. reference figures come from the seed summary CSV beside the
+    # records; every Massachusetts figure is recomputed from the rows just
+    # loaded, exactly as the data pipeline computes it.
+    summary_csv = os.path.join(os.path.dirname(os.path.abspath(csv_path)), config.FORM5500_SUMMARY_CSV)
+    if os.path.exists(summary_csv):
+        import_from_summary_csv(summary_csv)
 
     # Enforce the invariant that unreported employer-securities figures are NULL
     # (not 0) so missing company-stock data renders as "—" rather than "$0".
     nullify_unreported_employer_securities()
+    recompute_annual_summaries()
 
     set_meta("last_import", datetime.now(timezone.utc).isoformat())
     set_meta("source", csv_path)

@@ -168,39 +168,39 @@ CITY_SPELLINGS: dict[str, str] = {
 # Massachusetts-based ESOPs are counted (owner's decision, 2026-10-28), and
 # "based" means the headquarters of the employer the plan covers - normally,
 # but not always, the address on its Form 5500. Keyed by (EIN, plan number):
-# (years or None, Massachusetts-based?, home city or None, reason). A True entry
+# (years or None, Massachusetts-based?, (home city, ZIP) or None, reason). A True entry
 # counts a Massachusetts company whose parent or administrator files from
 # another state; a False entry leaves out a company based elsewhere whose
 # return carries a Massachusetts address (an acquirer's, lawyer's or
 # administrator's). Each entry was researched and independently reviewed.
 MA_BASED_OVERRIDES: dict[tuple[str, str], tuple] = {
     # Massachusetts companies whose ESOP returns are filed from another state.
-    ("41366970", "7"): (None, True, "Boston",
+    ("41366970", "7"): (None, True, ("Boston", "02127"),
                         "The Gillette Company: 2016-2021 returns are mailed from Procter & Gamble's "
                         "Cincinnati benefits office; Gillette stayed at 1 Gillette Park, Boston, "
                         "where the same EIN's other plan files"),
-    ("41549430", "3"): (None, True, "Plympton",
+    ("41549430", "3"): (None, True, ("Plympton", "02367"),
                         "Litecontrol Corporation, a Plympton lighting maker bought by Hubbell in "
                         "2014; its 2014 return is mailed c/o Hubbell, Shelton, CT"),
-    ("455266171", "3"): (None, True, "Plympton",
+    ("455266171", "3"): (None, True, ("Plympton", "02367"),
                          "Litecontrol's ESOP, final 2015 return filed by Hubbell's Newco Lighting "
                          "from Shelton, CT"),
-    ("43050515", "2"): (None, True, "Agawam",
+    ("43050515", "2"): (None, True, ("Agawam", "01001"),
                         "Environmental Compliance Services (Agawam): ESOP wound down in 2017-2018 by "
                         "ECS Holdco from West Hartford, CT after the company's sale"),
-    ("41858810", "4"): ({2014}, True, "West Springfield",
+    ("41858810", "4"): ({2014}, True, ("West Springfield", "01089"),
                         "United Bank's own ESOP: the bank was in West Springfield until its April "
                         "2014 merger with Rockville Financial; the return is filed from Glastonbury, CT"),
-    ("61213065", "19"): (None, True, "Belmont",
+    ("61213065", "19"): (None, True, ("Belmont", "02478"),
                          "Belmont Savings Bank's ESOP, wound down 2018-2020 by People's United "
                          "(Bridgeport, CT) after it acquired BSB Bancorp"),
-    ("208447891", "5"): (None, True, "North Andover",
+    ("208447891", "5"): (None, True, ("North Andover", "01845"),
                          "LSB Corporation / RiverBank's ESOP, final 2014 return filed by People's "
                          "United from Bridgeport, CT"),
-    ("113431358", "5"): (None, True, "Amesbury",
+    ("113431358", "5"): (None, True, ("Amesbury", "01913"),
                          "Essex County Gas Company's legacy ESOP (Amesbury), filed by its parent "
                          "KeySpan from New York"),
-    ("41663150", "20"): (None, True, "Amesbury",
+    ("41663150", "20"): (None, True, ("Amesbury", "01913"),
                          "the same Essex County Gas Company ESOP, filed by National Grid USA "
                          "Service Company from 2018"),
     # Companies based elsewhere whose returns carry a Massachusetts address.
@@ -224,6 +224,14 @@ MA_BASED_OVERRIDES: dict[tuple[str, str], tuple] = {
                         "Gripnail Corporation is in East Providence, RI; its returns use a Taunton "
                         "address only during the 2019-2022 wind-down"),
 }
+
+
+def is_ksop_codes(codes: str) -> bool:
+    """A KSOP is an ESOP with a 401(k) feature: code 2J alongside the ESOP code.
+    (2K, a 401(m) match or after-tax arrangement, often accompanies it but is
+    not part of the test: Strem Chemicals' and Haberman's 401(k)-and-ESOP plans
+    carry 2J without it.)"""
+    return "2J" in (codes or "").upper()
 
 
 def city_spelling(city: str) -> str:
@@ -383,15 +391,16 @@ def build_record(conn, year: int, ret: dict, sched: dict, now: str) -> dict:
     if not naics:
         naics = ret["naics_code"]
         sector = sector or (fa.NAICS_SECTORS.get(naics[:2], "") if naics else "")
+    zip_code = ret["sponsor_zip"]
     if hit and hit[1] and hit[2]:
-        city = hit[2]   # filed from another state; the row carries the company's home
+        city, zip_code = hit[2]   # filed from another state; the row carries the company's home
     codes = ret["codes"]
     return {
         "filing_year": year, "ein": ret["ein"], "plan_num": ret["pn"],
         "plan_name": ret["plan_name"], "sponsor_name": sponsor, "sponsor_city": city,
-        "sponsor_state": "MA", "sponsor_zip": ret["sponsor_zip"],
+        "sponsor_state": "MA", "sponsor_zip": zip_code,
         "type_plan_entity": ret["type_plan_entity"], "type_pension_bnft": codes,
-        "is_esop": 1, "is_ksop": 1 if ("2J" in codes and "2K" in codes) else 0,
+        "is_esop": 1, "is_ksop": 1 if is_ksop_codes(codes) else 0,
         "total_participants": None if ret["total_participants"] is None else int(ret["total_participants"]),
         "active_participants": None if ret["active_participants"] is None else int(ret["active_participants"]),
         **{f: money.get(f) for f in MONEY_FIELDS},
@@ -475,6 +484,12 @@ def verify(year: int, db_year: dict, returns: dict, sched: dict):
         if ret["sponsor_city"] and row["sponsor_city"] and not filed_elsewhere and \
                 city_spelling(ret["sponsor_city"]).lower() != str(row["sponsor_city"]).strip().lower():
             mismatches.append((label, "sponsor_city", row["sponsor_city"], ret["sponsor_city"], "F_5500"))
+        if not filed_elsewhere and (row["sponsor_zip"] or "") != ret["sponsor_zip"].strip():
+            mismatches.append((label, "sponsor_zip", row["sponsor_zip"], ret["sponsor_zip"], "F_5500"))
+        if (row["type_pension_bnft"] or "") != ret["codes"]:
+            mismatches.append((label, "type_pension_bnft", row["type_pension_bnft"], ret["codes"], "F_5500"))
+        if int(row["is_ksop"] or 0) != int(is_ksop_codes(ret["codes"])):
+            mismatches.append((label, "is_ksop", row["is_ksop"], int(is_ksop_codes(ret["codes"])), "F_5500"))
         money, src = dol_bulk.financials(sched.get(ret["ack_id"], {}))
         for fld in MONEY_FIELDS:
             av, dbv = money.get(fld), row[fld]
