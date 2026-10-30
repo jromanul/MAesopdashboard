@@ -65,8 +65,10 @@ MONEY_FIELDS = dol_bulk.MONEY_FIELDS
 # investment option among many (typically 3-8% of assets), not the
 # employee-ownership vehicle a tracked KSOP is, and the owner decided on
 # 2026-10-28 that these savings plans are not counted (each would add tens of
-# thousands of participants). Listed here so a later `--import-new` run cannot
-# silently re-add them. See FORM5500_METHODOLOGY.
+# thousands of participants). The owner confirmed the exclusion on 2026-10-30,
+# knowing that most of these plans designate their stock fund an ESOP. Listed
+# here so a later `--import-new` run cannot silently re-add them. See
+# FORM5500_METHODOLOGY.
 EXCLUDED_EINS: dict[str, str] = {
     "42271897": "Cabot Corporation (NYSE: CBT) - 'CABOT 401(K) PLAN', 2O alongside 2J/2K",
     "43234558": "Waters Technologies (NYSE: WAT) - 'THE WATERS EMPLOYEE INVESTMENT PLAN'",

@@ -188,10 +188,12 @@ broad 401(k) savings plans carry an ESOP code (e.g. a "401(K) PLAN" or "SAVINGS 
 PLAN" coded 2O alongside 2J/2K). In most of them the company-stock fund is formally designated
 an ESOP, for the dividend deduction or to deliver the match, but company stock is one
 investment option among many (typically 3-8% of assets), not the employee-ownership vehicle a
-tracked KSOP is. They are treated as 401(k) plans, not ESOPs (owner's decision, 2026-10-28);
-counting them would add some 300,000-450,000 participants a year to a dataset of about 30,000. Likewise, a profit-sharing or 401(k) plan at an employee-owned company
-is not an ESOP. Such filings are reviewed and excluded by hand; the exclusions are recorded in
-`scan_dol_filers.py` so they are not silently re-imported on a later refresh.
+tracked KSOP is. They are treated as 401(k) plans, not ESOPs (owner's decision, 2026-10-28,
+confirmed 2026-10-30 with that ESOP designation in view); counting them would add some
+300,000-450,000 participants a year to a dataset of about 30,000. Likewise, a profit-sharing
+or 401(k) plan at an employee-owned company is not an ESOP. Such filings are reviewed and
+excluded by hand; the exclusions are recorded in `scan_dol_filers.py` so they are not silently
+re-imported on a later refresh.
 
 ### Geographic Filtering
 Only **Massachusetts-based** ESOPs are counted: the employer the plan covers is headquartered
