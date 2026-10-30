@@ -17,7 +17,7 @@ WHAT IS FIXED
 
 2. SPONSOR NAME. Paragus Strategic IT's 2023 and 2024 rows read "Paragus";
    its returns for those years name the sponsor PARAGUS STRATEGIC IT, INC., as
-   in 2015-2022.
+   in 2015-2022. (The company audit later gave every year the ", Inc.".)
 
 Usage:
     python3 apply_2026_10_page_audit.py [--dry-run]
@@ -41,7 +41,7 @@ safe_console.enable_utf8_stdout()
 DB = config.DB_PATH
 
 NAME_FIXES = {  # EIN: sponsor name as on the returns
-    "204270900": "Paragus Strategic IT",
+    "204270900": "Paragus Strategic IT, Inc.",
 }
 
 
