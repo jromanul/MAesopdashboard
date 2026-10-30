@@ -4,7 +4,7 @@
     "form_year": 2024,
     "data_as_of": "October 28, 2026",
     "dol_release": "September 30, 2026",
-    "generated_utc": "2026-10-29T16:54:33+00:00",
+    "generated_utc": "2026-10-30T17:26:07+00:00",
     "source": "U.S. Department of Labor, EFAST2 Form 5500 bulk datasets",
     "source_url": "https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/public-disclosure/foia/form-5500-datasets",
     "dashboard_url": "https://maesopdashboard.streamlit.app",
@@ -18,7 +18,7 @@
       "employer_securities (company stock) is Schedule H line 1d(1) for large plans and Schedule I line 3d for small plans. null means the plan left the line blank, which is not the same as zero.",
       "total_assets and employer_securities are end-of-plan-year balances; employer_contributions and benefits_paid are totals for the plan year. All come from the plan's own Schedule H or I, as filed.",
       "Plans may file up to 9.5 months after a plan year ends (about 21.5 months after it begins), so the most recent form year keeps growing as fiscal-year and extended filers arrive and is not final.",
-      "Every ESOP of a Massachusetts-based employer is counted, closely held or publicly traded. 401(k)/savings plans that merely offer employer stock are not ESOPs and are excluded."
+      "Every ESOP of a Massachusetts-based employer is counted, closely held or publicly traded. Large public companies' 401(k) savings plans, in which company stock is one investment option among many (even where that fund is designated an ESOP), are not counted."
     ]
   },
   "headline": {
@@ -104,7 +104,7 @@
         131,
         126,
         131,
-        133,
+        134,
         133
       ],
       "total_participants": [
@@ -115,9 +115,9 @@
         26522,
         27412,
         29024,
-        29589,
-        29600,
-        30161,
+        29596,
+        29592,
+        30222,
         28919
       ],
       "active_participants": [
@@ -128,9 +128,9 @@
         18416,
         18504,
         20346,
-        19642,
-        19496,
-        21921,
+        19644,
+        19491,
+        21971,
         19764
       ],
       "total_assets": [
@@ -141,9 +141,9 @@
         2517730681,
         3063686339,
         3838638649,
-        4644543490,
-        3857945997,
-        3973764742,
+        4645061890,
+        3855605197,
+        3978257542,
         4050859873
       ],
       "mean_plan_assets": [
@@ -154,9 +154,9 @@
         19669771,
         23935050,
         29302585,
-        36861456,
-        29449969,
-        29877930,
+        36865571,
+        29432101,
+        29688489,
         30457593
       ],
       "employer_contributions": [
@@ -167,9 +167,9 @@
         75278883,
         80530720,
         94464032,
-        110035619,
-        124754759,
-        136338687,
+        109768686,
+        124759229,
+        136709154,
         134752650
       ],
       "benefits_paid": [
@@ -180,9 +180,9 @@
         299805841,
         220704118,
         151480827,
-        1057369488,
-        751453255,
-        309591494,
+        1057360584,
+        751457725,
+        309595928,
         494934240
       ],
       "employer_securities": [
@@ -193,9 +193,9 @@
         2242307394,
         2646488416,
         2898508216,
-        3259845093,
-        3287474767,
-        3472274196,
+        3260363493,
+        3285133967,
+        3476766996,
         3606344663
       ]
     }

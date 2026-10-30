@@ -71,7 +71,7 @@ row is `years`, `people` or `usd` so you can format without parsing the label.
 - Total assets — `total_assets`
 - Contributions vs distributions — `employer_contributions` and `benefits_paid` as grouped bars
 
-Note that 2024's participant series dip against 2023 (by 1,242 total and 2,157
+Note that 2024's participant series dip against 2023 (by 1,303 total and 2,207
 active). Nearly all of the dip is at plans that filed in both years, chiefly a few
 plans shrinking or winding down (Abt Global, Harpoon Brewery, both L.S. Starrett
 plans); plans entering and leaving the dataset add participants on net. Do not
