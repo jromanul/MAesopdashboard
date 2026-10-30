@@ -238,8 +238,9 @@ def build():
                  "after it begins), so the most recent form year keeps growing as fiscal-year "
                  "and extended filers arrive and is not final."),
                 ("Every ESOP of a Massachusetts-based employer is counted, closely held or "
-                 "publicly traded. 401(k)/savings plans that merely offer employer stock are "
-                 "not ESOPs and are excluded."),
+                 "publicly traded. Large public companies' 401(k) savings plans, in which "
+                 "company stock is one investment option among many (even where that fund is "
+                 "designated an ESOP), are not counted."),
             ],
         },
         "headline": headline,

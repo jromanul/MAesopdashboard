@@ -30,6 +30,18 @@ following year, the year it covers (dol_bulk rule 8):
    - Savogran's final return, from December 31, 2024 to April 23, 2025, is a
      2025 filing (0 participants; the plan was wound down).
 
+Also from the reviews (no count changes):
+   - The ESOPs of Massachusetts banks wound down by a Massachusetts acquirer
+     carry the bank's home city, as those wound down from another state
+     already did: Hampden Bank showed Pittsfield (Berkshire Bank), Peoples
+     Federal and Central Co-operative Rockland (Rockland Trust), Pilgrim and
+     Envision Easthampton (Hometown Financial), and so on
+     (scan_dol_filers.MA_BASED_OVERRIDES).
+   - Avidia Bank's rejected first filing of its 2025 ESOP under the 401(k)'s
+     plan number is recorded as a duplicate, and Starrett's and New England
+     Biolabs' two ESOPs each are recorded as distinct plans, so later scans
+     neither flag nor hold them back.
+
 Usage:
     DOL_CACHE_DIR=/path/to/zips python3 apply_2026_10_final_audit.py [--dry-run]
 """
@@ -60,16 +72,22 @@ DB = config.DB_PATH
 
 def cities_from_returns(conn, located: dict, dry_run: bool) -> int:
     """Each row's city as filed on its own return (an address change is real
-    information), with the spelling the plan uses in its other years."""
+    information), with the spelling the plan uses in its other years; a plan
+    filed by a parent or acquirer keeps the company's home city
+    (scan_dol_filers.MA_BASED_OVERRIDES)."""
     n = 0
     for row_id, (y, ret, _sched) in located.items():
-        if not dol_bulk.is_ma_address(ret["state"], ret["sponsor_zip"]) or not ret["sponsor_city"]:
-            continue  # filed from elsewhere: the row carries the company's home city
         r = conn.execute("SELECT sponsor_name, sponsor_city FROM form5500_filings WHERE id=?",
                          (row_id,)).fetchone()
         if r is None:
             continue
-        want = scan.inherit_city(r["sponsor_city"], ret["sponsor_city"])
+        hit = scan._ma_override(ret["ein"], ret["pn"], y)
+        if hit and hit[1] and hit[2]:
+            want = hit[2][0]  # filed by a parent or acquirer: the company's home city
+        elif dol_bulk.is_ma_address(ret["state"], ret["sponsor_zip"]) and ret["sponsor_city"]:
+            want = scan.inherit_city(r["sponsor_city"], ret["sponsor_city"])
+        else:
+            continue
         if (r["sponsor_city"] or "") == want:
             continue
         n += 1

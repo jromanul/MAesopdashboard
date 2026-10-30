@@ -183,11 +183,13 @@ draws no line by the share of the company the ESOP owns, by whether the company 
 held or publicly traded (bank ESOPs are counted like any other), or by whether the plan is
 being wound down after a sale.
 
-**Deliberate exclusion — plans that are not ESOPs.** Some large, publicly traded employers
-attach an ESOP code to an ordinary savings plan that merely offers company stock as one
-investment option among many (e.g. a "401(K) PLAN" or "SAVINGS AND INVESTMENT PLAN" carrying
-2O alongside 2J/2K). These are 401(k) plans, not ESOPs, and counting them would add thousands
-of participants apiece. Likewise, a profit-sharing or 401(k) plan at an employee-owned company
+**Deliberate exclusion — plans that are not ESOPs.** Seven large, publicly traded employers'
+broad 401(k) savings plans carry an ESOP code (e.g. a "401(K) PLAN" or "SAVINGS AND INVESTMENT
+PLAN" coded 2O alongside 2J/2K). In most of them the company-stock fund is formally designated
+an ESOP, for the dividend deduction or to deliver the match, but company stock is one
+investment option among many (typically 3-8% of assets), not the employee-ownership vehicle a
+tracked KSOP is. They are treated as 401(k) plans, not ESOPs (owner's decision, 2026-10-28);
+counting them would add some 300,000-450,000 participants a year to a dataset of about 30,000. Likewise, a profit-sharing or 401(k) plan at an employee-owned company
 is not an ESOP. Such filings are reviewed and excluded by hand; the exclusions are recorded in
 `scan_dol_filers.py` so they are not silently re-imported on a later refresh.
 

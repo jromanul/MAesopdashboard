@@ -58,12 +58,15 @@ MONEY_FIELDS = dol_bulk.MONEY_FIELDS
 
 # EINs whose ESOP-coded filings are deliberately NOT tracked, keyed by normalized
 # (leading-zero-stripped) EIN. These are large publicly traded employers whose
-# ordinary 401(k)/savings plan carries an ESOP code (2O) purely because company
-# stock is one investment option alongside 2J/2K — confirmed by reading the raw
-# F_5500 PLAN_NAME. They are not closely held employee-owned companies, and each
-# would add thousands of participants, materially overstating MA employee
-# ownership. Listed here so a later `--import-new` run cannot silently re-add
-# them. See FORM5500_METHODOLOGY.
+# broad 401(k)/savings plan carries an ESOP code (2O/2P alongside 2J/2K). In most
+# (Raytheon, UTC/RTX, State Street, Cabot, Crane NXT) the company-stock fund is
+# formally designated an ESOP, for the dividend deduction or to deliver the
+# match; GE's and Waters' show no ESOP component. Either way company stock is one
+# investment option among many (typically 3-8% of assets), not the
+# employee-ownership vehicle a tracked KSOP is, and the owner decided on
+# 2026-10-28 that these savings plans are not counted (each would add tens of
+# thousands of participants). Listed here so a later `--import-new` run cannot
+# silently re-add them. See FORM5500_METHODOLOGY.
 EXCLUDED_EINS: dict[str, str] = {
     "42271897": "Cabot Corporation (NYSE: CBT) - 'CABOT 401(K) PLAN', 2O alongside 2J/2K",
     "43234558": "Waters Technologies (NYSE: WAT) - 'THE WATERS EMPLOYEE INVESTMENT PLAN'",
@@ -117,6 +120,10 @@ KNOWN_NOT_TRACKED: dict[tuple[str, str], tuple] = {
                                 "PN 002 return already tracked"),
     ("332432954", "1"): ({2024}, "Green Tech Enterprises: superseded original; corrected re-filing "
                                  "is tracked as PN 002"),
+    ("43395834", "2"): ({2025}, "Avidia Bank ESOP: its 2025 return was first filed under the 401(k)'s "
+                                "plan number 002 and rejected, then re-filed as plan 004, which is "
+                                "tracked. Scoped by plan name: the 401(k) files under 002 every year",
+                        "EMPLOYEE STOCK OWNERSHIP"),
 }
 
 # ESOP plan-years whose return carries no ESOP code (2O/2P/2Q), reviewed one by
@@ -158,6 +165,12 @@ DISTINCT_PLANS: dict[tuple[str, str], str] = {
                        "acquisition; EBSB's own ESOP is plan 003",
     ("41858810", "4"): "United Bank's own ESOP (effective 2005); plan 003 under the same EIN is the "
                        "New England Bank ESOP it acquired in 2012",
+    # Companies with two ESOPs of their own, each counted.
+    ("41866480", "2"): "The L.S. Starrett Company ESOP; plan 004 is its separate 2013 ESOP",
+    ("41866480", "4"): "The L.S. Starrett Company 2013 ESOP (filed under EIN 463044208 in 2015-2021)",
+    ("463044208", "4"): "The L.S. Starrett Company 2013 ESOP, filed under this EIN in 2015-2021",
+    ("42631963", "3"): "New England Biolabs non-voting stock ownership plan; plan 005 is the voting plan",
+    ("42631963", "5"): "New England Biolabs voting stock ownership plan; plan 003 is the non-voting plan",
 }
 
 # Plan-years whose stored participant counts deliberately differ from the
@@ -171,7 +184,7 @@ PARTICIPANT_OVERRIDES: dict[tuple[int, str, str], dict] = {}
 # .title() mangles initialisms ("FE" -> "Fe") and camel-cased brands. Keyed by
 # EIN, or by (EIN, plan number) where one EIN files more than one company's plan.
 NEW_COMPANY_NAMES: dict = {
-    ("41782600", "1"): ("Peoples Federal Savings Bank", "Rockland"),  # filed by Rockland Trust
+    ("41782600", "1"): ("Peoples Federal Savings Bank", "Brighton"),  # filed by Rockland Trust
     ("364375169", "3"): ("Picis, Inc. (Optum Clinical Solutions)", "Wakefield"),
     ("41858810", "4"): ("United Bank (United Financial Bancorp)", "West Springfield"),
     ("208447891", "5"): ("LSB Corporation (RiverBank)", "North Andover"),  # filed by People's United
@@ -304,6 +317,37 @@ MA_BASED_OVERRIDES: dict[tuple[str, str], tuple] = {
     ("41663150", "20"): (None, True, ("Amesbury", "01913"),
                          "the same Essex County Gas Company ESOP, filed by National Grid USA "
                          "Service Company from 2018"),
+    # Massachusetts banks whose ESOP was wound down by a Massachusetts acquirer
+    # filing from its own city. They are counted either way; the row carries
+    # the bank's home city (from its own last return) as the entries above do,
+    # so a bank does not appear in its acquirer's town.
+    ("43312097", "9"): ({2014, 2015}, True, ("Springfield", "01103"),
+                        "Hampden Bank (19 Harrison Ave, Springfield): ESOP filed by Berkshire Bank "
+                        "from Pittsfield after the 2015 acquisition"),
+    ("41466100", "3"): ({2019, 2020}, True, ("Hyde Park", "02136"),
+                        "Blue Hills Bank: ESOP wound down by Rockland Trust after the 2019 acquisition"),
+    ("41174490", "3"): ({2017}, True, ("Chicopee", "01014"),
+                        "Chicopee Savings Bank: final return filed by Westfield Bank after the 2016 merger"),
+    ("743073286", "3"): ({2022, 2023, 2024}, True, ("Quincy", "02169"),
+                         "Envision Bank (Randolph Bancorp): ESOP wound down by Hometown Financial "
+                         "from Easthampton after the 2022 acquisition"),
+    ("41782600", "3"): ({2021, 2022}, True, ("Peabody", "01960"),
+                        "East Boston Savings Bank (Meridian Bancorp, Peabody): ESOP wound down by "
+                        "Rockland Trust after the 2021 acquisition"),
+    ("43130808", "4"): ({2017, 2018}, True, ("Dorchester", "02124"),
+                        "Meetinghouse Bank (Dorchester): ESOP wound down by East Boston Savings Bank "
+                        "from Peabody after the 2017 acquisition"),
+    ("41802790", "4"): ({2017, 2018}, True, ("Georgetown", "01833"),
+                        "Georgetown Savings Bank: ESOP wound down by Salem Five after the 2017 merger"),
+    ("41782600", "1"): ({2014, 2015}, True, ("Brighton", "02135"),
+                        "Peoples Federal Savings Bank (435 Market St, Brighton, per its own 2013 "
+                        "return): ESOP filed by Rockland Trust after the 2015 acquisition"),
+    ("41782600", "4"): ({2014}, True, ("Somerville", "02144"),
+                        "Central Co-operative Bank (Central Bancorp, 399 Highland Ave, Somerville): "
+                        "ESOP wound down by Rockland Trust after the 2012 acquisition"),
+    ("611570944", "2"): ({2019}, True, ("Cohasset", "02025"),
+                         "Pilgrim Bank (Cohasset): final return filed by Hometown Financial from "
+                         "Easthampton after the 2019 acquisition"),
     # Companies based elsewhere whose returns carry a Massachusetts address.
     ("461710155", "3"): (None, False, None,
                          "Coastway Community Bank was based in Warwick, RI; HarborOne wound its "
@@ -589,7 +633,9 @@ def verify(year: int, db_year: dict, returns: dict, sched: dict):
                 continue
             (overrides if fld in ov else mismatches).append(
                 (label, fld, dbv, int(dolv), "F_5500"))
-        filed_elsewhere = not dol_bulk.is_ma_address(ret["state"], ret["sponsor_zip"])
+        home = _ma_override(key[0], key[1], year)
+        filed_elsewhere = bool(home and home[1] and home[2]) or \
+            not dol_bulk.is_ma_address(ret["state"], ret["sponsor_zip"])
         if ret["sponsor_city"] and row["sponsor_city"] and not filed_elsewhere and \
                 city_spelling(ret["sponsor_city"]).lower() != str(row["sponsor_city"]).strip().lower():
             mismatches.append((label, "sponsor_city", row["sponsor_city"], ret["sponsor_city"], "F_5500"))

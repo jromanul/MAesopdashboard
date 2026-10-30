@@ -231,11 +231,12 @@ Each return counts in the form year in which its plan year begins (a plan year
 that begins in the last week of December, as a 52/53-week fiscal year can,
 counts in the following year, which it covers).
 
-Deliberately excluded: plans that are not ESOPs - ordinary 401(k)/savings
-plans that carry an ESOP code only because company stock is one investment
-option among many, and profit-sharing or 401(k) plans at employee-owned
-companies. Counting the large public-company savings plans would add
-thousands of participants each. An ESOP renamed while it is wound down after
+Deliberately excluded: plans that are not ESOPs - large public companies'
+401(k) savings plans that carry an ESOP code because their company-stock fund
+is designated an ESOP, though company stock is one investment option among
+many, and profit-sharing or 401(k) plans at employee-owned companies.
+Counting the public-company savings plans would add hundreds of thousands of
+participants. An ESOP renamed while it is wound down after
 a sale (Brockway-Smith's, now called a profit-sharing plan, for example)
 stays counted while it is still an ESOP.
 
