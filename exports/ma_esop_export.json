@@ -4,7 +4,7 @@
     "form_year": 2024,
     "data_as_of": "October 28, 2026",
     "dol_release": "September 30, 2026",
-    "generated_utc": "2026-10-30T17:26:07+00:00",
+    "generated_utc": "2026-10-30T20:05:21+00:00",
     "source": "U.S. Department of Labor, EFAST2 Form 5500 bulk datasets",
     "source_url": "https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/public-disclosure/foia/form-5500-datasets",
     "dashboard_url": "https://maesopdashboard.streamlit.app",
@@ -467,7 +467,7 @@
     },
     {
       "plan_name": "SHAWMUT GROUP EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Shawmut Group",
+      "sponsor": "Shawmut Group Inc.",
       "city": "Boston",
       "industry": "Construction",
       "plan_year_started": 1997,
@@ -671,7 +671,7 @@
     },
     {
       "plan_name": "INTERNATIONAL CARS EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "International Cars",
+      "sponsor": "International Cars, Ltd., Inc.",
       "city": "Danvers",
       "industry": "Retail Trade",
       "plan_year_started": 2000,
@@ -707,7 +707,7 @@
     },
     {
       "plan_name": "NORTHERN TREE SERVICE, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Northern Tree Service, Inc.",
+      "sponsor": "Northern Tree Holdco, Inc.",
       "city": "Palmer",
       "industry": "Administrative & Waste Services",
       "plan_year_started": 2019,
@@ -743,7 +743,7 @@
     },
     {
       "plan_name": "DALE MEDICAL PRODUCTS EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Dale Medical Products",
+      "sponsor": "Dale Medical Products, Inc.",
       "city": "Franklin",
       "industry": "Manufacturing",
       "plan_year_started": 2021,
@@ -791,7 +791,7 @@
     },
     {
       "plan_name": "CARNEY, SANDOE & ASSOCIATES EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Carney, Sandoe & Associates",
+      "sponsor": "Carney, Sandoe & Associates, Inc.",
       "city": "Boston",
       "industry": "Administrative & Waste Services",
       "plan_year_started": 2013,
@@ -803,7 +803,7 @@
     },
     {
       "plan_name": "TITAN ROOFING EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Titan Roofing",
+      "sponsor": "Titan Roofing, Inc.",
       "city": "Springfield",
       "industry": "Construction",
       "plan_year_started": 2023,
@@ -827,7 +827,7 @@
     },
     {
       "plan_name": "SPAULDING BRICK EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Spaulding Brick",
+      "sponsor": "Spaulding Brick Co., Inc.",
       "city": "Wilmington",
       "industry": "Wholesale Trade",
       "plan_year_started": 1997,
@@ -875,7 +875,7 @@
     },
     {
       "plan_name": "COURTSMART DIGITAL SYSTEMS EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "CourtSmart Digital Systems",
+      "sponsor": "CourtSmart Digital Systems Inc.",
       "city": "North Chelmsford",
       "industry": "Information & Technology",
       "plan_year_started": 2020,
@@ -971,7 +971,7 @@
     },
     {
       "plan_name": "NOTCH EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Notch",
+      "sponsor": "Notch Welding & Mechanical Contractors, Inc.",
       "city": "Chicopee",
       "industry": "Construction",
       "plan_year_started": 2020,
@@ -1007,7 +1007,7 @@
     },
     {
       "plan_name": "EVERETT CO-OPERATIVE BANK EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Everett Co-Operative Bank",
+      "sponsor": "Everett Co-operative Bank",
       "city": "Everett",
       "industry": "Finance & Insurance",
       "plan_year_started": 2022,
@@ -1031,7 +1031,7 @@
     },
     {
       "plan_name": "USI EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "USI",
+      "sponsor": "USI Holdings, Inc. (Ultra Services)",
       "city": "Billerica",
       "industry": "Construction",
       "plan_year_started": 2018,
@@ -1055,7 +1055,7 @@
     },
     {
       "plan_name": "BLUE Q EMPLOYEE STOCK OWNERSHIP PLAN AND TRUST",
-      "sponsor": "Blue Q",
+      "sponsor": "Blue Q Corporation",
       "city": "Pittsfield",
       "industry": "Manufacturing",
       "plan_year_started": 2018,
@@ -1127,7 +1127,7 @@
     },
     {
       "plan_name": "GOODY, CLANCY & ASSOCIATES EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Goody, Clancy & Associates",
+      "sponsor": "Goody, Clancy & Associates, Inc.",
       "city": "Boston",
       "industry": "Professional & Technical Services",
       "plan_year_started": 1987,
@@ -1259,7 +1259,7 @@
     },
     {
       "plan_name": "NMR GROUP EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "NMR Group",
+      "sponsor": "NMR Group, Inc.",
       "city": "Somerville",
       "industry": "Professional & Technical Services",
       "plan_year_started": 2016,
@@ -1319,7 +1319,7 @@
     },
     {
       "plan_name": "RICK ROY CONSTRUCTION EMPLOYEE STOCK OWNERSHIP 401(K) PLAN",
-      "sponsor": "Rick Roy Construction",
+      "sponsor": "Rick Roy Construction, LLC",
       "city": "Harwich",
       "industry": "Construction",
       "plan_year_started": 2023,
@@ -1343,7 +1343,7 @@
     },
     {
       "plan_name": "LANDRY'S BICYCLES EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Landry's Bicycles",
+      "sponsor": "Landry's, Inc. (Landry's Bicycles)",
       "city": "Natick",
       "industry": "Retail Trade",
       "plan_year_started": 2009,
@@ -1439,7 +1439,7 @@
     },
     {
       "plan_name": "BURKART EMPLOYEE STOCK OWNERSHIP 401(K) PLAN",
-      "sponsor": "Burkart",
+      "sponsor": "Burkart-Phelan, Inc.",
       "city": "Shirley",
       "industry": "Manufacturing",
       "plan_year_started": 2022,
@@ -1451,7 +1451,7 @@
     },
     {
       "plan_name": "THE VAULT EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "The Vault",
+      "sponsor": "Munro Associates, LLC (The Vault)",
       "city": "Somerset",
       "industry": "Retail Trade",
       "plan_year_started": 2023,
@@ -1487,7 +1487,7 @@
     },
     {
       "plan_name": "FRASER ENGINEERING COMPANY EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Fraser Engineering Company",
+      "sponsor": "Fraser Engineering Co., Inc.",
       "city": "Newton",
       "industry": "Construction",
       "plan_year_started": 2003,
@@ -1511,7 +1511,7 @@
     },
     {
       "plan_name": "BAXTER EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Baxter",
+      "sponsor": "Baxter, Inc.",
       "city": "West Yarmouth",
       "industry": "Construction",
       "plan_year_started": 2020,
@@ -1523,7 +1523,7 @@
     },
     {
       "plan_name": "G&C CONCRETE CONSTRUCTION EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "G&C Concrete Construction",
+      "sponsor": "G&C Concrete Construction, Inc.",
       "city": "Haverhill",
       "industry": "Construction",
       "plan_year_started": 2024,
@@ -1595,7 +1595,7 @@
     },
     {
       "plan_name": "RAYCON CONSTRUCTION EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Raycon Construction",
+      "sponsor": "Raycon Construction Holding Company",
       "city": "Rehoboth",
       "industry": "Construction",
       "plan_year_started": 2022,
@@ -1619,7 +1619,7 @@
     },
     {
       "plan_name": "FEINGOLD & FEINGOLD INSURANCE AGENCY INC. EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Feingold & Feingold Insurance Agency Inc.",
+      "sponsor": "Feingold & Feingold Insurance Agency, Inc.",
       "city": "Worcester",
       "industry": "Finance & Insurance",
       "plan_year_started": 1988,
@@ -1643,7 +1643,7 @@
     },
     {
       "plan_name": "ERLAND CONSTRUCTION EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Erland Construction",
+      "sponsor": "Erland Construction Holding Company, Inc.",
       "city": "Burlington",
       "industry": "Construction",
       "plan_year_started": 2022,
@@ -1703,7 +1703,7 @@
     },
     {
       "plan_name": "PARAGUS EMPLOYEE STOCK OWNERSHIP 401K PLAN",
-      "sponsor": "Paragus Strategic IT",
+      "sponsor": "Paragus Strategic IT, Inc.",
       "city": "Hadley",
       "industry": "Professional & Technical Services",
       "plan_year_started": 2015,
@@ -1715,7 +1715,7 @@
     },
     {
       "plan_name": "GLOBAL BEER NETWORK, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Global Beer Network, Inc.",
+      "sponsor": "Win-It-Too, Inc. (Global Beer Network)",
       "city": "Middleton",
       "industry": "Retail Trade",
       "plan_year_started": 2020,
@@ -1739,7 +1739,7 @@
     },
     {
       "plan_name": "LDA ARCHITECTURE & INTERIORS EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "LDA Architecture & Interiors",
+      "sponsor": "LDA Architecture & Interiors, Inc.",
       "city": "Boston",
       "industry": "Professional & Technical Services",
       "plan_year_started": 2024,
@@ -1763,7 +1763,7 @@
     },
     {
       "plan_name": "FITZGERALD TILE EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Fitzgerald Tile",
+      "sponsor": "Albert F. Fitzgerald, Inc. (Fitzgerald Tile)",
       "city": "North Reading",
       "industry": "Wholesale Trade",
       "plan_year_started": 2023,
@@ -1787,7 +1787,7 @@
     },
     {
       "plan_name": "SAVOGRAN COMPANY EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Savogran Company",
+      "sponsor": "The Savogran Company",
       "city": "Norwood",
       "industry": "Manufacturing",
       "plan_year_started": 1988,

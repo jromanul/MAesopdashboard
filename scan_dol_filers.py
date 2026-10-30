@@ -207,26 +207,42 @@ CITY_SPELLINGS: dict[str, str] = {
     "SO. LANCASTER": "South Lancaster",    # James Monroe Corp. 2020-2023
     "W. SPRINGFIELD": "West Springfield",  # New England Bank 2014
     "WODBURN": "Woburn",                   # Atlantic Plywood, plan-year-2019 final return
+    # Short forms of town names: the municipality's official name, so a company
+    # reads the same in every year (Marlboro and Marlborough had both appeared).
+    "MARLBORO": "Marlborough",
+    "MIDDLEBORO": "Middleborough",
+    "SOUTHBORO": "Southborough",
+    "WESTBORO": "Westborough",
+    "NORTHBORO": "Northborough",
+    "FOXBORO": "Foxborough",
+    "BOXBORO": "Boxborough",
 }
 
-# Industry codes checked against each company's website (the owner's May 31, 2026
-# review of every active company, commit 2d5ab22), wherever the code differs from
-# the one the return carries. The June 2026 refresh wrote the returns' codes back
-# over them; this list keeps the reviewed code in the form year it was reviewed
-# for and every later year. Keyed by EIN; the sector follows the code.
-VERIFIED_NAICS_FROM = 2024
-VERIFIED_NAICS: dict[str, str] = {
+# Industry codes, one per company for every year (industry is a company
+# attribute; a code that changed from one return to the next was noise, not a
+# change of business). Keyed by EIN; the sector follows the code.
+#
+# OWNER_VERIFIED_NAICS: the owner's May 31, 2026 review of every company active
+# in 2024, each checked against its website (commit 2d5ab22). Sullivan Tire's
+# padded 441300 is the tire-dealer code, 441340.
+OWNER_VERIFIED_NAICS: dict[str, str] = {
     "934368162": "541910",  # Abt Global, Inc. (Abt Associates)
+    "43024663": "541990",   # Acentech Incorporated
+    "43130168": "541330",   # AHA Consulting Engineers, Inc.
+    "113672395": "334310",  # Artel Video Systems Corporation
     "332601261": "551112",  # ASC Management Holdings, Inc.
     "364488912": "333248",  # Ashworth International, Inc.
     "42501424": "561621",   # B&B Engineering Corporation
+    "43497377": "522120",   # BankProv
     "260743647": "561730",  # Barrett Tree Service East, Inc.
     "43026692": "238990",   # Baxter
     "43521482": "339999",   # Blue Q
+    "43175021": "339110",   # Boston Brace International, Inc.
     "41110170": "423720",   # Bourneuf Corporation
     "43200597": "236220",   # Brait Builders Corporation
     "43402944": "522110",   # Brookline Bancorp, Inc.
     "42831820": "339992",   # Burkart
+    "42777442": "522110",   # Cambridge Bancorp
     "825377573": "459991",  # Canna Provisions, Inc.
     "43005476": "481111",   # Cape Air / Nantucket Airlines (Hyannis Air Service)
     "42272126": "444110",   # Cape Cod Lumber Co., Inc.
@@ -234,44 +250,92 @@ VERIFIED_NAICS: dict[str, str] = {
     "42514329": "332812",   # Central Coating Technologies, Inc.
     "42803764": "541511",   # Charles River Analytics, Inc.
     "473752261": "531390",  # CHMWarnick, Inc.
+    "41983105": "522120",   # Colonial Federal Savings Bank
     "43152864": "238290",   # Colonial Systems, Inc.
+    "42279997": "334310",   # Comrex Corporation
     "42482120": "444110",   # Concord Lumber Corp.
+    "270396940": "236200",  # Consigli Building Group, Inc.
+    "43358086": "519100",   # CourtSmart Digital Systems
     "471008886": "561300",  # Creative Financial Staffing, Inc.
+    "42300185": "339110",   # Dale Medical Products
+    "844259761": "339900",  # David Clark Holdings, Inc.
+    "43577380": "541990",   # Daymark Energy Advisors, Inc.
+    "43177356": "541310",   # Dietz & Company Architects, Inc.
+    "43257145": "561720",   # Donnelly Service Group, Inc.
     "43067724": "522110",   # Eastern Bank
+    "42624147": "423600",   # Electro-Term, Inc.
+    "42489159": "238210",   # Elm Electrical, Inc.
     "42993095": "541620",   # Environmental Health & Engineering, Inc.
+    "743073286": "522120",  # Envision Bank
+    "41294820": "522120",   # Everett Co-Operative Bank
+    "42274728": "524210",   # Feingold & Feingold Insurance Agency Inc.
+    "43104386": "236110",   # Feinmann, Inc.
+    "42373147": "423990",   # Fitzgerald Tile
+    "42086300": "238220",   # Fraser Engineering Company
     "43041248": "238110",   # G&C Concrete Construction
+    "42917465": "541330",   # Gemini Industries Inc.
+    "813268325": "332900",  # The Gillette Company
+    "43495686": "423400",   # Gillette Restaurant Equipment, Inc.
+    "770370729": "445310",  # Global Beer Network, Inc.
+    "42301242": "541310",   # Goody, Clancy & Associates
+    "42175284": "541330",   # Green International Affiliates, Inc.
+    "332432954": "453990",  # Green Tech Enterprises Inc.
+    "43408953": "541600",   # Halloran Consulting Group, Inc.
+    "41123040": "522130",   # HarborOne Bank
+    "42925204": "312120",   # Harpoon Brewery
+    "42137249": "423910",   # Imtra Corporation
+    "42550058": "441110",   # International Cars
+    "43061714": "561300",   # Isaacson Miller, Inc.
     "42348065": "334516",   # Janis Research
     "41866480": "333515",   # The L.S. Starrett Company
+    "42774191": "333510",   # Lampin Corporation
+    "43340225": "541310",   # LDA Architecture & Interiors
+    "43071690": "541330",   # Meridian Associates, Inc.
     "42941854": "523930",   # Middleton & Company, Inc.
     "843556185": "522110",  # Needham Bank
+    "42837729": "423600",   # Nelco Products, Inc.
+    "43347358": "541511",   # Nevo Technologies, Inc.
     "42389826": "423830",   # New England Controls, Inc.
     "43490470": "445120",   # New England Discount Retailers, Inc.
+    "43553283": "541910",   # NMR Group
     "43298009": "237310",   # Northern Construction Holding, Inc.
+    "851665706": "561730",  # Northern Tree Service, Inc.
     "42587894": "238220",   # Notch
     "43223296": "423420",   # OEM Connect, Ltd.
+    "204270900": "541519",  # Paragus Strategic IT
     "42517090": "541700",   # Physical Sciences Inc.
+    "42887710": "541310",   # Prellwitz/Chilinski Associates, Inc.
     "42760904": "333415",   # Process Cooling Systems, Inc.
     "42637381": "335929",   # Quirk Wire Co., Inc.
     "208818800": "238110",  # Raycon Construction
+    "43221989": "561720",   # RCM Services, Inc.
     "42804642": "327910",   # Rex Cut Products, Inc.
     "43130236": "236220",   # The Richmond Group, Inc.
+    "920450207": "236110",  # Rick Roy Construction
+    "42444641": "524210",   # Sallop Insurance
     "41810570": "325510",   # Savogran Company
     "43053085": "541715",   # Scientific Systems Company, Inc.
     "651174540": "333914",  # Seal-Ryt Corp.
     "43027262": "339950",   # Sign Design, Inc.
     "41203530": "423320",   # Spaulding Brick
+    "43258366": "541330",   # SPEC Process Engineering & Construction, Inc.
     "42718570": "541715",   # Spectral Sciences, Inc.
     "42741165": "237310",   # SPS New England, Inc.
     "204734036": "327991",  # Stonetek Imports, Inc.
-    "42682840": "441300",   # Sullivan Investment Co., Inc. (Sullivan Tire)
+    "42682840": "441340",   # Sullivan Investment Co., Inc. (Sullivan Tire)
     "42943867": "332721",   # Swissturn/USA, Inc.
     "42745179": "541310",   # Symmes Maini & McKee Associates, Inc.
+    "43169205": "541330",   # Tata & Howard, Inc.
     "42324804": "332813",   # Tech-Etch, Inc.
     "475615911": "459991",  # Theory Wellness, Inc.
+    "42821431": "541330",   # Tighe & Bond, Inc.
     "42630303": "238160",   # Titan Roofing
     "43484613": "237130",   # Tri-Wire Engineering Solutions, Inc.
+    "824155907": "238220",  # USI
     "832236376": "459991",  # The Vault
     "42942412": "423720",   # Washburn-Garfield Corporation
+    "731627673": "522120",  # Western New England Bancorp, Inc.
+    "201998367": "541330",  # Weston & Sampson, Inc.
     "42044378": "327991",   # Williams Stone Co., Inc.
     "208135911": "236220",  # Windover Construction, Inc.
     "42188202": "332618",   # Wirefab, Inc.
@@ -279,6 +343,83 @@ VERIFIED_NAICS: dict[str, str] = {
     "42895731": "332119",   # Worcester Manufacturing, Inc.
     "43038026": "337212",   # Wright Architectural Millwork Corporation
 }
+
+# REVIEWED_NAICS: the October 2026 review of the companies outside the owner's
+# review (most stopped filing before 2024), each checked against company
+# sources and confirmed by a second reviewer. Padded codes (339900, 541600, ...)
+# became the specific 6-digit code; bank codes were left as filed.
+REVIEWED_NAICS: dict[str, str] = {
+    "42347643": "541910",   # Abt Associates Inc.
+    "42224182": "334519",   # Adcole Corporation
+    "42471226": "541715",   # Aerodyne Research, Inc.
+    "43035339": "541910",   # Applied Marketing Science, Inc.
+    "332588017": "423210",  # At Work Collaborative, Inc.
+    "42717456": "423710",   # Atlantic Fasteners
+    "931156047": "332117",  # Atlantic Holdings, Inc. (Atlantic Sintered)
+    "42547913": "423310",   # Atlantic Plywood Corporation
+    "42772059": "325998",   # Barclay Water Treatment Co., Inc.
+    "412126830": "541715",  # BBN Technologies
+    "43444078": "445298",   # BostonBean Coffee Company, Inc.
+    "41123740": "423310",   # Brockway-Smith Company
+    "42041968": "334519",   # Brookfield Engineering Laboratories, Inc.
+    "42793755": "541620",   # The Cadmus Group
+    "822323992": "541620",  # The Cadmus Holding Company, Inc.
+    "521405842": "541330",  # Centra Technology, Inc.
+    "42041237": "513130",   # Channing Bete Company, Inc.
+    "461793579": "541511",  # Charles River Analytics, Inc.
+    "42259905": "449122",   # Country Curtains
+    "42264013": "424690",   # D.N. Lukens, Inc.
+    "42460805": "326112",   # Danafilms, Inc.
+    "42932946": "327910",   # Darmann Abrasive Products, Inc.
+    "42557451": "334310",   # David Clark Company Incorporated
+    "43247749": "334511",   # Diamond Antenna and Microwave Corporation
+    "42323460": "333993",   # Econocorp, Inc.
+    "61518492": "236220",   # Enfield Enterprises Inc.
+    "43050515": "541620",   # Environmental Compliance Services, Inc.
+    "43579044": "236220",   # Erland Construction
+    "43297570": "423420",   # Expert Laser Services, Inc.
+    "42513930": "236210",   # F. H. Chase Inc.
+    "41309690": "523991",   # Fiduciary Trust Company
+    "41366970": "332215",   # The Gillette Company
+    "42079638": "524210",   # Haberman Insurance Group, Inc.
+    "364615460": "238910",  # Helical Drilling, Inc.
+    "43537120": "541715",   # Infoscitex Corporation
+    "43520315": "611430",   # Interaction Associates, Inc.
+    "42597651": "513120",   # International Data Group, Inc.
+    "42969998": "488510",   # Intral Corporation
+    "42472856": "335929",   # James Monroe Corp.
+    "42273500": "722310",   # L. P. M. Holding Company, Inc
+    "463044208": "333515",  # The L.S. Starrett Company
+    "42556035": "459110",   # Landry's Bicycles
+    "42745661": "512191",   # Lessard Taylor Communications Inc
+    "41549430": "335132",   # Litecontrol Corporation
+    "455266171": "335132",  # Litecontrol Corporation
+    "43130634": "333310",   # Market Forge Industries, Inc.
+    "471084653": "611430",  # MIS Training Institute Holdings, Inc.
+    "42298684": "541380",   # The MMR Group, Inc.
+    "42746512": "541810",   # Mullen Advertising, Inc.
+    "42631963": "325414",   # New England Biolabs, Inc.
+    "10367721": "311230",   # New England Natural Bakers, Inc.
+    "41682990": "325998",   # Nye Lubricants, Inc.
+    "42699206": "424130",   # Packaging Consultants, Inc.
+    "42170946": "339930",   # Paul K. Guillow, Inc.
+    "364375169": "513210",  # Picis, Inc. (Optum Clinical Solutions)
+    "42278461": "335313",   # Russelectric, Inc.
+    "261697053": "334111",  # SCC and Integrated IT Holding Corp.
+    "42759985": "236220",   # Shawmut Design and Construction
+    "813645861": "236220",  # Shawmut Group
+    "455603992": "541820",  # Shift Communications, Inc.
+    "311060347": "541330",  # Stevenson & Associates
+    "42372206": "325199",   # Strem Chemicals Inc.
+    "43316408": "541690",   # Synapse Energy Economics, Inc.
+    "43533865": "424910",   # Valley Green, Inc.
+    "203724403": "541330",  # Vertex
+    "42453227": "541715",   # Visidyne, Incorporated
+    "42880295": "322220",   # Web Industries, Inc.
+}
+
+VERIFIED_NAICS_FROM = 2014
+VERIFIED_NAICS: dict[str, str] = {**REVIEWED_NAICS, **OWNER_VERIFIED_NAICS}
 
 # Plans whose return address is not where the covered company is based. Only
 # Massachusetts-based ESOPs are counted (owner's decision, 2026-10-28), and
