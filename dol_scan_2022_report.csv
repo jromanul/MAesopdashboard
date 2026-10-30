@@ -6,11 +6,3 @@ EXCLUDED,WATERS TECHNOLOGIES CORPORATION,MILFORD,043234558,002,F_5500,4378.0,Wat
 EXCLUDED,STATE STREET CORPORATION,BOSTON,042456637,002,F_5500,22027.0,"State Street Corporation (NYSE: STT) - 'SALARY SAVINGS PROGRAM', 2O alongside 2J/2K"
 EXCLUDED,"ERLAND CONSTRUCTION, INC.",BURLINGTON,042606179,002,F_5500,103.0,"Erland Construction, Inc.: duplicate of the EIN 043579044 return"
 EXCLUDED,GRIPNAIL CORPORATION,TAUNTON,050309452,002,F_5500,0.0,"not Massachusetts-based: Gripnail Corporation is in East Providence, RI; its returns use a Taunton address only during the 2019-2022 wind-down"
-FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,F_5500,,total_participants: DB=61 DOL=53
-FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,F_5500,,active_participants: DB=50 DOL=45
-FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,SCH_I,,total_assets: DB=4492800.0 DOL=2152000.0
-FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,SCH_I,,total_liabilities: DB=10735859.0 DOL=10867162.0
-FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,SCH_I,,employer_securities: DB=4492800.0 DOL=2152000.0
-FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,SCH_I,,employer_contributions: DB=370467.0 DOL=374937.0
-FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,SCH_I,,benefits_paid: DB=4434.0 DOL=8904.0
-FIELD_MISMATCH,"New England Discount Retailers, Inc. (EIN 43490470)",,,,SCH_I,,net_income: DB=2472103.0 DOL=-389874.0
