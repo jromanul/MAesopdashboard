@@ -5,5 +5,10 @@ secondaryBackgroundColor = "#F5F7FA"
 textColor = "#111111"
 font = "sans serif"
 
+[client]
+# Public visitors get the reader's menu only — no Deploy button or developer
+# options in the top-right toolbar.
+toolbarMode = "viewer"
+
 [server]
 headless = true

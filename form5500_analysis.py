@@ -53,37 +53,6 @@ ZOMBIE_PLAN_EINS: set[str] = {
     "42501424",   # B&B Engineering Corporation (0 active)
 }
 
-FIELD_MAPPINGS = {
-    "sponsor_name": ["SPONSOR_DFE_NAME", "SPONS_DFE_NAME", "SPONS_SIGNED_NAME",
-                     "SPONS_DFE_MAIL_US_ADDRESS"],
-    "sponsor_state": ["SPONS_DFE_MAIL_US_STATE", "SPONS_DFE_LOC_US_STATE",
-                      "SPONSOR_DFE_MAIL_US_STATE"],
-    "sponsor_city": ["SPONS_DFE_MAIL_US_CITY", "SPONS_DFE_LOC_US_CITY",
-                     "SPONSOR_DFE_MAIL_US_CITY"],
-    "sponsor_zip": ["SPONS_DFE_MAIL_US_ZIP", "SPONS_DFE_LOC_US_ZIP",
-                    "SPONSOR_DFE_MAIL_US_ZIP"],
-    "plan_name": ["PLAN_NAME", "PLAN_NM"],
-    "plan_eff_date": ["PLAN_EFF_DATE", "PLAN_EFFECTIVE_DT"],
-    "ein": ["SPONS_DFE_EIN", "SPONSOR_DFE_EIN", "EIN"],
-    "plan_num": ["PLAN_NUM", "PN"],
-    "type_plan_entity": ["TYPE_PLAN_ENTITY_CD", "TYPE_PLAN_ENTITY"],
-    "type_pension_bnft": ["TYPE_PENSION_BNFT_CD", "TYPE_PENSION_BENEFIT_CD"],
-    "total_participants": ["TOT_PARTCP_BOY_CNT", "TOTAL_PARTCP_BOY_CNT",
-                           "TOT_PARTCP_EOY_CNT"],
-    "active_participants": ["TOT_ACTIVE_PARTCP_CNT", "TOTAL_ACTIVE_PARTCP_CNT",
-                            "ACTIVE_PARTCP_CNT"],
-    "naics_code": ["BUSINESS_CD", "NAICS_CD", "SIC_CD"],
-    "total_assets": ["TOT_ASSETS_BOY_AMT", "TOT_ASSETS_EOY_AMT",
-                     "TOTAL_ASSETS_BOY_AMT", "NET_ASSETS_EOY_AMT"],
-    "total_liabilities": ["TOT_LIABILITIES_BOY_AMT", "TOT_LIABILITIES_EOY_AMT",
-                          "TOTAL_LIABILITIES_BOY_AMT"],
-    "employer_contributions": ["EMPLOYER_CONTRIB_AMT", "EMPLR_CONTRIB_AMT",
-                               "EMPLR_CONTRIB_CUR_YR_AMT"],
-    "participant_contributions": ["PARTCP_CONTRIB_AMT", "PARTCPNT_CONTRIB_AMT"],
-    "benefits_paid": ["TOT_DISTRIB_BNFT_AMT", "BENEFIT_PAYMENT_AMT"],
-    "net_income": ["NET_INCOME_AMT", "NET_INCM_AMT"],
-}
-
 NAICS_SECTORS = {
     "11": "Agriculture, Forestry, Fishing",
     "21": "Mining, Oil & Gas",
@@ -111,37 +80,23 @@ NAICS_SECTORS = {
     "92": "Public Administration",
 }
 
+# End-of-year columns only, Schedule H name first and the Schedule I (SMALL_*)
+# name second; a Schedule H row has no SMALL_* columns and vice versa, so one
+# list serves both files. These lists used to fall back to the beginning-of-
+# year column when the end-of-year one was blank, and for employer
+# contributions to EMPLR_CONTRIB_EOY_AMT — the contributions *receivable*
+# balance, not the year's contributions — which put stale and wrong figures
+# into the database. dol_bulk.py holds the authoritative field map; keep the
+# two in step.
 SCHEDULE_FINANCIAL_FIELDS = {
-    "total_assets": [
-        "TOT_ASSETS_EOY_AMT", "TOT_ASSETS_BOY_AMT",
-        "TOTAL_ASSETS_EOY_AMT", "TOTAL_ASSETS_BOY_AMT",
-        "NET_ASSETS_EOY_AMT",
-    ],
-    "total_liabilities": [
-        "TOT_LIABILITIES_EOY_AMT", "TOT_LIABILITIES_BOY_AMT",
-        "TOTAL_LIABILITIES_EOY_AMT", "TOTAL_LIABILITIES_BOY_AMT",
-    ],
-    "employer_contributions": [
-        "EMPLR_CONTRIB_INCOME_AMT", "EMPLR_CONTRIB_AMT", "EMPLOYER_CONTRIB_AMT",
-        "EMPLR_CONTRIB_CUR_YR_AMT", "EMPLR_CONTRIB_EOY_AMT",
-    ],
-    "participant_contributions": [
-        "PARTICIPANT_CONTRIB_AMT", "PARTCP_CONTRIB_AMT", "PARTCPNT_CONTRIB_AMT",
-        "EE_CONTRIB_AMT",
-    ],
-    "benefits_paid": [
-        "TOT_DISTRIB_BNFT_AMT", "BENEFIT_PAYMENT_AMT",
-        "BENEFITS_PAID_AMT",
-    ],
-    "net_income": [
-        "NET_INCOME_AMT", "NET_INCM_AMT",
-        "NET_GAIN_LOSS_AMT",
-    ],
-    "employer_securities": [
-        "EMPLR_SEC_EOY_AMT", "EMPLR_SEC_BOY_AMT",
-        "EMPLR_SECURITIES_EOY_AMT", "EMPLOYER_SECURITIES_EOY_AMT",
-        "EMPLR_SECURITIES_BOY_AMT", "EMPLOYER_SECURITIES_BOY_AMT",
-    ],
+    "total_assets": ["TOT_ASSETS_EOY_AMT", "SMALL_TOT_ASSETS_EOY_AMT"],
+    "total_liabilities": ["TOT_LIABILITIES_EOY_AMT", "SMALL_TOT_LIABILITIES_EOY_AMT"],
+    "employer_contributions": ["EMPLR_CONTRIB_INCOME_AMT", "SMALL_EMPLR_CONTRIB_INCOME_AMT"],
+    "participant_contributions": ["PARTICIPANT_CONTRIB_AMT", "SMALL_PARTICIPANT_CONTRIB_AMT"],
+    "benefits_paid": ["TOT_DISTRIB_BNFT_AMT", "SMALL_TOT_DISTRIB_BNFT_AMT"],
+    "net_income": ["NET_INCOME_AMT", "SMALL_NET_INCOME_AMT"],
+    # Schedule H line 1d(1); Schedule I line 3d.
+    "employer_securities": ["EMPLR_SEC_EOY_AMT", "SMALL_EMPLR_SEC_EOY_AMT"],
 }
 
 SCHEDULE_EIN_FIELDS = ["SCH_H_EIN", "SCH_I_EIN", "SPONS_DFE_EIN", "SPONSOR_DFE_EIN", "EIN"]
@@ -362,6 +317,19 @@ def get_prior_eins(before_year: int) -> set[str]:
     return {r["ein"] for r in rows if r["ein"]}
 
 
+def get_prior_sponsor_names(before_year: int) -> set[str]:
+    """Sponsor names of every plan filed before the given form year.
+
+    Paired with get_prior_eins() to tell a genuinely new sponsor from a known one
+    filing under a new EIN (RCM Services' 2025 return names its old EIN as the
+    prior sponsor).
+    """
+    rows = _get_conn().execute(
+        "SELECT DISTINCT sponsor_name FROM form5500_filings WHERE filing_year < ?",
+        (before_year,)).fetchall()
+    return {r["sponsor_name"] for r in rows if r["sponsor_name"]}
+
+
 def get_ma_filings_by_city(year: int | None = None, *,
                            exclude_zombie: bool = False) -> list[dict]:
     query = """
@@ -377,7 +345,7 @@ def get_ma_filings_by_city(year: int | None = None, *,
         params.append(year)
     if exclude_zombie:
         query += _zombie_clause()
-    query += " GROUP BY sponsor_city ORDER BY plan_count DESC"
+    query += " GROUP BY sponsor_city ORDER BY plan_count DESC, sponsor_city"
     rows = _get_conn().execute(query, params).fetchall()
     return [dict(r) for r in rows]
 
@@ -398,7 +366,7 @@ def get_ma_filings_by_industry(year: int | None = None, *,
         params.append(year)
     if exclude_zombie:
         query += _zombie_clause()
-    query += " GROUP BY industry_sector ORDER BY plan_count DESC"
+    query += " GROUP BY industry_sector ORDER BY plan_count DESC, industry_sector"
     rows = _get_conn().execute(query, params).fetchall()
     return [dict(r) for r in rows]
 
@@ -500,14 +468,16 @@ def get_new_and_terminated(year: int) -> tuple[list[dict], list[dict]]:
     #   Voting (PN=005) Stock Ownership Plans have filed substantial,
     #   continuous ESOP returns every year through 2023 ($100M-$900M range);
     #   they were fiscal-year late filers like the others above, now imported
-    #   with FY2024 Schedule H figures).
+    #   with FY2024 Schedule H figures), The Severn Group (2026-10-26 — its
+    #   only tracked row, 2023, was a state typo: the return reads "Upper
+    #   Marlboro, MA 20774", a Maryland address, so the row is removed and the
+    #   plan was never a Massachusetts ESOP to terminate).
     #
     # TIER 1 — Confirmed Terminated: acquisition/wind-down confirmed AND backed
     # by filing evidence (current-yr non-ESOP filing or $0/0 final return) or a
     # confirmed acquisition of a 100%-ESOP by a strategic/PE buyer.
     _TIER1_TERMINATED_EINS: dict[str, str] = {
         "822323992": "Sold to CI Capital (2021); filed 2024 401(k)+welfare, no ESOP",
-        "550796211": "Relocated to MD; filed 2024 401(k), no ESOP (no longer MA)",
         "43533865":  "Wound down — $0 assets / 0 active in final (2023) filing",
         "10367721":  "Acquired by BetterBody Foods (Dec 1 2024); 0 active in final filing",
         "521405842": "Acquired by PAE/Amentum; $0/0 final filing",
@@ -535,11 +505,10 @@ def get_new_and_terminated(year: int) -> tuple[list[dict], list[dict]]:
         "42556035":  "100% employee-owned since Jan 2022 (Landry's Bicycles)",
         "42699206":  "Employee-owned per MA state EO registry (Packaging Consultants)",
         "42170946":  "Operating; ESOP filed 2023, no acquisition found (Paul K. Guillow / Guillow's)",
-        # Its own ESOP filed 2020-2023 and again for 2025 (2,202 participants,
-        # $273.2M). The 2024 gap is real but not a termination: for that year the
-        # only ESOP return under this EIN was the acquired Cambridge Bancorp plan,
-        # excluded here as a cross-EIN duplicate of Cambridge's own filing.
-        "43067724":  "Still active — filed its own 2025 ESOP return (Eastern Bank)",
+        # Eastern Bank (43067724) left this list 2026-10-26: its own 2024 ESOP
+        # return was filed (2,041 participants, $256.5M) but DOL's "Latest" file
+        # had dropped it in favour of the Cambridge Bancorp plan filed later
+        # under the same EIN and plan number. See apply_2026_10_sweep.py.
     }
 
     terminated: list[dict] = []
@@ -578,10 +547,9 @@ def get_asset_distribution(year: int | None = None, *,
     """Plan asset values for the size histogram.
 
     Includes plans that reported exactly $0 — they belong in the lowest bucket,
-    and dropping them silently made this histogram cover a different population
-    than the participant histogram displayed beside it (114 plans against 115 for
-    2024, because Savogran reports $0 assets while still having active
-    participants). NULL is still excluded: unreported is not the same as zero.
+    and dropping them would make this histogram cover a different population
+    than the participant histogram displayed beside it. NULL is still excluded:
+    unreported is not the same as zero.
     """
     query = """
         SELECT total_assets FROM form5500_filings
@@ -700,6 +668,13 @@ def get_asset_per_participant_distribution(year: int = None) -> list:
 
 # ── Data Processing Logic ─────────────────────────
 
+def _text(val) -> str:
+    """A CSV cell as text, with a missing value (pandas NaN) as ""."""
+    if val is None or (isinstance(val, float) and val != val):
+        return ""
+    return str(val).strip()
+
+
 def _safe_int(val) -> int | None:
     if val is None:
         return None
@@ -803,7 +778,9 @@ def _normalize_pn(pn_raw: str) -> str:
 # ── Import from pre-processed CSV ────────────────
 
 def import_from_csv(csv_path: str):
-    df = pd.read_csv(csv_path)
+    # ZIPs and codes are text: read as numbers, "02114" would lose its zero.
+    df = pd.read_csv(csv_path, dtype={"sponsor_zip": str, "type_pension_bnft": str,
+                                      "naics_code": str, "plan_eff_date": str})
     logger.info("Importing %d records from %s", len(df), csv_path)
 
     records = []
@@ -828,11 +805,11 @@ def import_from_csv(csv_path: str):
             "plan_num": plan_num if plan_num != "nan" else "",
             "plan_name": plan_name if plan_name != "nan" else "",
             "sponsor_name": sponsor_name,
-            "sponsor_city": str(row.get("sponsor_city", "")).replace("nan", ""),
-            "sponsor_state": str(row.get("sponsor_state", "")).replace("nan", ""),
-            "sponsor_zip": str(row.get("sponsor_zip", "")).replace("nan", ""),
-            "type_plan_entity": str(row.get("type_plan_entity", "")).replace("nan", ""),
-            "type_pension_bnft": str(row.get("type_pension_bnft", "")).replace("nan", ""),
+            "sponsor_city": _text(row.get("sponsor_city")),
+            "sponsor_state": _text(row.get("sponsor_state")),
+            "sponsor_zip": _text(row.get("sponsor_zip")),
+            "type_plan_entity": _text(row.get("type_plan_entity")),
+            "type_pension_bnft": _text(row.get("type_pension_bnft")),
             "is_esop": int(row.get("is_esop", 0)),
             "is_ksop": int(row.get("is_ksop", 0)),
             "total_participants": _safe_int(row.get("total_participants")),
@@ -844,27 +821,25 @@ def import_from_csv(csv_path: str):
             "benefits_paid": _safe_money(row.get("benefits_paid")),
             "net_income": _safe_money(row.get("net_income")),
             "employer_securities": _safe_money(row.get("employer_securities")),
-            "naics_code": str(row.get("naics_code", "")).replace("nan", ""),
-            "industry_sector": str(row.get("industry_sector", "")).replace("nan", ""),
-            "plan_eff_date": str(row.get("plan_eff_date", "")).replace("nan", ""),
+            "naics_code": _text(row.get("naics_code")),
+            "industry_sector": _text(row.get("industry_sector")),
+            "plan_eff_date": _text(row.get("plan_eff_date")),
         })
 
     insert_filings(records)
-
     years = sorted(set(r["filing_year"] for r in records))
-    for yr in years:
-        yr_records = [r for r in records if r["filing_year"] == yr]
-        us_summary = {
-            "us_total_esop_count": 0,
-            "us_total_participants": 0,
-            "us_total_assets": 0.0,
-        }
-        summary = compute_annual_summary(yr, yr_records, us_summary)
-        insert_annual_summary(summary)
+
+    # The U.S. reference figures come from the seed summary CSV beside the
+    # records; every Massachusetts figure is recomputed from the rows just
+    # loaded, exactly as the data pipeline computes it.
+    summary_csv = os.path.join(os.path.dirname(os.path.abspath(csv_path)), config.FORM5500_SUMMARY_CSV)
+    if os.path.exists(summary_csv):
+        import_from_summary_csv(summary_csv)
 
     # Enforce the invariant that unreported employer-securities figures are NULL
     # (not 0) so missing company-stock data renders as "—" rather than "$0".
     nullify_unreported_employer_securities()
+    recompute_annual_summaries()
 
     set_meta("last_import", datetime.now(timezone.utc).isoformat())
     set_meta("source", csv_path)
@@ -1141,39 +1116,37 @@ def recompute_annual_summaries():
 def nullify_unreported_employer_securities(schedule_dir: str = None) -> int:
     """Store NULL (not 0) for employer-securities figures the filer never reported.
 
-    Employer securities — company stock held in the ESOP trust — is broken out
-    only on **Schedule H, Part I, line 1c**. Small ESOPs that file Schedule I /
-    Form 5500-SF do not itemize this figure, but legacy processing stored it as
-    ``0.0`` for those plans. A literal ``0`` is then rendered as a misleading
-    "$0" (e.g. a $32M-asset ESOP appearing to hold no company stock) and is
-    silently summed into column totals, understating "% of assets reporting
-    stock" denominators.
+    Employer securities — company stock held in the ESOP trust — is reported on
+    **Schedule H line 1d(1)** by large plans and on **Schedule I line 3d** by
+    small plans. Legacy processing stored ``0.0`` where no value was filed, and
+    a literal ``0`` then renders as a misleading "$0" (e.g. a $32M-asset ESOP
+    appearing to hold no company stock).
 
     This sets ``employer_securities = NULL`` for every MA ESOP filing whose
     stored value is ``0`` **unless** that zero was *explicitly reported* on the
-    plan's Schedule H (line 1c == 0 for a handful of diversified / wind-down
-    plans). Positive values (from Schedule H or Form 5500-SF) and genuine
-    Schedule-H reported zeros are preserved untouched. After this runs, missing
-    data renders as an em-dash ("—") and is skipped by ``pd.to_numeric(...).sum()``
-    and by ``SUM(employer_securities)``; ``COALESCE(employer_securities, 0)``
-    aggregates are unchanged in value but now correctly mean "sum across plans
-    that reported company stock."
+    plan's own Schedule H or Schedule I (a handful of diversified / wind-down
+    plans do report $0). Positive values and explicitly reported zeros are
+    preserved untouched. After this runs, missing data renders as an em-dash
+    ("—"), and ``COALESCE(employer_securities, 0)`` aggregates mean "sum across
+    plans that reported company stock."
 
     Idempotent. Returns the number of rows set to NULL.
     """
     schedule_dir = schedule_dir or config.FORM5500_SCHEDULE_DIR
     conn = _get_conn()
 
-    # Build the set of (year, ein, pn) that EXPLICITLY reported 0 on Schedule H,
-    # mirroring import_schedule_csv's field selection so the discriminator is
-    # consistent with how positive values were imported.
+    # Build the set of (year, ein, pn) that EXPLICITLY reported 0 on Schedule H
+    # or Schedule I, mirroring import_schedule_csv's field selection so the
+    # discriminator is consistent with how positive values were imported.
     confirmed_zero: set[tuple] = set()
+    sched_patterns = (config.FORM5500_SCHEDULE_H_PATTERNS
+                      + config.FORM5500_SCHEDULE_I_PATTERNS)
     if os.path.isdir(schedule_dir):
         for filename in sorted(os.listdir(schedule_dir)):
             fn_lower = filename.lower()
             if not fn_lower.endswith(".csv"):
                 continue
-            if not any(p.lower() in fn_lower for p in config.FORM5500_SCHEDULE_H_PATTERNS):
+            if not any(p.lower() in fn_lower for p in sched_patterns):
                 continue
             year_match = re.search(r"(20\d{2})", filename)
             if not year_match:
@@ -1191,7 +1164,7 @@ def nullify_unreported_employer_securities(schedule_dir: str = None) -> int:
                             confirmed_zero.add(
                                 (yr, _normalize_ein(ein), _normalize_pn(pn)))
             except Exception as e:  # noqa: BLE001
-                logger.error("Error scanning Schedule H %s: %s", filename, e)
+                logger.error("Error scanning schedule file %s: %s", filename, e)
 
     rows = conn.execute(
         "SELECT id, filing_year, ein, plan_num FROM form5500_filings "
@@ -1221,7 +1194,7 @@ def nullify_unreported_employer_securities(schedule_dir: str = None) -> int:
     set_meta("employer_securities_nullified",
              datetime.now(timezone.utc).isoformat())
     logger.info("nullify_unreported_employer_securities: set %d rows to NULL "
-                "(%d confirmed Schedule-H reported zeros preserved)",
+                "(%d explicitly reported zeros preserved)",
                 len(null_ids), len(rows) - len(null_ids))
     return len(null_ids)
 

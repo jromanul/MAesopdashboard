@@ -2,172 +2,187 @@
 Re-derive MA ESOP plan financials directly from authoritative DOL EFAST2 filings.
 
 DOL Form 5500 filings are the authoritative source. This script downloads the DOL
-bulk Schedule H (large plans, >=100 participants) and Schedule I (small plans,
-<100 participants) datasets, buckets every record by its real PLAN YEAR
-(SCH_*_PLAN_YEAR_BEGIN_DATE), and overwrites each MA ESOP plan-year's financial
-fields with the authoritative value.
+bulk main-form, Schedule H (large plans) and Schedule I (small plans) datasets for
+every form year, finds the return each database row represents, and overwrites
+that row's financial fields with the values filed on that return's own schedule.
 
-Why this exists
----------------
-An earlier pipeline captured small-plan (Schedule I) assets from the wrong field,
-leaving ~640 plan-years materially understated (e.g. RCM Services showed $6,676 vs
-the true $5.78M; Cape Cod Lumber $32M vs $71M). Re-deriving from DOL corrects them.
+Rules, per database row (see dol_bulk.py for why each matters):
+  1. The row's return is chosen with dol_bulk.canonical_return(): plan year
+     beginning in the form year, ESOP-coded, full rather than short year.
+  2. Its schedule is joined by ACK_ID — never by (EIN, plan number, plan year),
+     which pairs a plan's regular return with its short final return.
+  3. End-of-year fields only. A blank is stored as NULL ("not reported").
+  4. Employer securities: Schedule H line 1d(1), or Schedule I line 3d for small
+     plans. An impossible value (negative, or above total assets) is NULL.
+  5. Participant counts are NOT changed here. They come from the main form and
+     are verified instead: any row whose stored counts differ from its return is
+     reported so it can be reviewed, since a difference can be a documented
+     correction (see scan_dol_filers.PARTICIPANT_OVERRIDES).
 
-Rules (in priority order, per plan-year, matched on plan_year + EIN + plan_num):
-  1. Schedule H value wins where present (audited large-plan form; the only form
-     that itemizes employer securities, Part I line 1c).
-  2. Otherwise Schedule I value (small plans; employer_securities is NOT reported
-     on Schedule I, so it is set to NULL -> renders "—", never "$0").
-  3. Participant counts are NEVER touched here (they come from the main Form 5500
-     and are already accurate).
-Integrity guards applied afterward (see form5500_analysis):
-  - employer_securities that is 0/unconfirmed -> NULL
-  - employer_securities > total_assets (impossible) -> NULL
-  - cross-EIN duplicate rows (same plan filed under two EINs in a transition year)
-    must be de-duplicated separately (see _find_cross_ein_dupes()).
+Also writes the filtered schedule rows for every tracked filing to data/form5500/
+(f_sch_h_<year>.csv, f_sch_i_<year>.csv). Those files are what
+form5500_analysis.nullify_unreported_employer_securities() reads to tell an
+explicitly reported $0 from a blank, and what a reseeded database imports.
+
+Afterwards: unreported-securities guard, annual summaries recomputed, and a
+check for the same plan filed under two EINs (resolve those by hand).
 
 Usage:
-    python3 refetch_dol_financials.py            # download, save filtered files, re-derive
-    python3 refetch_dol_financials.py --no-download   # reuse files already in CACHE_DIR
+    python3 refetch_dol_financials.py                 # download, re-derive
+    python3 refetch_dol_financials.py --no-download   # reuse zips in DOL_CACHE_DIR
+    python3 refetch_dol_financials.py --dry-run       # report changes, write nothing
 """
 from __future__ import annotations
 
 import csv
-import io
 import os
-import re
-import ssl
+import shutil
 import sqlite3
+import ssl
 import sys
 import urllib.request
-import zipfile
 
 import config
+import dol_bulk
 import form5500_analysis as fa
+from scan_dol_filers import PARTICIPANT_OVERRIDES, drop_name_scoped_exclusions
 
 import safe_console
 
 safe_console.enable_utf8_stdout()
 
-CACHE_DIR = os.path.join("/tmp", "dol")
 SCHEDULE_DIR = config.FORM5500_SCHEDULE_DIR
-YEARS = list(range(2014, 2025))
-
-SCH_I_ASSET_FIELDS = {
-    "total_assets": ["SMALL_TOT_ASSETS_EOY_AMT"],
-    "total_liabilities": ["SMALL_TOT_LIABILITIES_EOY_AMT"],
-    "employer_contributions": ["SMALL_EMPLR_CONTRIB_INCOME_AMT"],
-    "participant_contributions": ["SMALL_PARTICIPANT_CONTRIB_AMT"],
-    "benefits_paid": ["SMALL_TOT_DISTRIB_BNFT_AMT"],
-    "net_income": ["SMALL_NET_INCOME_AMT"],
-}
+OPEN_YEAR = config.FORM5500_OPEN_FORM_YEAR
+YEARS = list(range(2014, OPEN_YEAR + 1))
+KINDS = ("F_5500", "F_SCH_H", "F_SCH_I")
 
 
 def _download(url: str, dest: str) -> bool:
+    req = urllib.request.Request(url, headers={"User-Agent": "MassCEO-Research/1.0"})
+    tmp = dest + ".part"
     try:
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-        req = urllib.request.Request(url, headers={"User-Agent": "MassCEO-Research/1.0"})
-        with urllib.request.urlopen(req, context=ctx, timeout=240) as resp:
-            data = resp.read()
-        with zipfile.ZipFile(io.BytesIO(data)) as zf:
-            name = next((n for n in zf.namelist() if n.lower().endswith(".csv")), None)
-            if not name:
-                return False
-            with zf.open(name) as f, open(dest, "wb") as out:
-                out.write(f.read())
+        with urllib.request.urlopen(req, context=ssl.create_default_context(),
+                                    timeout=600) as resp, open(tmp, "wb") as out:
+            shutil.copyfileobj(resp, out)
+        os.replace(tmp, dest)
         return True
     except Exception as e:  # noqa: BLE001
         print(f"    download failed: {e}")
+        if os.path.exists(tmp):
+            os.remove(tmp)
         return False
 
 
+# DOL's "All" files (every filing version) are fetched for every form year: the
+# "Latest" file can drop a filing in any year (see dol_bulk, rule 4).
+ALL_VERSION_YEARS = YEARS
+
+
+# The 2013 form is read too, for plan-year-2014 short final returns filed on it,
+# and the 5500-SF of every year, for the reviewed ESOPs that (wrongly) file it
+# (scan_dol_filers.ESOP_WITHOUT_CODE).
+FORM_YEARS = [YEARS[0] - 1] + YEARS
+
+
 def fetch_bulk(download: bool = True):
-    os.makedirs(CACHE_DIR, exist_ok=True)
-    for sched in ("H", "I"):
-        for y in YEARS:
-            dest = os.path.join(CACHE_DIR, f"sch{sched}_{y}.csv")
-            if os.path.exists(dest) or not download:
+    os.makedirs(dol_bulk.CACHE_DIR, exist_ok=True)
+    for y in FORM_YEARS:
+        for variant in dol_bulk.VARIANTS:
+            if variant == "All" and y not in ALL_VERSION_YEARS + [YEARS[0] - 1]:
                 continue
-            for variant in (f"Latest/F_SCH_{sched}_{y}_Latest",
-                            f"All/F_SCH_{sched}_{y}_All"):
-                url = f"https://askebsa.dol.gov/FOIA%20Files/{y}/{variant}.zip"
-                print(f"  Sch {sched} {y}: {url}")
-                if _download(url, dest):
-                    break
+            for kind in KINDS + ("F_5500_SF",):
+                if dol_bulk.has_zip(y, kind, variant) or not download:
+                    continue
+                url = dol_bulk.zip_url(y, kind, variant)
+                print(f"  {kind} {y} {variant}: {url}")
+                _download(url, dol_bulk.zip_path(y, kind, variant))
 
 
-def _num(v):
-    return fa._safe_money(v)
-
-
-def build_maps():
-    """Return {(plan_year, ein, pn): {field: value}} for Schedule H and Schedule I."""
-    H, I = {}, {}
-    for y in YEARS:
-        hp = os.path.join(CACHE_DIR, f"schH_{y}.csv")
-        if os.path.exists(hp):
-            with open(hp, encoding="utf-8", errors="replace") as f:
-                for r in csv.DictReader(f):
-                    d = r.get("SCH_H_PLAN_YEAR_BEGIN_DATE", "")
-                    if not d[:4].isdigit():
-                        continue
-                    py = int(d[:4])
-                    if _num(fa._get_field(r, fa.SCHEDULE_FINANCIAL_FIELDS["total_assets"])) is None:
-                        continue
-                    k = (py, fa._normalize_ein(fa._get_field(r, fa.SCHEDULE_EIN_FIELDS)),
-                         fa._normalize_pn(fa._get_field(r, fa.SCHEDULE_PN_FIELDS)))
-                    H[k] = {fld: _num(fa._get_field(r, c))
-                            for fld, c in fa.SCHEDULE_FINANCIAL_FIELDS.items()}
-        ip = os.path.join(CACHE_DIR, f"schI_{y}.csv")
-        if os.path.exists(ip):
-            with open(ip, encoding="utf-8", errors="replace") as f:
-                for r in csv.DictReader(f):
-                    d = r.get("SCH_I_PLAN_YEAR_BEGIN_DATE", "")
-                    if not d[:4].isdigit():
-                        continue
-                    py = int(d[:4])
-                    if _num(fa._get_field(r, SCH_I_ASSET_FIELDS["total_assets"])) is None:
-                        continue
-                    k = (py, fa._normalize_ein(fa._get_field(r, ["SCH_I_EIN"])),
-                         fa._normalize_pn(fa._get_field(r, ["SCH_I_PLAN_NUM"])))
-                    I[k] = {fld: _num(fa._get_field(r, c))
-                            for fld, c in SCH_I_ASSET_FIELDS.items()}
-    return H, I
-
-
-def rederive(H, I):
-    conn = sqlite3.connect(str(config.DB_PATH))
-    conn.row_factory = sqlite3.Row
+def locate_returns(conn) -> dict:
+    """{db_row_id: (form_year, canonical_return, schedules)} for every tracked row."""
     rows = conn.execute("SELECT * FROM form5500_filings "
                         "WHERE sponsor_state='MA' AND is_esop=1").fetchall()
-    from_h = from_i = 0
+    by_year: dict = {}
     for r in rows:
-        k = (r["filing_year"], fa._normalize_ein(r["ein"]), fa._normalize_pn(r["plan_num"]))
-        if k in H:                       # Schedule H priority
-            rec = H[k]
+        by_year.setdefault(r["filing_year"], []).append(r)
+
+    located = {}
+    for y in sorted(by_year):
+        if not (dol_bulk.has_zip(y, "F_5500") or dol_bulk.has_zip(y, "F_5500", "All")):
+            print(f"  {y}: no main-form zip cached; financials left as they are")
+            continue
+        keys = {(dol_bulk.norm_ein(r["ein"]), dol_bulk.norm_pn(r["plan_num"]))
+                for r in by_year[y]}
+        returns = dol_bulk.returns_for_year(y, extra_keys=keys)
+        returns = drop_name_scoped_exclusions(y, returns)
+        sched = dol_bulk.schedules_for_returns(returns)
+        for r in by_year[y]:
+            k = (dol_bulk.norm_ein(r["ein"]), dol_bulk.norm_pn(r["plan_num"]))
+            cands = returns.get(k, [])
+            if not cands:
+                print(f"  {y} {r['sponsor_name']} EIN={r['ein']} PN={r['plan_num']}: "
+                      f"no return in DOL bulk")
+                continue
+            x = dol_bulk.canonical_return(y, cands)
+            located[r["id"]] = (y, x, sched.get(x["ack_id"], {}))
+    return located
+
+
+def rederive(conn, located: dict, dry_run: bool = False) -> dict:
+    stats = {"SCH_H": 0, "SCH_I": 0, "SF": 0, "none": 0, "changed": 0}
+    count_diffs = []
+    for row_id, (y, ret, sched) in located.items():
+        r = conn.execute("SELECT * FROM form5500_filings WHERE id=?", (row_id,)).fetchone()
+        money, src = dol_bulk.financials(sched)
+        stats[src or "none"] += 1
+        override = PARTICIPANT_OVERRIDES.get(
+            (y, dol_bulk.norm_ein(r["ein"]), dol_bulk.norm_pn(r["plan_num"])), {})
+        for f, v in (("total_participants", ret["total_participants"]),
+                     ("active_participants", ret["active_participants"])):
+            if f not in override and v is not None and r[f] is not None and int(v) != int(r[f]):
+                count_diffs.append((y, r["sponsor_name"], f, r[f], int(v)))
+        if not src:
+            continue
+        changed = [f for f in dol_bulk.MONEY_FIELDS
+                   if (money[f] is None) != (r[f] is None)
+                   or (money[f] is not None and abs(money[f] - r[f]) > 0.5)]
+        if not changed:
+            continue
+        stats["changed"] += 1
+        print(f"  {y} {r['sponsor_name'][:36]:36} [{src}] " + ", ".join(
+            f"{f} {r[f]} -> {money[f]}" for f in changed))
+        if not dry_run:
             conn.execute(
-                "UPDATE form5500_filings SET total_assets=?, total_liabilities=?, "
-                "employer_contributions=?, participant_contributions=?, benefits_paid=?, "
-                "net_income=?, employer_securities=? WHERE id=?",
-                (rec["total_assets"], rec["total_liabilities"], rec["employer_contributions"],
-                 rec["participant_contributions"], rec["benefits_paid"], rec["net_income"],
-                 rec["employer_securities"], r["id"]))
-            from_h += 1
-        elif k in I:                     # Schedule I (no employer securities reported)
-            rec = I[k]
-            conn.execute(
-                "UPDATE form5500_filings SET total_assets=?, total_liabilities=?, "
-                "employer_contributions=?, participant_contributions=?, benefits_paid=?, "
-                "net_income=?, employer_securities=NULL WHERE id=?",
-                (rec["total_assets"], rec["total_liabilities"], rec["employer_contributions"],
-                 rec["participant_contributions"], rec["benefits_paid"], rec["net_income"],
-                 r["id"]))
-            from_i += 1
-    conn.commit()
-    conn.close()
-    print(f"Re-derived: {from_h} from Schedule H, {from_i} from Schedule I")
+                "UPDATE form5500_filings SET " +
+                ", ".join(f"{f}=?" for f in dol_bulk.MONEY_FIELDS) + " WHERE id=?",
+                [money[f] for f in dol_bulk.MONEY_FIELDS] + [row_id])
+    if not dry_run:
+        conn.commit()
+    if count_diffs:
+        print(f"\n  {len(count_diffs)} participant count(s) differ from the return "
+              f"(not changed here — review):")
+        for y, name, f, dbv, dolv in count_diffs:
+            print(f"    {y} {name}: {f} DB={dbv} DOL={dolv}")
+    return stats
+
+
+def save_filtered_schedules(located: dict):
+    """Write each tracked filing's raw Schedule H / I row to data/form5500/."""
+    os.makedirs(SCHEDULE_DIR, exist_ok=True)
+    for kind, prefix in (("SCH_H", "f_sch_h"), ("SCH_I", "f_sch_i")):
+        per_year: dict = {}
+        for y, _ret, sched in located.values():
+            if kind in sched:
+                per_year.setdefault(y, []).append(sched[kind]["_raw"])
+        for y, raws in sorted(per_year.items()):
+            path = os.path.join(SCHEDULE_DIR, f"{prefix}_{y}.csv")
+            cols = list(raws[0].keys())
+            with open(path, "w", newline="", encoding="utf-8") as f:
+                w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
+                w.writeheader()
+                for raw in sorted(raws, key=lambda d: d.get("ACK_ID", "")):
+                    w.writerow(raw)
+    print(f"  filtered schedules written to {SCHEDULE_DIR}")
 
 
 def find_cross_ein_dupes():
@@ -185,13 +200,22 @@ def find_cross_ein_dupes():
 
 def main():
     download = "--no-download" not in sys.argv
-    print("Downloading DOL Schedule H + Schedule I bulk data..." if download
-          else "Using cached DOL files...")
+    dry_run = "--dry-run" in sys.argv
+    print("Downloading DOL bulk data..." if download
+          else f"Using cached DOL files in {dol_bulk.CACHE_DIR}...")
     fetch_bulk(download)
-    H, I = build_maps()
-    print(f"Authoritative records: Schedule H={len(H)}, Schedule I={len(I)}")
-    rederive(H, I)
-    # Integrity guards (0/unconfirmed + >assets employer_securities -> NULL)
+    conn = sqlite3.connect(str(config.DB_PATH))
+    conn.row_factory = sqlite3.Row
+    located = locate_returns(conn)
+    print(f"Located the filed return for {len(located)} tracked plan-years")
+    stats = rederive(conn, located, dry_run)
+    conn.close()
+    print(f"Re-derived: {stats['SCH_H']} from Schedule H, {stats['SCH_I']} from "
+          f"Schedule I, {stats['none']} with no schedule; {stats['changed']} rows changed")
+    if dry_run:
+        print("Dry run: nothing written.")
+        return
+    save_filtered_schedules(located)
     fa.nullify_unreported_employer_securities()
     fa.recompute_annual_summaries()
     dupes = find_cross_ein_dupes()

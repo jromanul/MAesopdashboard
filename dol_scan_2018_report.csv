@@ -1,0 +1,6 @@
+bucket,sponsor_name,city,ein,plan_num,source,participants,detail
+EXCLUDED,RANELLA HIRSCH MD PC,CAMBRIDGE,352223136,001,F_5500,2.0,Ranella Hirsch MD PC 401(k): two-person 401(k); 2Q with no ESOP code
+EXCLUDED,STATE STREET CORPORATION,BOSTON,042456637,002,F_5500,24444.0,"State Street Corporation (NYSE: STT) - 'SALARY SAVINGS PROGRAM', 2O alongside 2J/2K"
+EXCLUDED,COASTWAY COMMUNITY BANK,BROCKTON,461710155,003,F_5500,144.0,"not Massachusetts-based: Coastway Community Bank was based in Warwick, RI; HarborOne wound its ESOP down from Brockton in 2018-2019"
+EXCLUDED,RAYTHEON COMPANY,WALTHAM,951778500,026,F_5500,88044.0,"Raytheon Company - 'RAYTHEON SAVINGS AND INVESTMENT PLAN', 2O alongside 2J/2K"
+EXCLUDED,CABOT CORPORATION,BILLERICA,042271897,022,F_5500,2204.0,"Cabot Corporation (NYSE: CBT) - 'CABOT 401(K) PLAN', 2O alongside 2J/2K"

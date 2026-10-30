@@ -15,6 +15,11 @@ The 2025 file holds 9 MA ESOP-coded rows (June 2026 refresh). Two are excluded:
 Financials come from F_SCH_H_2025 / F_SCH_I_2025 (cached in /tmp/dol), with the
 same precedence and employer_securities integrity guards as the main pipeline.
 Idempotent; form5500_annual_summary is left untouched.
+
+SUPERSEDED: already applied. Kept for the record; the data it wrote has since
+been re-derived from each row's return (participants are the year-end total,
+line 6f; a KSOP is code 2J). New returns are imported by
+`scan_dol_filers.py --import-new`.
 """
 import csv
 import io
@@ -107,8 +112,8 @@ def main():
             "type_plan_entity": str(row.get("TYPE_PLAN_ENTITY_CD") or "").strip(),
             "type_pension_bnft": codes,
             "is_esop": 1,
-            "is_ksop": 1 if ("2J" in codes and "2K" in codes) else 0,
-            "total_participants": to_num(row.get("TOT_PARTCP_BOY_CNT")),
+            "is_ksop": 1 if "2J" in codes else 0,
+            "total_participants": to_num(row.get("TOT_ACT_RTD_SEP_BENEF_CNT")),
             "active_participants": to_num(row.get("TOT_ACTIVE_PARTCP_CNT")),
             "total_assets": ta,
             "total_liabilities": money.get("total_liabilities"),

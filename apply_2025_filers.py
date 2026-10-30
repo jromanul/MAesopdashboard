@@ -37,7 +37,9 @@ the acquirer's number, correctly excluded as a cross-EIN duplicate. The 2025
 return under that EIN is named "EASTERN BANK EMPLOYEE STOCK OWNERSHIP PLAN",
 carries no prior-EIN link, and reports 2,202 participants and $273.2M. That is
 Eastern's own plan, which this dataset tracked from 2020 to 2023 (1,786 ->
-1,904 participants) and which filed nothing for 2024. Cambridge's own plan files
+1,904 participants) and which filed nothing for 2024. (Corrected October 2026:
+it did file for 2024; DOL's Latest file had dropped that return. See
+apply_2026_10_sweep.py.) Cambridge's own plan files
 separately for 2025 as a final amended return (485 participants) and is already
 in the database.
 
@@ -73,6 +75,11 @@ moment 2025 becomes a complete year. This normalizes the existing rows and
 writes new ones unpadded.
 
 Idempotent.
+
+SUPERSEDED: already applied. Kept for the record; the data it wrote has since
+been re-derived from each row's return (participants are the year-end total,
+line 6f; a KSOP is code 2J). New returns are imported by
+`scan_dol_filers.py --import-new`.
 """
 import csv
 import io
@@ -233,8 +240,8 @@ def main():
             "type_plan_entity": str(r.get("TYPE_PLAN_ENTITY_CD") or "").strip(),
             "type_pension_bnft": codes,
             "is_esop": 1,
-            "is_ksop": 1 if ("2J" in codes and "2K" in codes) else 0,
-            "total_participants": int(num(r.get("TOT_PARTCP_BOY_CNT")) or 0),
+            "is_ksop": 1 if "2J" in codes else 0,
+            "total_participants": int(num(r.get("TOT_ACT_RTD_SEP_BENEF_CNT")) or 0),
             "active_participants": int(num(r.get("TOT_ACTIVE_PARTCP_CNT")) or 0),
             "total_assets": money.get("total_assets"),
             "total_liabilities": money.get("total_liabilities"),

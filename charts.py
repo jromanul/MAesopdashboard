@@ -35,7 +35,8 @@ _AXIS = "#E4EAF1"
 
 
 def _apply_layout(fig: go.Figure, title: str = "", height: int | None = None,
-                  source: str = "", y_title: str = "", x_title: str = "") -> go.Figure:
+                  source: str = "", y_title: str = "", x_title: str = "",
+                  bottom: int | None = None) -> go.Figure:
     """Shared chart chrome.
 
     Presentation only. Gridlines are hairline-weight and horizontal-only so the
@@ -50,7 +51,7 @@ def _apply_layout(fig: go.Figure, title: str = "", height: int | None = None,
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
         height=height or config.CHART_HEIGHT_MD,
-        margin=dict(l=58, r=26, t=46, b=92 if source else 38),
+        margin=dict(l=58, r=34, t=46, b=bottom or (92 if source else 38)),
         legend=dict(orientation="h", yanchor="bottom", y=-0.20, xanchor="center", x=0.5,
                     font=dict(size=10.5, color=_TEXT_DARK),
                     bgcolor="rgba(0,0,0,0)", borderwidth=0),
@@ -59,6 +60,11 @@ def _apply_layout(fig: go.Figure, title: str = "", height: int | None = None,
                         font=dict(family=_FONT, color="#FFFFFF", size=11.5)),
         separators=".,",
     )
+    if len(fig.data) > 1:
+        # A legend under the plot collides with year labels that Plotly turns on a
+        # narrow (phone) screen, so a multi-series chart puts it under the title.
+        fig.update_layout(legend=dict(yanchor="bottom", y=1.0, xanchor="left", x=0),
+                          margin=dict(t=72))
     fig.update_xaxes(
         showgrid=False, showline=True, linecolor=_AXIS, linewidth=1, ticks="",
         title=dict(text=x_title, font=dict(size=10.5, color=_TEXT_DARK)),
@@ -72,11 +78,23 @@ def _apply_layout(fig: go.Figure, title: str = "", height: int | None = None,
         zeroline=True, zerolinecolor=_AXIS, zerolinewidth=1,
     )
     if source:
+        # Pinned to the bottom edge of the figure (not a fraction of the plot
+        # height), so it clears rotated tick labels at any chart height.
+        b = bottom or (92 if source else 38)
         fig.add_annotation(
             text=f"Source: {source}", xref="paper", yref="paper",
-            x=0, y=-0.32, showarrow=False,
-            font=dict(size=9, color=_TEXT_DARK),
+            x=0, y=0, xanchor="left", yanchor="top", yshift=-(b - 24),
+            showarrow=False, font=dict(size=10, color=_TEXT_DARK),
         )
+    return fig
+
+
+def _year_axis(fig: go.Figure, years: list) -> go.Figure:
+    """Whole-year ticks with half a year of padding, so neither end is clipped.
+    Labels turn at most 45 degrees when crowded (a phone), never 90."""
+    if years:
+        fig.update_xaxes(dtick=1, range=[min(years) - 0.5, max(years) + 0.5],
+                         autotickangles=[0, -45])
     return fig
 
 
@@ -96,16 +114,19 @@ def build_f5500_plan_count_trend(summaries: list[dict]) -> go.Figure:
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=years, y=counts, mode="lines+markers",
+        x=years, y=counts, mode="lines+markers+text",
         name="MA ESOP Plans",
         line=dict(color=_NAVY, width=3),
         marker=dict(size=8, color=_NAVY),
+        text=counts, textposition="top center", cliponaxis=False,
+        textfont=dict(size=11, color=_TEXT_BLACK, family=_FONT),
         hovertemplate="Year %{x}: %{y} plans<extra></extra>",
     ))
-    _apply_layout(fig, title="MA ESOP Plan Count Over Time",
-                  y_title="Number of Plans", source="DOL Form 5500 Bulk Data",
+    _apply_layout(fig, title="MA ESOP Plans Filed, by Form Year",
+                  y_title="Plans filed", source="U.S. DOL Form 5500 (EFAST2 bulk data)",
                   height=config.CHART_HEIGHT_MD)
-    fig.update_xaxes(dtick=1)
+    fig.update_yaxes(rangemode="tozero")
+    _year_axis(fig, years)
     return fig
 
 
@@ -130,11 +151,11 @@ def build_f5500_participants_trend(summaries: list[dict]) -> go.Figure:
             marker=dict(size=6, color=_GOLD),
             hovertemplate="Year %{x}: %{y:,.0f} active<extra></extra>",
         ))
-    _apply_layout(fig, title="MA ESOP Participants Over Time",
-                  y_title="Participants", source="DOL Form 5500 Bulk Data",
+    _apply_layout(fig, title="Participants in MA ESOPs",
+                  y_title="Participants", source="U.S. DOL Form 5500 (EFAST2 bulk data)",
                   height=config.CHART_HEIGHT_MD)
-    fig.update_yaxes(tickformat=",")
-    fig.update_xaxes(dtick=1)
+    fig.update_yaxes(tickformat=",", rangemode="tozero")
+    _year_axis(fig, years)
     return fig
 
 
@@ -148,14 +169,14 @@ def build_f5500_assets_trend(summaries: list[dict]) -> go.Figure:
         name="Total Assets",
         line=dict(color=_NAVY, width=3),
         marker=dict(size=8, color=_NAVY),
-        fill="tozeroy", fillcolor="rgba(27,58,92,0.1)",
+        fill="tozeroy", fillcolor="rgba(20,85,143,0.10)",
         hovertemplate="Year %{x}: $%{y:.2f}B<extra></extra>",
     ))
-    _apply_layout(fig, title="MA ESOP Total Assets Over Time",
-                  y_title="Assets ($ Billions)", source="DOL Form 5500 (Schedule H/I)",
+    _apply_layout(fig, title="Total Assets Held by MA ESOPs",
+                  y_title="Assets ($ billions)", source="U.S. DOL Form 5500, Schedules H and I",
                   height=config.CHART_HEIGHT_MD)
-    fig.update_yaxes(tickprefix="$", ticksuffix="B")
-    fig.update_xaxes(dtick=1)
+    fig.update_yaxes(tickprefix="$", ticksuffix="B", rangemode="tozero")
+    _year_axis(fig, years)
     return fig
 
 
@@ -171,32 +192,35 @@ def build_f5500_avg_plan_assets_trend(summaries: list[dict]) -> go.Figure:
         marker=dict(size=8, color=_GOLD),
         hovertemplate="Year %{x}: $%{y:.1f}M<extra></extra>",
     ))
-    _apply_layout(fig, title="Average MA ESOP Plan Assets Over Time",
-                  y_title="Average Assets ($ Millions)", source="DOL Form 5500 (Schedule H/I)",
+    _apply_layout(fig, title="Average Assets per Filed Plan",
+                  y_title="Average assets ($ millions)", source="U.S. DOL Form 5500, Schedules H and I",
                   height=config.CHART_HEIGHT_MD)
-    fig.update_yaxes(tickprefix="$", ticksuffix="M")
-    fig.update_xaxes(dtick=1)
+    fig.update_yaxes(tickprefix="$", ticksuffix="M", rangemode="tozero")
+    _year_axis(fig, years)
     return fig
 
 
 def build_f5500_contributions_bar(summaries: list[dict]) -> go.Figure:
     years = [s["filing_year"] for s in summaries]
     contribs_m = [(s.get("ma_total_contributions") or 0) / 1e6 for s in summaries]
-    texts = [f"${c:.1f}M" for c in contribs_m]
+    texts = [f"${c:.0f}M" for c in contribs_m]
 
     fig = go.Figure(go.Bar(
         x=years, y=contribs_m,
         marker_color=_NAVY,
-        text=texts, textposition="outside",
-        textfont=dict(size=11, color=_TEXT_BLACK, family=_FONT),
+        text=texts, textposition="outside", cliponaxis=False,
+        textfont=dict(size=10, color=_TEXT_BLACK, family=_FONT),
         hovertemplate="Year %{x}: $%{y:.1f}M<extra></extra>",
     ))
-    _apply_layout(fig, title="Annual Employer Contributions to MA ESOPs",
-                  y_title="Contributions ($ Millions)", source="DOL Form 5500 (Schedule H/I)",
+    _apply_layout(fig, title="Employer Contributions to MA ESOPs",
+                  y_title="Contributions ($ millions)", source="U.S. DOL Form 5500, Schedules H and I",
                   height=config.CHART_HEIGHT_MD)
-    fig.update_yaxes(tickprefix="$", ticksuffix="M")
-    fig.update_xaxes(dtick=1)
-    fig.update_layout(bargap=0.35)
+    fig.update_yaxes(tickprefix="$", ticksuffix="M",
+                     range=[0, max(contribs_m or [0]) * 1.15 or 1])
+    _year_axis(fig, years)
+    # On a narrow screen a label wider than its bar is hidden rather than
+    # overprinting its neighbour; hover still gives every value.
+    fig.update_layout(bargap=0.35, uniformtext=dict(minsize=8, mode="hide"))
     return fig
 
 
@@ -292,23 +316,77 @@ def build_f5500_industry_bar(industry_data: list[dict], top_n: int = 15) -> go.F
 
     sectors = [d["industry_sector"] for d in reversed(top)]
     counts = [d["plan_count"] for d in reversed(top)]
+    total = sum(d["plan_count"] for d in top)
 
     fig = go.Figure(go.Bar(
         y=sectors, x=counts, orientation="h",
-        marker_color=_GOLD,
-        hovertemplate="%{y}: %{x} ESOPs<extra></extra>",
+        marker_color=[sector_color(s) for s in sectors],
+        text=[f"{c}" for c in counts], textposition="outside", cliponaxis=False,
+        textfont=dict(size=11, color=_TEXT_BLACK, family=_FONT),
+        customdata=[[c / total * 100 if total else 0, "plan" if c == 1 else "plans"]
+                    for c in counts],
+        hovertemplate="%{y}: %{x} %{customdata[1]} (%{customdata[0]:.1f}%)<extra></extra>",
+    ))
+    _apply_layout(fig, title="Active MA ESOPs by Industry Sector",
+                  x_title="Active plans", source="U.S. DOL Form 5500; sector from NAICS business code",
+                  height=max(320, len(top) * 30 + 140), bottom=84)
+    # A fixed left margin wide enough for the longest sector name, so the source
+    # line can start at the figure's edge rather than the plot's.
+    fig.update_layout(hovermode="closest", showlegend=False, margin=dict(l=244, r=40))
+    fig.update_annotations(xshift=-232)
+    fig.update_xaxes(showgrid=True, gridcolor=_GRID, range=[0, max(counts) * 1.12])
+    fig.update_yaxes(showgrid=False, zeroline=False, automargin=False,
+                     tickfont=dict(color=_TEXT_BLACK, size=11.5))
+    return fig
+
+
+def sector_color(sector: str) -> str:
+    """Fixed colour per industry sector, so a sector reads the same in every chart."""
+    return config.SECTOR_COLORS.get(sector, config.SECTOR_COLORS["Other"])
+
+
+def build_f5500_industry_share(labels: list[str], values: list[float], title: str,
+                               value_fmt: str = ",.0f") -> go.Figure:
+    """Donut of one measure's split by sector, coloured with sector_color()."""
+    fig = go.Figure(go.Pie(
+        labels=labels, values=values, hole=0.5, sort=False, direction="clockwise",
+        marker=dict(colors=[sector_color(l) for l in labels],
+                    line=dict(color="white", width=1.5)),
+        texttemplate="%{percent:.0%}", textposition="inside",
+        insidetextorientation="horizontal", textfont=dict(size=11, family=_FONT),
+        hovertemplate="%{label}<br>%{value:" + value_fmt + "} (%{percent:.1%})<extra></extra>",
     ))
     fig.update_layout(
-        font=dict(family=_FONT, color=_TEXT_BLACK, size=12),
-        plot_bgcolor="white", paper_bgcolor="white",
-        height=max(300, len(top) * 28 + 80),
-        margin=dict(l=200, r=30, t=40, b=50),
-        xaxis=dict(title="Number of ESOPs", showgrid=True, gridcolor="#F0F0F0",
-                   tickfont=dict(color=_TEXT_BLACK), title_font=dict(color=_TEXT_BLACK)),
-        yaxis=dict(showgrid=False, tickfont=dict(color=_TEXT_BLACK)),
-        title=dict(text="MA ESOPs by Industry Sector",
-                  font=dict(size=15, color=_TEXT_BLACK, family=_FONT)),
+        title=dict(text=title, x=0.5, xanchor="center",
+                   font=dict(size=14, family=_FONT, color=_TEXT_BLACK, weight=700)),
+        height=config.CHART_HEIGHT_MD + 40,
+        margin=dict(t=50, b=10, l=10, r=10),
+        showlegend=True,
+        legend=dict(orientation="h", y=-0.02, yanchor="top", x=0.5, xanchor="center",
+                    font=dict(size=10.5, color=_TEXT_DARK)),
+        uniformtext=dict(minsize=10, mode="hide"),
+        paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(family=_FONT, color=_TEXT_BLACK),
+        hoverlabel=dict(bgcolor="#0A2E52", font=dict(family=_FONT, color="#FFFFFF", size=11.5)),
     )
+    return fig
+
+
+def build_f5500_category_bar(categories: list[str], values: list[float], title: str,
+                             y_title: str, text: list[str] | None = None,
+                             source: str = "U.S. DOL Form 5500 (plan effective date)") -> go.Figure:
+    """Single-series vertical bar for an ordered category axis (eras, decades)."""
+    fig = go.Figure(go.Bar(
+        x=categories, y=values, marker_color=_NAVY,
+        text=text if text is not None else values, textposition="outside", cliponaxis=False,
+        textfont=dict(size=11, color=_TEXT_BLACK, family=_FONT),
+        hovertemplate="%{x}: %{text}<extra></extra>",
+    ))
+    _apply_layout(fig, title=title, y_title=y_title, source=source,
+                  height=config.CHART_HEIGHT_SM + 90, bottom=110)
+    fig.update_layout(hovermode="closest", bargap=0.3, showlegend=False)
+    fig.update_xaxes(automargin=True, autotickangles=[0, -45])
+    fig.update_yaxes(range=[0, (max(values) if values else 1) * 1.18])
     return fig
 
 
@@ -329,17 +407,18 @@ def build_f5500_asset_histogram(asset_values: list[float]) -> go.Figure:
     fig = go.Figure(go.Bar(
         x=labels, y=counts,
         marker_color=_NAVY,
-        text=counts, textposition="outside",
+        text=counts, textposition="outside", cliponaxis=False,
         textfont=dict(size=11, color=_TEXT_BLACK, family=_FONT),
         hovertemplate="%{x}: %{y} plans<extra></extra>",
     ))
-    _apply_layout(fig, title="Distribution of MA ESOP Plan Assets",
-                  y_title="Number of Plans", source="DOL Form 5500 (Schedule H/I)",
-                  height=config.CHART_HEIGHT_MD)
-    fig.update_xaxes(tickangle=-45)
+    _apply_layout(fig, title="Active Plans by Total Assets",
+                  y_title="Active plans", x_title="Plan assets (end of plan year)",
+                  source="U.S. DOL Form 5500, Schedules H and I",
+                  height=config.CHART_HEIGHT_MD + 30, bottom=128)
+    fig.update_xaxes(tickangle=-35)
     if counts:
         fig.update_yaxes(range=[0, max(counts) * 1.18])  # headroom for outside labels
-    fig.update_layout(bargap=0.25)
+    fig.update_layout(bargap=0.25, hovermode="closest")
     return fig
 
 
@@ -360,17 +439,18 @@ def build_f5500_participant_histogram(partcp_values: list[int]) -> go.Figure:
     fig = go.Figure(go.Bar(
         x=labels, y=counts,
         marker_color=_GOLD,
-        text=counts, textposition="outside",
+        text=counts, textposition="outside", cliponaxis=False,
         textfont=dict(size=11, color=_TEXT_BLACK, family=_FONT),
         hovertemplate="%{x}: %{y} plans<extra></extra>",
     ))
-    _apply_layout(fig, title="Distribution of MA ESOP Participant Counts",
-                  y_title="Number of Plans", source="DOL Form 5500 Bulk Data",
-                  height=config.CHART_HEIGHT_MD)
-    fig.update_xaxes(tickangle=-45)
+    _apply_layout(fig, title="Active Plans by Number of Participants",
+                  y_title="Active plans", x_title="Participants (end of plan year)",
+                  source="U.S. DOL Form 5500 (EFAST2 bulk data)",
+                  height=config.CHART_HEIGHT_MD + 30, bottom=128)
+    fig.update_xaxes(tickangle=-35)
     if counts:
         fig.update_yaxes(range=[0, max(counts) * 1.18])  # headroom for outside labels
-    fig.update_layout(bargap=0.25)
+    fig.update_layout(bargap=0.25, hovermode="closest")
     return fig
 
 
@@ -500,10 +580,10 @@ def build_f5500_contributions_vs_distributions(summaries: list) -> go.Figure:
         marker_color=_GOLD,
         hovertemplate="Year %{x}: $%{y:.1f}M distributed<extra></extra>",
     ))
-    _apply_layout(fig, title="Contributions vs Distributions \u2014 MA ESOPs",
-                  y_title="Amount ($ Millions)", source="DOL Form 5500 (Schedule H/I)",
+    _apply_layout(fig, title="Employer Contributions In vs. Benefits Paid Out",
+                  y_title="Amount ($ millions)", source="U.S. DOL Form 5500, Schedules H and I",
                   height=config.CHART_HEIGHT_MD)
-    fig.update_yaxes(tickprefix="$", ticksuffix="M")
-    fig.update_xaxes(dtick=1)
+    fig.update_yaxes(tickprefix="$", ticksuffix="M", tickformat=",", rangemode="tozero")
+    _year_axis(fig, years)
     fig.update_layout(barmode="group", bargap=0.25, bargroupgap=0.1)
     return fig

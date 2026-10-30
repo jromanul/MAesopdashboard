@@ -2,8 +2,9 @@
   "meta": {
     "title": "Massachusetts ESOPs — Form 5500",
     "form_year": 2024,
-    "data_as_of": "August 6, 2026",
-    "generated_utc": "2026-08-06T23:42:01+00:00",
+    "data_as_of": "October 28, 2026",
+    "dol_release": "September 30, 2026",
+    "generated_utc": "2026-10-30T17:26:07+00:00",
     "source": "U.S. Department of Labor, EFAST2 Form 5500 bulk datasets",
     "source_url": "https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/public-disclosure/foia/form-5500-datasets",
     "dashboard_url": "https://maesopdashboard.streamlit.app",
@@ -13,65 +14,66 @@
       "filed": "Every ESOP that filed a Form 5500 for the year, including plans winding down. Use for year-over-year trend lines."
     },
     "caveats": [
-      "total_participants is the plan total at the BEGINNING of the plan year (Form 5500 line 5); active_participants is current employees at the END of the year (line 6a). DOL publishes no end-of-year total, so the two sit on different dates and a growing plan can show more active than total. Reproduced exactly as filed.",
-      "employer_securities (company stock) is reported only on Schedule H, which large plans file. It is null for plans filing Schedule I or 5500-SF — null means not reported, which is not the same as zero. Do not divide it by total assets across all plans; the denominators differ.",
-      "A form year keeps growing for roughly 18 months as fiscal-year and extended filers arrive, so the most recent year is not final.",
-      "Ordinary 401(k)/savings plans at large public companies that merely offer employer stock are deliberately excluded; they are not employee-owned firms."
+      "total_participants is the plan total at the END of the plan year (Form 5500 line 6f: current employees, retirees, former employees still owed a balance, beneficiaries); active_participants is current employees on the same date (line 6a).",
+      "employer_securities (company stock) is Schedule H line 1d(1) for large plans and Schedule I line 3d for small plans. null means the plan left the line blank, which is not the same as zero.",
+      "total_assets and employer_securities are end-of-plan-year balances; employer_contributions and benefits_paid are totals for the plan year. All come from the plan's own Schedule H or I, as filed.",
+      "Plans may file up to 9.5 months after a plan year ends (about 21.5 months after it begins), so the most recent form year keeps growing as fiscal-year and extended filers arrive and is not final.",
+      "Every ESOP of a Massachusetts-based employer is counted, closely held or publicly traded. Large public companies' 401(k) savings plans, in which company stock is one investment option among many (even where that fund is designated an ESOP), are not counted."
     ]
   },
   "headline": {
     "basis": "active",
-    "active_plans": 115,
-    "filed_plans": 128,
-    "excluded_inactive": 13,
-    "ksop_plans": 6,
-    "total_participants": 26228,
-    "total_active_participants": 17011,
-    "total_assets": 3442584179,
-    "mean_assets_per_plan": 30198107,
-    "median_assets_per_plan": 6468002,
-    "mean_participants_per_plan": 228.1,
-    "median_participants_per_plan": 73,
-    "aggregate_assets_per_participant": 131256,
-    "aggregate_assets_per_active_participant": 202374,
-    "median_assets_per_active_participant_per_plan": 118383,
-    "mean_assets_per_active_participant_per_plan": 233616,
-    "employer_securities": 2489022553,
-    "employer_securities_pct_of_assets": 72.3,
-    "plans_reporting_employer_securities": 34
+    "active_plans": 119,
+    "filed_plans": 133,
+    "excluded_inactive": 14,
+    "ksop_plans": 5,
+    "total_participants": 27856,
+    "total_active_participants": 19764,
+    "total_assets": 3987805292,
+    "mean_assets_per_plan": 33510969,
+    "median_assets_per_plan": 6458729,
+    "mean_participants_per_plan": 234.1,
+    "median_participants_per_plan": 70,
+    "aggregate_assets_per_participant": 143158,
+    "aggregate_assets_per_active_participant": 201771,
+    "median_assets_per_active_participant_per_plan": 116894,
+    "mean_assets_per_active_participant_per_plan": 227536,
+    "employer_securities": 3606344663,
+    "employer_securities_pct_of_assets": 90.4,
+    "plans_reporting_employer_securities": 112
   },
   "typical_plan": {
     "basis": "active",
-    "plans_described": 115,
+    "plans_described": 119,
     "rows": [
       {
         "metric": "ESOP age (years since plan start)",
         "median": 9,
-        "mean": 13.9,
+        "mean": 14,
         "unit": "years"
       },
       {
         "metric": "Total participants (incl. retirees/separated)",
-        "median": 73,
-        "mean": 228,
+        "median": 70,
+        "mean": 234,
         "unit": "people"
       },
       {
         "metric": "Active participants (current employees)",
-        "median": 51,
-        "mean": 148,
+        "median": 52,
+        "mean": 166,
         "unit": "people"
       },
       {
         "metric": "Plan assets",
-        "median": 6468002,
-        "mean": 29935515,
+        "median": 6458729,
+        "mean": 33510969,
         "unit": "usd"
       },
       {
         "metric": "Assets per active participant (per plan)",
-        "median": 118383,
-        "mean": 233616,
+        "median": 116894,
+        "mean": 227536,
         "unit": "usd"
       }
     ]
@@ -93,108 +95,108 @@
     ],
     "series": {
       "plan_count": [
-        121,
-        124,
-        128,
-        123,
-        118,
-        119,
         127,
-        122,
         130,
+        132,
+        132,
+        128,
+        128,
         131,
-        128
+        126,
+        131,
+        134,
+        133
       ],
       "total_participants": [
-        26350,
-        26309,
-        25736,
-        25246,
-        25403,
-        26112,
-        29366,
-        30424,
-        31373,
-        33014,
-        28506
+        25964,
+        25357,
+        26425,
+        26422,
+        26522,
+        27412,
+        29024,
+        29596,
+        29592,
+        30222,
+        28919
       ],
       "active_participants": [
-        17756,
-        17228,
-        17778,
-        17795,
-        17806,
-        17928,
-        20049,
-        19677,
-        19351,
-        21658,
-        17011
+        17883,
+        17310,
+        18250,
+        18454,
+        18416,
+        18504,
+        20346,
+        19644,
+        19491,
+        21971,
+        19764
       ],
       "total_assets": [
-        1835107704,
-        1868012123,
-        1777720988,
-        2016054977,
-        2198706990,
-        2677654737,
-        3455655769,
-        4879912335,
-        3858052033,
-        3960685364,
-        3505638760
+        1858589640,
+        1871906931,
+        2073581504,
+        2328294671,
+        2517730681,
+        3063686339,
+        3838638649,
+        4645061890,
+        3855605197,
+        3978257542,
+        4050859873
       ],
       "mean_plan_assets": [
-        15166179,
-        15064614,
-        13888445,
-        16390691,
-        18633110,
-        22501300,
-        27209888,
-        39999281,
-        29677323,
-        30234239,
-        27387803
+        14634564,
+        14399284,
+        15708951,
+        17638596,
+        19669771,
+        23935050,
+        29302585,
+        36865571,
+        29432101,
+        29688489,
+        30457593
       ],
       "employer_contributions": [
-        59034249,
-        61469983,
-        71332247,
-        72696454,
-        74552330,
-        79544825,
-        94985913,
-        99060853,
-        124372044,
-        134697701,
-        118907503
+        58902918,
+        61620254,
+        71474984,
+        72835981,
+        75278883,
+        80530720,
+        94464032,
+        109768686,
+        124759229,
+        136709154,
+        134752650
       ],
       "benefits_paid": [
-        167820359,
-        137723404,
-        189932224,
-        110666017,
-        271289013,
-        181889812,
-        111488848,
-        648174249,
-        754868599,
-        309094426,
-        480501492
+        195625517,
+        151674103,
+        210498213,
+        143256186,
+        299805841,
+        220704118,
+        151480827,
+        1057360584,
+        751457725,
+        309595928,
+        494934240
       ],
       "employer_securities": [
-        1371808762,
-        1450618420,
-        1310105136,
-        1503159765,
-        1671801107,
-        1940301763,
-        2431807787,
-        3736242040,
-        2786467483,
-        2891065626,
-        2489022553
+        1632394954,
+        1662696124,
+        1808678257,
+        2056246758,
+        2242307394,
+        2646488416,
+        2898508216,
+        3260363493,
+        3285133967,
+        3476766996,
+        3606344663
       ]
     }
   },
@@ -203,11 +205,11 @@
     "plan_assets": [
       {
         "label": "< $1M",
-        "count": 12
+        "count": 14
       },
       {
         "label": "$1M - $5M",
-        "count": 39
+        "count": 40
       },
       {
         "label": "$5M - $10M",
@@ -215,7 +217,7 @@
       },
       {
         "label": "$10M - $50M",
-        "count": 35
+        "count": 34
       },
       {
         "label": "$50M - $100M",
@@ -223,7 +225,7 @@
       },
       {
         "label": "$100M - $500M",
-        "count": 5
+        "count": 7
       },
       {
         "label": "$500M - $1B",
@@ -237,19 +239,19 @@
     "participant_counts": [
       {
         "label": "< 50",
-        "count": 38
+        "count": 40
       },
       {
         "label": "50 - 100",
-        "count": 30
+        "count": 31
       },
       {
         "label": "100 - 250",
-        "count": 20
+        "count": 21
       },
       {
         "label": "250 - 500",
-        "count": 13
+        "count": 12
       },
       {
         "label": "500 - 1,000",
@@ -257,7 +259,7 @@
       },
       {
         "label": "1,000 - 5,000",
-        "count": 6
+        "count": 7
       },
       {
         "label": "5,000 - 10,000",
@@ -274,33 +276,33 @@
     "cohorts": [
       {
         "era": "Before 1990",
-        "plans": 12,
-        "participants": 6920,
-        "assets": 601469079
+        "plans": 13,
+        "participants": 5630,
+        "assets": 602752455
       },
       {
         "era": "1990-1999",
-        "plans": 13,
-        "participants": 5094,
-        "assets": 529129169
+        "plans": 14,
+        "participants": 6066,
+        "assets": 851174780
       },
       {
         "era": "2000-2009",
         "plans": 19,
-        "participants": 2477,
+        "participants": 2413,
         "assets": 378041651
       },
       {
         "era": "2010-2019",
         "plans": 35,
-        "participants": 7328,
+        "participants": 7140,
         "assets": 1509231867
       },
       {
         "era": "2020-present",
-        "plans": 36,
-        "participants": 4409,
-        "assets": 424712413
+        "plans": 38,
+        "participants": 6607,
+        "assets": 646604539
       }
     ]
   },
@@ -310,32 +312,32 @@
       {
         "decade": "1970s",
         "plans": 3,
-        "pct_of_active": 2.6
+        "pct_of_active": 2.5
       },
       {
         "decade": "1980s",
-        "plans": 9,
-        "pct_of_active": 7.8
+        "plans": 10,
+        "pct_of_active": 8.4
       },
       {
         "decade": "1990s",
-        "plans": 13,
-        "pct_of_active": 11.3
+        "plans": 14,
+        "pct_of_active": 11.8
       },
       {
         "decade": "2000s",
         "plans": 19,
-        "pct_of_active": 16.5
+        "pct_of_active": 16.0
       },
       {
         "decade": "2010s",
         "plans": 35,
-        "pct_of_active": 30.4
+        "pct_of_active": 29.4
       },
       {
         "decade": "2020s",
-        "plans": 36,
-        "pct_of_active": 31.3
+        "plans": 38,
+        "pct_of_active": 31.9
       }
     ]
   },
@@ -343,59 +345,59 @@
     "basis": "active",
     "sectors": [
       {
-        "sector": "Professional & Technical Services",
-        "plans": 27,
-        "participants": 7353,
-        "assets": 681202678,
-        "avg_account_balance": 92643,
+        "sector": "Manufacturing",
+        "plans": 29,
+        "participants": 5665,
+        "assets": 1073458407,
+        "avg_account_balance": 189490,
         "include_in_balance_table": true
       },
       {
-        "sector": "Manufacturing",
-        "plans": 24,
-        "participants": 5956,
-        "assets": 1119725370,
-        "avg_account_balance": 188000,
+        "sector": "Professional & Technical Services",
+        "plans": 23,
+        "participants": 5131,
+        "assets": 410461105,
+        "avg_account_balance": 79996,
         "include_in_balance_table": true
       },
       {
         "sector": "Construction",
-        "plans": 18,
-        "participants": 3275,
-        "assets": 992436632,
-        "avg_account_balance": 303034,
-        "include_in_balance_table": true
-      },
-      {
-        "sector": "Wholesale Trade",
-        "plans": 13,
-        "participants": 2092,
-        "assets": 190870476,
-        "avg_account_balance": 91238,
+        "plans": 20,
+        "participants": 4589,
+        "assets": 1293276330,
+        "avg_account_balance": 281821,
         "include_in_balance_table": true
       },
       {
         "sector": "Finance & Insurance",
         "plans": 12,
-        "participants": 3155,
-        "assets": 205045162,
-        "avg_account_balance": 64991,
+        "participants": 5230,
+        "assets": 463090106,
+        "avg_account_balance": 88545,
+        "include_in_balance_table": true
+      },
+      {
+        "sector": "Wholesale Trade",
+        "plans": 12,
+        "participants": 993,
+        "assets": 180066967,
+        "avg_account_balance": 181336,
         "include_in_balance_table": true
       },
       {
         "sector": "Retail Trade",
-        "plans": 9,
-        "participants": 1019,
-        "assets": 67211661,
-        "avg_account_balance": 65958,
+        "plans": 11,
+        "participants": 2563,
+        "assets": 168955168,
+        "avg_account_balance": 65921,
         "include_in_balance_table": true
       },
       {
         "sector": "Administrative & Waste Services",
-        "plans": 5,
-        "participants": 861,
-        "assets": 89486775,
-        "avg_account_balance": 103934,
+        "plans": 7,
+        "participants": 1612,
+        "assets": 343420765,
+        "avg_account_balance": 213040,
         "include_in_balance_table": true
       },
       {
@@ -407,62 +409,46 @@
         "include_in_balance_table": true
       },
       {
-        "sector": "Education",
-        "plans": 1,
-        "participants": 15,
-        "assets": 1000,
-        "avg_account_balance": 67,
-        "include_in_balance_table": false
-      },
-      {
         "sector": "Management of Companies",
         "plans": 1,
-        "participants": 209,
-        "assets": 15110348,
-        "avg_account_balance": 72298,
+        "participants": 13,
+        "assets": 1000,
+        "avg_account_balance": 77,
         "include_in_balance_table": false
       },
       {
-        "sector": "Mining, Oil & Gas",
+        "sector": "Real Estate",
         "plans": 1,
-        "participants": 48,
-        "assets": 22482420,
-        "avg_account_balance": 468384,
-        "include_in_balance_table": false
-      },
-      {
-        "sector": "Other Services",
-        "plans": 1,
-        "participants": 24,
-        "assets": 5468325,
-        "avg_account_balance": 227847,
+        "participants": 32,
+        "assets": 1532112,
+        "avg_account_balance": 47878,
         "include_in_balance_table": false
       },
       {
         "sector": "Transportation & Warehousing",
         "plans": 1,
-        "participants": 1088,
+        "participants": 895,
         "assets": 34914019,
-        "avg_account_balance": 32090,
+        "avg_account_balance": 39010,
         "include_in_balance_table": false
       }
     ],
     "avg_account_balance_min_plans": 2,
     "totals": {
-      "plans": 115,
-      "participants": 26228,
-      "assets": 3442584179
+      "plans": 119,
+      "participants": 27856,
+      "assets": 3987805292
     }
   },
   "plans": [
     {
       "plan_name": "CONSIGLI BUILDING GROUP EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Consigli Building Group",
+      "sponsor": "Consigli Building Group, Inc.",
       "city": "Milford",
       "industry": "Construction",
       "plan_year_started": 2017,
       "is_ksop": false,
-      "total_participants": 1959,
+      "total_participants": 1974,
       "active_participants": 1634,
       "total_assets": 729347060.0,
       "employer_securities": 729330000.0
@@ -474,43 +460,67 @@
       "industry": "Manufacturing",
       "plan_year_started": 1990,
       "is_ksop": false,
-      "total_participants": 1219,
+      "total_participants": 1172,
       "active_participants": 121,
       "total_assets": 367792322.0,
       "employer_securities": 363563946.0
     },
     {
+      "plan_name": "SHAWMUT GROUP EMPLOYEE STOCK OWNERSHIP PLAN",
+      "sponsor": "Shawmut Group",
+      "city": "Boston",
+      "industry": "Construction",
+      "plan_year_started": 1997,
+      "is_ksop": false,
+      "total_participants": 1217,
+      "active_participants": 825,
+      "total_assets": 322045611.0,
+      "employer_securities": 313531188.0
+    },
+    {
+      "plan_name": "EASTERN BANK EMPLOYEE STOCK OWNERSHIP PLAN",
+      "sponsor": "Eastern Bank",
+      "city": "Boston",
+      "industry": "Finance & Insurance",
+      "plan_year_started": 2020,
+      "is_ksop": false,
+      "total_participants": 2190,
+      "active_participants": 1773,
+      "total_assets": 256509815.0,
+      "employer_securities": 254895978.0
+    },
+    {
       "plan_name": "FIRST AMENDED AND RESTATED CREATIVE FINANCIAL STAFFING, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
       "sponsor": "Creative Financial Staffing, Inc.",
       "city": "Boston",
-      "industry": "Professional & Technical Services",
+      "industry": "Administrative & Waste Services",
       "plan_year_started": 2014,
       "is_ksop": false,
-      "total_participants": 765,
+      "total_participants": 699,
       "active_participants": 560,
       "total_assets": 253372727.0,
       "employer_securities": 247360000.0
     },
     {
       "plan_name": "DAVID CLARK EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "David Clark",
+      "sponsor": "David Clark Holdings, Inc.",
       "city": "Worcester",
       "industry": "Manufacturing",
       "plan_year_started": 2007,
       "is_ksop": false,
-      "total_participants": 256,
+      "total_participants": 249,
       "active_participants": 216,
       "total_assets": 182637500.0,
       "employer_securities": 182637500.0
     },
     {
       "plan_name": "NEW ENGLAND BIOLABS, INC. NON-VOTING STOCK OWNERSHIP PLAN",
-      "sponsor": "NEW ENGLAND BIOLABS, INC.",
+      "sponsor": "New England Biolabs, Inc.",
       "city": "Ipswich",
       "industry": "Manufacturing",
       "plan_year_started": 1985,
       "is_ksop": false,
-      "total_participants": 443,
+      "total_participants": 494,
       "active_participants": 482,
       "total_assets": 162974294.0,
       "employer_securities": null
@@ -522,7 +532,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 1975,
       "is_ksop": false,
-      "total_participants": 2628,
+      "total_participants": 1481,
       "active_participants": 1156,
       "total_assets": 116572494.0,
       "employer_securities": 114058866.0
@@ -534,7 +544,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 1988,
       "is_ksop": false,
-      "total_participants": 396,
+      "total_participants": 383,
       "active_participants": 249,
       "total_assets": 93245729.0,
       "employer_securities": 87832969.0
@@ -546,7 +556,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 1984,
       "is_ksop": false,
-      "total_participants": 836,
+      "total_participants": 710,
       "active_participants": 350,
       "total_assets": 90421806.0,
       "employer_securities": 89623298.0
@@ -555,10 +565,10 @@
       "plan_name": "NEW ENGLAND CONTROLS, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
       "sponsor": "New England Controls, Inc.",
       "city": "Foxborough",
-      "industry": "Manufacturing",
+      "industry": "Wholesale Trade",
       "plan_year_started": 1986,
       "is_ksop": false,
-      "total_participants": 524,
+      "total_participants": 540,
       "active_participants": 414,
       "total_assets": 88602233.0,
       "employer_securities": 86706383.0
@@ -567,22 +577,22 @@
       "plan_name": "CAPE COD LUMBER CO., INC. EMPLOYEE STOCK OWNERSHIP PLAN",
       "sponsor": "Cape Cod Lumber Co., Inc.",
       "city": "Abington",
-      "industry": "Wholesale Trade",
+      "industry": "Retail Trade",
       "plan_year_started": 2014,
       "is_ksop": false,
-      "total_participants": 101,
+      "total_participants": 94,
       "active_participants": 85,
       "total_assets": 81831673.0,
-      "employer_securities": null
+      "employer_securities": 81344000.0
     },
     {
       "plan_name": "NEW ENGLAND BIOLABS, INC. VOTING STOCK OWNERSHIP PLAN",
-      "sponsor": "NEW ENGLAND BIOLABS, INC.",
+      "sponsor": "New England Biolabs, Inc.",
       "city": "Ipswich",
       "industry": "Manufacturing",
       "plan_year_started": 2021,
       "is_ksop": false,
-      "total_participants": 436,
+      "total_participants": 486,
       "active_participants": 482,
       "total_assets": 78571398.0,
       "employer_securities": null
@@ -594,10 +604,10 @@
       "industry": "Construction",
       "plan_year_started": 2017,
       "is_ksop": false,
-      "total_participants": 117,
+      "total_participants": 106,
       "active_participants": 63,
       "total_assets": 67579639.0,
-      "employer_securities": null
+      "employer_securities": 66994000.0
     },
     {
       "plan_name": "NEEDHAM BANK EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -606,7 +616,7 @@
       "industry": "Finance & Insurance",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 284,
+      "total_participants": 287,
       "active_participants": 285,
       "total_assets": 61827355.0,
       "employer_securities": 61701231.0
@@ -618,43 +628,43 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2014,
       "is_ksop": false,
-      "total_participants": 815,
+      "total_participants": 842,
       "active_participants": 727,
       "total_assets": 52845386.0,
       "employer_securities": 44472920.0
     },
     {
       "plan_name": "HARBORONE BANK EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Harborone Bank",
+      "sponsor": "HarborOne Bank",
       "city": "Brockton",
       "industry": "Finance & Insurance",
       "plan_year_started": 2016,
       "is_ksop": false,
-      "total_participants": 492,
+      "total_participants": 483,
       "active_participants": 359,
       "total_assets": 52189959.0,
       "employer_securities": 52189959.0
     },
     {
       "plan_name": "SPS NEW ENGLAND, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Sps New England, Inc.",
+      "sponsor": "SPS New England, Inc.",
       "city": "Salisbury",
       "industry": "Construction",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 203,
+      "total_participants": 189,
       "active_participants": 176,
       "total_assets": 51608000.0,
       "employer_securities": 51608000.0
     },
     {
       "plan_name": "TECH-ETCH EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Tech-Etch",
+      "sponsor": "Tech-Etch, Inc.",
       "city": "Plymouth",
       "industry": "Manufacturing",
       "plan_year_started": 1999,
       "is_ksop": false,
-      "total_participants": 868,
+      "total_participants": 822,
       "active_participants": 597,
       "total_assets": 42276323.0,
       "employer_securities": 42199074.0
@@ -666,7 +676,7 @@
       "industry": "Retail Trade",
       "plan_year_started": 2000,
       "is_ksop": false,
-      "total_participants": 436,
+      "total_participants": 444,
       "active_participants": 311,
       "total_assets": 36587707.0,
       "employer_securities": 36395959.0
@@ -678,22 +688,10 @@
       "industry": "Transportation & Warehousing",
       "plan_year_started": 1995,
       "is_ksop": true,
-      "total_participants": 1088,
+      "total_participants": 895,
       "active_participants": 570,
       "total_assets": 34914019.0,
       "employer_securities": 2319885.0
-    },
-    {
-      "plan_name": "MANGANARO EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Manganaro",
-      "city": "Woburn",
-      "industry": "Construction",
-      "plan_year_started": 2024,
-      "is_ksop": true,
-      "total_participants": 135,
-      "active_participants": 161,
-      "total_assets": 34720125.0,
-      "employer_securities": 34720125.0
     },
     {
       "plan_name": "TIGHE & BOND, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -702,7 +700,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 1997,
       "is_ksop": false,
-      "total_participants": 522,
+      "total_participants": 602,
       "active_participants": 549,
       "total_assets": 34102955.0,
       "employer_securities": 32304600.0
@@ -714,7 +712,7 @@
       "industry": "Administrative & Waste Services",
       "plan_year_started": 2019,
       "is_ksop": false,
-      "total_participants": 175,
+      "total_participants": 185,
       "active_participants": 163,
       "total_assets": 31500665.0,
       "employer_securities": 31500000.0
@@ -726,7 +724,7 @@
       "industry": "Administrative & Waste Services",
       "plan_year_started": 2007,
       "is_ksop": false,
-      "total_participants": 387,
+      "total_participants": 386,
       "active_participants": 240,
       "total_assets": 28888268.0,
       "employer_securities": 28776221.0
@@ -738,7 +736,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2012,
       "is_ksop": false,
-      "total_participants": 298,
+      "total_participants": 299,
       "active_participants": 132,
       "total_assets": 28850055.0,
       "employer_securities": 28850000.0
@@ -750,10 +748,10 @@
       "industry": "Manufacturing",
       "plan_year_started": 2021,
       "is_ksop": false,
-      "total_participants": 57,
+      "total_participants": 56,
       "active_participants": 46,
       "total_assets": 27046434.0,
-      "employer_securities": null
+      "employer_securities": 27036677.0
     },
     {
       "plan_name": "WOODLAND PARTNERS, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -762,22 +760,22 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 2015,
       "is_ksop": false,
-      "total_participants": 31,
+      "total_participants": 29,
       "active_participants": 13,
       "total_assets": 26153086.0,
-      "employer_securities": null
+      "employer_securities": 23096000.0
     },
     {
       "plan_name": "WILLIAMS STONE CO., INC. EMPLOYEE STOCK OWNERSHIP PLAN",
       "sponsor": "Williams Stone Co., Inc.",
       "city": "East Otis",
-      "industry": "Mining, Oil & Gas",
+      "industry": "Manufacturing",
       "plan_year_started": 2005,
       "is_ksop": false,
-      "total_participants": 48,
+      "total_participants": 47,
       "active_participants": 41,
       "total_assets": 22482420.0,
-      "employer_securities": null
+      "employer_securities": 16007525.0
     },
     {
       "plan_name": "COLONIAL SYSTEMS, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -786,10 +784,10 @@
       "industry": "Construction",
       "plan_year_started": 2019,
       "is_ksop": false,
-      "total_participants": 32,
+      "total_participants": 33,
       "active_participants": 21,
       "total_assets": 21670257.0,
-      "employer_securities": null
+      "employer_securities": 21375747.0
     },
     {
       "plan_name": "CARNEY, SANDOE & ASSOCIATES EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -798,10 +796,10 @@
       "industry": "Administrative & Waste Services",
       "plan_year_started": 2013,
       "is_ksop": false,
-      "total_participants": 46,
+      "total_participants": 42,
       "active_participants": 35,
       "total_assets": 21617485.0,
-      "employer_securities": null
+      "employer_securities": 20260905.0
     },
     {
       "plan_name": "TITAN ROOFING EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -810,10 +808,10 @@
       "industry": "Construction",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 74,
+      "total_participants": 75,
       "active_participants": 72,
       "total_assets": 21496530.0,
-      "employer_securities": null
+      "employer_securities": 21216000.0
     },
     {
       "plan_name": "NELCO PRODUCTS, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -822,10 +820,10 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 2004,
       "is_ksop": false,
-      "total_participants": 42,
+      "total_participants": 44,
       "active_participants": 40,
       "total_assets": 20592589.0,
-      "employer_securities": null
+      "employer_securities": 20590532.0
     },
     {
       "plan_name": "SPAULDING BRICK EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -834,10 +832,10 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 1997,
       "is_ksop": false,
-      "total_participants": 45,
+      "total_participants": 43,
       "active_participants": 30,
       "total_assets": 19761324.0,
-      "employer_securities": null
+      "employer_securities": 19731197.0
     },
     {
       "plan_name": "CAMBRIDGE BANCORP EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -846,38 +844,38 @@
       "industry": "Finance & Insurance",
       "plan_year_started": 1986,
       "is_ksop": false,
-      "total_participants": 557,
+      "total_participants": 485,
       "active_participants": 361,
       "total_assets": 19573587.0,
       "employer_securities": 19572400.0
     },
     {
       "plan_name": "SYMMES MAINI & MCKEE ASSOCIATES, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Symmes Maini & Mckee Associates, Inc.",
+      "sponsor": "Symmes Maini & McKee Associates, Inc.",
       "city": "Cambridge",
       "industry": "Professional & Technical Services",
       "plan_year_started": 1988,
       "is_ksop": false,
-      "total_participants": 236,
+      "total_participants": 206,
       "active_participants": 184,
       "total_assets": 17055350.0,
       "employer_securities": 16755309.0
     },
     {
       "plan_name": "BANKPROV EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Bankprov",
+      "sponsor": "BankProv",
       "city": "Amesbury",
       "industry": "Finance & Insurance",
       "plan_year_started": 2015,
       "is_ksop": false,
-      "total_participants": 270,
+      "total_participants": 256,
       "active_participants": 175,
       "total_assets": 15949029.0,
       "employer_securities": 15948048.0
     },
     {
       "plan_name": "COURTSMART DIGITAL SYSTEMS EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Courtsmart Digital Systems",
+      "sponsor": "CourtSmart Digital Systems",
       "city": "North Chelmsford",
       "industry": "Information & Technology",
       "plan_year_started": 2020,
@@ -885,7 +883,7 @@
       "total_participants": 27,
       "active_participants": 22,
       "total_assets": 15624641.0,
-      "employer_securities": null
+      "employer_securities": 15615017.0
     },
     {
       "plan_name": "SALLOP INSURANCE EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -894,19 +892,19 @@
       "industry": "Finance & Insurance",
       "plan_year_started": 2002,
       "is_ksop": false,
-      "total_participants": 17,
+      "total_participants": 18,
       "active_participants": 15,
       "total_assets": 15562198.0,
-      "employer_securities": null
+      "employer_securities": 12042725.0
     },
     {
       "plan_name": "ASHWORTH INTERNATIONAL, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
       "sponsor": "Ashworth International, Inc.",
       "city": "Fall River",
-      "industry": "Management of Companies",
+      "industry": "Manufacturing",
       "plan_year_started": 2016,
       "is_ksop": false,
-      "total_participants": 209,
+      "total_participants": 199,
       "active_participants": 113,
       "total_assets": 15110348.0,
       "employer_securities": 13258050.0
@@ -918,19 +916,19 @@
       "industry": "Construction",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 51,
+      "total_participants": 46,
       "active_participants": 44,
       "total_assets": 14890205.0,
-      "employer_securities": null
+      "employer_securities": 14890000.0
     },
     {
       "plan_name": "EMPLOYEE STOCK OWNERSHIP PLAN OF WESTFIELD FINANCIAL, INC.",
-      "sponsor": "Westfield Financial, Inc.",
+      "sponsor": "Western New England Bancorp, Inc.",
       "city": "Westfield",
       "industry": "Finance & Insurance",
       "plan_year_started": 2002,
       "is_ksop": false,
-      "total_participants": 433,
+      "total_participants": 447,
       "active_participants": 267,
       "total_assets": 14729782.0,
       "employer_securities": 13561509.0
@@ -942,7 +940,7 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2010,
       "is_ksop": false,
-      "total_participants": 148,
+      "total_participants": 155,
       "active_participants": 108,
       "total_assets": 14670376.0,
       "employer_securities": 14230620.0
@@ -954,22 +952,22 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 2021,
       "is_ksop": false,
-      "total_participants": 83,
+      "total_participants": 79,
       "active_participants": 71,
       "total_assets": 12732247.0,
-      "employer_securities": null
+      "employer_securities": 12732246.0
     },
     {
       "plan_name": "WINDOVER CONSTRUCTION, INC. EMPLOYEE STOCK OWNERSHIP PLAN AND TRUST",
       "sponsor": "Windover Construction, Inc.",
       "city": "Beverly",
-      "industry": "Professional & Technical Services",
+      "industry": "Construction",
       "plan_year_started": 2017,
       "is_ksop": false,
-      "total_participants": 113,
+      "total_participants": 107,
       "active_participants": 75,
       "total_assets": 12477000.0,
-      "employer_securities": null
+      "employer_securities": 12477000.0
     },
     {
       "plan_name": "NOTCH EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -978,19 +976,19 @@
       "industry": "Construction",
       "plan_year_started": 2020,
       "is_ksop": false,
-      "total_participants": 106,
+      "total_participants": 104,
       "active_participants": 88,
       "total_assets": 11680000.0,
-      "employer_securities": null
+      "employer_securities": 11680000.0
     },
     {
       "plan_name": "859 US EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Sullivan Investment Co., Inc.",
+      "sponsor": "Sullivan Investment Co., Inc. (Sullivan Tire)",
       "city": "Norwell",
-      "industry": "Wholesale Trade",
+      "industry": "Retail Trade",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 1489,
+      "total_participants": 1315,
       "active_participants": 1235,
       "total_assets": 11305958.0,
       "employer_securities": 11305958.0
@@ -999,10 +997,10 @@
       "plan_name": "THEORY WELLNESS, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
       "sponsor": "Theory Wellness, Inc.",
       "city": "Stoneham",
-      "industry": "Manufacturing",
+      "industry": "Retail Trade",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 239,
+      "total_participants": 200,
       "active_participants": 187,
       "total_assets": 10865913.0,
       "employer_securities": 10865913.0
@@ -1014,10 +1012,10 @@
       "industry": "Finance & Insurance",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 62,
+      "total_participants": 64,
       "active_participants": 59,
       "total_assets": 10849057.0,
-      "employer_securities": null
+      "employer_securities": 10848871.0
     },
     {
       "plan_name": "QUIRK WIRE CO., INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1026,10 +1024,10 @@
       "industry": "Manufacturing",
       "plan_year_started": 2003,
       "is_ksop": false,
-      "total_participants": 67,
+      "total_participants": 64,
       "active_participants": 35,
       "total_assets": 10668229.0,
-      "employer_securities": null
+      "employer_securities": 9756802.0
     },
     {
       "plan_name": "USI EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1038,10 +1036,10 @@
       "industry": "Construction",
       "plan_year_started": 2018,
       "is_ksop": false,
-      "total_participants": 26,
+      "total_participants": 29,
       "active_participants": 24,
       "total_assets": 10567400.0,
-      "employer_securities": null
+      "employer_securities": 10436000.0
     },
     {
       "plan_name": "PROCESS COOLING SYSTEMS, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1050,22 +1048,22 @@
       "industry": "Manufacturing",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 67,
+      "total_participants": 66,
       "active_participants": 59,
       "total_assets": 10174947.0,
-      "employer_securities": null
+      "employer_securities": 10090713.0
     },
     {
       "plan_name": "BLUE Q EMPLOYEE STOCK OWNERSHIP PLAN AND TRUST",
       "sponsor": "Blue Q",
       "city": "Pittsfield",
-      "industry": "Wholesale Trade",
+      "industry": "Manufacturing",
       "plan_year_started": 2018,
       "is_ksop": false,
       "total_participants": 61,
       "active_participants": 43,
       "total_assets": 10092715.0,
-      "employer_securities": null
+      "employer_securities": 9250685.0
     },
     {
       "plan_name": "CONCORD LUMBER CORP. EMPLOYEE STOCK OWNERSHIP PLAN & TRUST",
@@ -1074,7 +1072,7 @@
       "industry": "Retail Trade",
       "plan_year_started": 1996,
       "is_ksop": false,
-      "total_participants": 188,
+      "total_participants": 176,
       "active_participants": 94,
       "total_assets": 8324682.0,
       "employer_securities": 8315986.0
@@ -1086,46 +1084,46 @@
       "industry": "Manufacturing",
       "plan_year_started": 2004,
       "is_ksop": false,
-      "total_participants": 62,
+      "total_participants": 54,
       "active_participants": 53,
       "total_assets": 7447453.0,
-      "employer_securities": null
+      "employer_securities": 7447453.0
     },
     {
       "plan_name": "BROOKLINE BANCORP, INC EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Brookline Bancorp, Inc",
+      "sponsor": "Brookline Bancorp, Inc.",
       "city": "Boston",
       "industry": "Finance & Insurance",
       "plan_year_started": 1997,
       "is_ksop": false,
-      "total_participants": 934,
+      "total_participants": 926,
       "active_participants": 63,
       "total_assets": 7225247.0,
       "employer_securities": 6837239.0
     },
     {
       "plan_name": "RCM SERVICES, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Rcm Services, Inc.",
+      "sponsor": "RCM Services, Inc.",
       "city": "Allston",
       "industry": "Administrative & Waste Services",
       "plan_year_started": 2015,
       "is_ksop": false,
-      "total_participants": 93,
+      "total_participants": 107,
       "active_participants": 51,
       "total_assets": 6981880.0,
-      "employer_securities": null
+      "employer_securities": 6980800.0
     },
     {
       "plan_name": "ACENTECH INCORPORATED EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Acentech Inc.",
+      "sponsor": "Acentech Incorporated",
       "city": "Cambridge",
       "industry": "Professional & Technical Services",
       "plan_year_started": 2015,
       "is_ksop": false,
-      "total_participants": 101,
+      "total_participants": 95,
       "active_participants": 68,
       "total_assets": 6583839.0,
-      "employer_securities": null
+      "employer_securities": 5009065.0
     },
     {
       "plan_name": "GOODY, CLANCY & ASSOCIATES EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1134,10 +1132,10 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 1987,
       "is_ksop": false,
-      "total_participants": 101,
+      "total_participants": 100,
       "active_participants": 56,
       "total_assets": 6546042.0,
-      "employer_securities": null
+      "employer_securities": 6157040.0
     },
     {
       "plan_name": "GREEN TECH ENTERPRISES EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1146,10 +1144,10 @@
       "industry": "Retail Trade",
       "plan_year_started": 2024,
       "is_ksop": false,
-      "total_participants": 25,
+      "total_participants": 37,
       "active_participants": 37,
       "total_assets": 6468002.0,
-      "employer_securities": null
+      "employer_securities": 92874.0
     },
     {
       "plan_name": "ELM ELECTRICAL, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1158,22 +1156,22 @@
       "industry": "Construction",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 208,
+      "total_participants": 222,
       "active_participants": 208,
       "total_assets": 6458729.0,
       "employer_securities": 6450000.0
     },
     {
       "plan_name": "NEVO TECHNOLOGIES, INC EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Nevo Technologies, Inc",
+      "sponsor": "Nevo Technologies, Inc.",
       "city": "Cambridge",
       "industry": "Professional & Technical Services",
       "plan_year_started": 2009,
       "is_ksop": false,
-      "total_participants": 21,
+      "total_participants": 20,
       "active_participants": 14,
       "total_assets": 6200000.0,
-      "employer_securities": null
+      "employer_securities": 6200000.0
     },
     {
       "plan_name": "TATA & HOWARD, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1182,10 +1180,10 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2014,
       "is_ksop": false,
-      "total_participants": 98,
+      "total_participants": 74,
       "active_participants": 46,
       "total_assets": 6154994.0,
-      "employer_securities": null
+      "employer_securities": 6150000.0
     },
     {
       "plan_name": "WORCESTER MANUFACTURING, INC. ESOP",
@@ -1194,22 +1192,22 @@
       "industry": "Manufacturing",
       "plan_year_started": 2012,
       "is_ksop": false,
-      "total_participants": 50,
+      "total_participants": 41,
       "active_participants": 35,
       "total_assets": 5836000.0,
-      "employer_securities": null
+      "employer_securities": 3260137.0
     },
     {
       "plan_name": "MIDDLETON & COMPANY, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
       "sponsor": "Middleton & Company, Inc.",
       "city": "Boston",
-      "industry": "Other Services",
+      "industry": "Finance & Insurance",
       "plan_year_started": 2003,
       "is_ksop": false,
       "total_participants": 24,
       "active_participants": 14,
       "total_assets": 5468325.0,
-      "employer_securities": null
+      "employer_securities": 5211028.0
     },
     {
       "plan_name": "BRAIT BUILDERS CORPORATION EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1218,7 +1216,7 @@
       "industry": "Construction",
       "plan_year_started": 2019,
       "is_ksop": false,
-      "total_participants": 22,
+      "total_participants": 33,
       "active_participants": 31,
       "total_assets": 5234775.0,
       "employer_securities": null
@@ -1230,10 +1228,10 @@
       "industry": "Manufacturing",
       "plan_year_started": 2001,
       "is_ksop": false,
-      "total_participants": 61,
+      "total_participants": 56,
       "active_participants": 27,
       "total_assets": 4893665.0,
-      "employer_securities": null
+      "employer_securities": 4882600.0
     },
     {
       "plan_name": "NEW ENGLAND DISCOUNT RETAILERS, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1242,10 +1240,10 @@
       "industry": "Retail Trade",
       "plan_year_started": 2019,
       "is_ksop": false,
-      "total_participants": 68,
+      "total_participants": 70,
       "active_participants": 60,
       "total_assets": 4865600.0,
-      "employer_securities": null
+      "employer_securities": 4865600.0
     },
     {
       "plan_name": "PRELLWITZ/CHILINSKI ASSOCIATES, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1254,34 +1252,34 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2006,
       "is_ksop": false,
-      "total_participants": 97,
+      "total_participants": 90,
       "active_participants": 48,
       "total_assets": 4811213.0,
-      "employer_securities": null
+      "employer_securities": 4344840.0
     },
     {
       "plan_name": "NMR GROUP EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Nmr Group",
+      "sponsor": "NMR Group",
       "city": "Somerville",
       "industry": "Professional & Technical Services",
       "plan_year_started": 2016,
       "is_ksop": false,
-      "total_participants": 59,
+      "total_participants": 57,
       "active_participants": 35,
       "total_assets": 4366346.0,
-      "employer_securities": null
+      "employer_securities": 3583000.0
     },
     {
       "plan_name": "SIGN DESIGN, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
       "sponsor": "Sign Design, Inc.",
       "city": "Brockton",
-      "industry": "Professional & Technical Services",
+      "industry": "Manufacturing",
       "plan_year_started": 2019,
       "is_ksop": false,
       "total_participants": 60,
       "active_participants": 54,
       "total_assets": 4330583.0,
-      "employer_securities": null
+      "employer_securities": 1500000.0
     },
     {
       "plan_name": "SPECTRAL SCIENCES, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1290,10 +1288,10 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 1993,
       "is_ksop": false,
-      "total_participants": 46,
+      "total_participants": 42,
       "active_participants": 39,
       "total_assets": 4238039.0,
-      "employer_securities": null
+      "employer_securities": 4170899.0
     },
     {
       "plan_name": "DARMANN ABRASIVE PRODUCTS, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1302,10 +1300,10 @@
       "industry": "Manufacturing",
       "plan_year_started": 1998,
       "is_ksop": false,
-      "total_participants": 81,
+      "total_participants": 72,
       "active_participants": 38,
       "total_assets": 4078604.0,
-      "employer_securities": null
+      "employer_securities": 3793770.0
     },
     {
       "plan_name": "REX CUT PRODUCTS, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1314,10 +1312,10 @@
       "industry": "Manufacturing",
       "plan_year_started": 2008,
       "is_ksop": false,
-      "total_participants": 73,
+      "total_participants": 70,
       "active_participants": 42,
       "total_assets": 4004083.0,
-      "employer_securities": null
+      "employer_securities": 399584.0
     },
     {
       "plan_name": "RICK ROY CONSTRUCTION EMPLOYEE STOCK OWNERSHIP 401(K) PLAN",
@@ -1326,34 +1324,34 @@
       "industry": "Construction",
       "plan_year_started": 2023,
       "is_ksop": true,
-      "total_participants": 22,
+      "total_participants": 20,
       "active_participants": 19,
       "total_assets": 3905745.0,
-      "employer_securities": null
+      "employer_securities": 2098000.0
     },
     {
       "plan_name": "OEM CONNECT, LTD. EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Oem Connect, Ltd.",
+      "sponsor": "OEM Connect, Ltd.",
       "city": "Billerica",
-      "industry": "Manufacturing",
+      "industry": "Wholesale Trade",
       "plan_year_started": 2010,
       "is_ksop": false,
-      "total_participants": 43,
+      "total_participants": 37,
       "active_participants": 21,
       "total_assets": 3824604.0,
-      "employer_securities": null
+      "employer_securities": 3609995.0
     },
     {
       "plan_name": "LANDRY'S BICYCLES EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Landry'S Bicycles",
+      "sponsor": "Landry's Bicycles",
       "city": "Natick",
       "industry": "Retail Trade",
       "plan_year_started": 2009,
       "is_ksop": false,
-      "total_participants": 112,
+      "total_participants": 100,
       "active_participants": 68,
       "total_assets": 3688643.0,
-      "employer_securities": null
+      "employer_securities": 3688552.0
     },
     {
       "plan_name": "WRIGHT ARCHITECTURAL MILLWORK CORPORATION EMPLOYEE STOCK OWNERSHIP PLAN AND TRUST",
@@ -1362,19 +1360,19 @@
       "industry": "Manufacturing",
       "plan_year_started": 2018,
       "is_ksop": false,
-      "total_participants": 68,
+      "total_participants": 65,
       "active_participants": 49,
       "total_assets": 3680000.0,
-      "employer_securities": null
+      "employer_securities": 3680000.0
     },
     {
       "plan_name": "AHA CONSULTING ENGINEERS INC EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Aha Consulting Engineers Inc",
+      "sponsor": "AHA Consulting Engineers, Inc.",
       "city": "Burlington",
       "industry": "Professional & Technical Services",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 124,
+      "total_participants": 121,
       "active_participants": 109,
       "total_assets": 3589192.0,
       "employer_securities": 3152585.0
@@ -1386,34 +1384,34 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2019,
       "is_ksop": false,
-      "total_participants": 270,
+      "total_participants": 219,
       "active_participants": 175,
       "total_assets": 3483990.0,
       "employer_securities": 560000.0
     },
     {
       "plan_name": "SWISSTURN/USA, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Swissturn/Usa, Inc.",
+      "sponsor": "Swissturn/USA, Inc.",
       "city": "Oxford",
       "industry": "Manufacturing",
       "plan_year_started": 2015,
       "is_ksop": false,
-      "total_participants": 89,
+      "total_participants": 96,
       "active_participants": 56,
       "total_assets": 3439393.0,
-      "employer_securities": null
+      "employer_securities": 2869080.0
     },
     {
       "plan_name": "STONETEK IMPORTS, INC. EMPLOYEE STOCK OWNERSHIP PLAN AND TRUST",
       "sponsor": "Stonetek Imports, Inc.",
       "city": "New Bedford",
-      "industry": "Construction",
+      "industry": "Manufacturing",
       "plan_year_started": 2020,
       "is_ksop": false,
-      "total_participants": 35,
+      "total_participants": 36,
       "active_participants": 32,
       "total_assets": 3389100.0,
-      "employer_securities": null
+      "employer_securities": 3389100.0
     },
     {
       "plan_name": "ELECTRO-TERM, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1422,10 +1420,10 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 2008,
       "is_ksop": false,
-      "total_participants": 69,
+      "total_participants": 62,
       "active_participants": 35,
       "total_assets": 3231591.0,
-      "employer_securities": null
+      "employer_securities": 3211063.0
     },
     {
       "plan_name": "FEINMANN, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1434,10 +1432,10 @@
       "industry": "Construction",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 35,
+      "total_participants": 31,
       "active_participants": 27,
       "total_assets": 3216241.0,
-      "employer_securities": null
+      "employer_securities": 3215600.0
     },
     {
       "plan_name": "BURKART EMPLOYEE STOCK OWNERSHIP 401(K) PLAN",
@@ -1446,10 +1444,10 @@
       "industry": "Manufacturing",
       "plan_year_started": 2022,
       "is_ksop": true,
-      "total_participants": 23,
+      "total_participants": 24,
       "active_participants": 18,
       "total_assets": 3149295.0,
-      "employer_securities": null
+      "employer_securities": 1392849.0
     },
     {
       "plan_name": "THE VAULT EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1458,10 +1456,10 @@
       "industry": "Retail Trade",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 43,
+      "total_participants": 36,
       "active_participants": 32,
       "total_assets": 3012910.0,
-      "employer_securities": null
+      "employer_securities": 3012900.0
     },
     {
       "plan_name": "INTERNATIONAL DATA GROUP, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1482,10 +1480,10 @@
       "industry": "Manufacturing",
       "plan_year_started": 1997,
       "is_ksop": false,
-      "total_participants": 21,
+      "total_participants": 17,
       "active_participants": 15,
       "total_assets": 2798182.0,
-      "employer_securities": null
+      "employer_securities": 2766664.0
     },
     {
       "plan_name": "FRASER ENGINEERING COMPANY EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1494,10 +1492,10 @@
       "industry": "Construction",
       "plan_year_started": 2003,
       "is_ksop": false,
-      "total_participants": 78,
+      "total_participants": 70,
       "active_participants": 47,
       "total_assets": 2616526.0,
-      "employer_securities": null
+      "employer_securities": 2610998.0
     },
     {
       "plan_name": "WIREFAB, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1506,22 +1504,10 @@
       "industry": "Manufacturing",
       "plan_year_started": 1991,
       "is_ksop": false,
-      "total_participants": 54,
+      "total_participants": 56,
       "active_participants": 37,
       "total_assets": 2438866.0,
-      "employer_securities": null
-    },
-    {
-      "plan_name": "FORGE GROUP, INC. ESOP",
-      "sponsor": "Forge Group, Inc.",
-      "city": "Worcester",
-      "industry": "Finance & Insurance",
-      "plan_year_started": 2021,
-      "is_ksop": false,
-      "total_participants": 25,
-      "active_participants": 19,
-      "total_assets": 2401084.0,
-      "employer_securities": null
+      "employer_securities": 1709633.0
     },
     {
       "plan_name": "BAXTER EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1530,22 +1516,22 @@
       "industry": "Construction",
       "plan_year_started": 2020,
       "is_ksop": false,
-      "total_participants": 14,
+      "total_participants": 17,
       "active_participants": 15,
       "total_assets": 2375055.0,
-      "employer_securities": null
+      "employer_securities": 2375000.0
     },
     {
       "plan_name": "G&C CONCRETE CONSTRUCTION EMPLOYEE STOCK OWNERSHIP PLAN",
       "sponsor": "G&C Concrete Construction",
       "city": "Haverhill",
-      "industry": "Retail Trade",
+      "industry": "Construction",
       "plan_year_started": 2024,
       "is_ksop": false,
-      "total_participants": 32,
+      "total_participants": 29,
       "active_participants": 29,
       "total_assets": 2260037.0,
-      "employer_securities": null
+      "employer_securities": 2260000.0
     },
     {
       "plan_name": "BOSTON BRACE INTERNATIONAL, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1554,7 +1540,7 @@
       "industry": "Manufacturing",
       "plan_year_started": 2014,
       "is_ksop": false,
-      "total_participants": 314,
+      "total_participants": 304,
       "active_participants": 143,
       "total_assets": 2103826.0,
       "employer_securities": 0.0
@@ -1578,10 +1564,10 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2002,
       "is_ksop": false,
-      "total_participants": 135,
+      "total_participants": 115,
       "active_participants": 94,
       "total_assets": 1891451.0,
-      "employer_securities": null
+      "employer_securities": 1824300.0
     },
     {
       "plan_name": "COLONIAL FEDERAL SAVINGS BANK EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1590,10 +1576,10 @@
       "industry": "Finance & Insurance",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 27,
+      "total_participants": 28,
       "active_participants": 25,
       "total_assets": 1720511.0,
-      "employer_securities": null
+      "employer_securities": 1720511.0
     },
     {
       "plan_name": "DAYMARK ENERGY ADVISORS, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1602,10 +1588,10 @@
       "industry": "Professional & Technical Services",
       "plan_year_started": 2001,
       "is_ksop": false,
-      "total_participants": 59,
+      "total_participants": 53,
       "active_participants": 39,
       "total_assets": 1640008.0,
-      "employer_securities": null
+      "employer_securities": 1228000.0
     },
     {
       "plan_name": "RAYCON CONSTRUCTION EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1614,22 +1600,22 @@
       "industry": "Construction",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 127,
+      "total_participants": 148,
       "active_participants": 129,
       "total_assets": 1536000.0,
-      "employer_securities": null
+      "employer_securities": 1536000.0
     },
     {
       "plan_name": "CHMWARNICK, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Chmwarnick, Inc.",
+      "sponsor": "CHMWarnick, Inc.",
       "city": "Beverly",
-      "industry": "Finance & Insurance",
+      "industry": "Real Estate",
       "plan_year_started": 2022,
       "is_ksop": false,
       "total_participants": 32,
       "active_participants": 31,
       "total_assets": 1532112.0,
-      "employer_securities": null
+      "employer_securities": 1532112.0
     },
     {
       "plan_name": "FEINGOLD & FEINGOLD INSURANCE AGENCY INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1641,7 +1627,7 @@
       "total_participants": 22,
       "active_participants": 15,
       "total_assets": 1485241.0,
-      "employer_securities": null
+      "employer_securities": 1485241.0
     },
     {
       "plan_name": "GILLETTE RESTAURANT EQUIPMENT, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1650,10 +1636,22 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 14,
+      "total_participants": 13,
       "active_participants": 11,
       "total_assets": 1378528.0,
-      "employer_securities": null
+      "employer_securities": 1273000.0
+    },
+    {
+      "plan_name": "ERLAND CONSTRUCTION EMPLOYEE STOCK OWNERSHIP PLAN",
+      "sponsor": "Erland Construction",
+      "city": "Burlington",
+      "industry": "Construction",
+      "plan_year_started": 2022,
+      "is_ksop": false,
+      "total_participants": 81,
+      "active_participants": 70,
+      "total_assets": 1268092.0,
+      "employer_securities": 1115040.0
     },
     {
       "plan_name": "CANNA PROVISIONS, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1662,10 +1660,10 @@
       "industry": "Retail Trade",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 76,
+      "total_participants": 51,
       "active_participants": 43,
       "total_assets": 1194080.0,
-      "employer_securities": null
+      "employer_securities": 428632.0
     },
     {
       "plan_name": "BOURNEUF CORPORATION EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1674,34 +1672,46 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 1997,
       "is_ksop": false,
-      "total_participants": 16,
+      "total_participants": 15,
       "active_participants": 14,
       "total_assets": 1064068.0,
-      "employer_securities": null
+      "employer_securities": 1064068.0
+    },
+    {
+      "plan_name": "ENFIELD ENTERPRISES INC. EMPLOYEE STOCK OWNERSHIP PLAN",
+      "sponsor": "Enfield Enterprises Inc.",
+      "city": "Springfield",
+      "industry": "Construction",
+      "plan_year_started": 2020,
+      "is_ksop": false,
+      "total_participants": 58,
+      "active_participants": 41,
+      "total_assets": 1043428.0,
+      "employer_securities": 930000.0
     },
     {
       "plan_name": "DIETZ & COMPANY ARCHITECTS EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Dietz & Company Architects",
+      "sponsor": "Dietz & Company Architects, Inc.",
       "city": "Springfield",
       "industry": "Professional & Technical Services",
       "plan_year_started": 2020,
       "is_ksop": false,
-      "total_participants": 31,
+      "total_participants": 24,
       "active_participants": 21,
       "total_assets": 1031367.0,
-      "employer_securities": null
+      "employer_securities": 1016000.0
     },
     {
       "plan_name": "PARAGUS EMPLOYEE STOCK OWNERSHIP 401K PLAN",
-      "sponsor": "Paragus",
+      "sponsor": "Paragus Strategic IT",
       "city": "Hadley",
       "industry": "Professional & Technical Services",
       "plan_year_started": 2015,
       "is_ksop": true,
-      "total_participants": 85,
+      "total_participants": 51,
       "active_participants": 51,
       "total_assets": 893543.0,
-      "employer_securities": null
+      "employer_securities": 687353.0
     },
     {
       "plan_name": "GLOBAL BEER NETWORK, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1710,22 +1720,34 @@
       "industry": "Retail Trade",
       "plan_year_started": 2020,
       "is_ksop": false,
-      "total_participants": 39,
+      "total_participants": 40,
       "active_participants": 25,
       "total_assets": 810000.0,
-      "employer_securities": null
+      "employer_securities": 810000.0
+    },
+    {
+      "plan_name": "PAUL K. GUILLOW, INC. EMPLOYEE STOCK OWNERSHIP PLAN AND TRUST",
+      "sponsor": "Paul K. Guillow, Inc.",
+      "city": "Wakefield",
+      "industry": "Manufacturing",
+      "plan_year_started": 1986,
+      "is_ksop": false,
+      "total_participants": 34,
+      "active_participants": 20,
+      "total_assets": 779311.0,
+      "employer_securities": 565119.0
     },
     {
       "plan_name": "LDA ARCHITECTURE & INTERIORS EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Lda Architecture & Interiors",
+      "sponsor": "LDA Architecture & Interiors",
       "city": "Boston",
       "industry": "Professional & Technical Services",
       "plan_year_started": 2024,
       "is_ksop": false,
-      "total_participants": 29,
+      "total_participants": 32,
       "active_participants": 32,
       "total_assets": 704824.0,
-      "employer_securities": null
+      "employer_securities": 368321.0
     },
     {
       "plan_name": "MERIDIAN ASSOCIATES, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1737,7 +1759,7 @@
       "total_participants": 25,
       "active_participants": 13,
       "total_assets": 633363.0,
-      "employer_securities": null
+      "employer_securities": 594000.0
     },
     {
       "plan_name": "FITZGERALD TILE EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1746,22 +1768,34 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 2023,
       "is_ksop": false,
-      "total_participants": 63,
+      "total_participants": 54,
       "active_participants": 52,
       "total_assets": 624528.0,
-      "employer_securities": null
+      "employer_securities": 624358.0
     },
     {
       "plan_name": "BTSE EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Btse",
+      "sponsor": "Barrett Tree Service East, Inc.",
       "city": "Medford",
-      "industry": "Professional & Technical Services",
+      "industry": "Administrative & Waste Services",
       "plan_year_started": 2022,
       "is_ksop": false,
-      "total_participants": 57,
+      "total_participants": 53,
       "active_participants": 43,
       "total_assets": 561263.0,
-      "employer_securities": null
+      "employer_securities": 293707.0
+    },
+    {
+      "plan_name": "SAVOGRAN COMPANY EMPLOYEE STOCK OWNERSHIP PLAN",
+      "sponsor": "Savogran Company",
+      "city": "Norwood",
+      "industry": "Manufacturing",
+      "plan_year_started": 1988,
+      "is_ksop": false,
+      "total_participants": 3,
+      "active_participants": 3,
+      "total_assets": 504065.0,
+      "employer_securities": 504065.0
     },
     {
       "plan_name": "DONNELLY SERVICE GROUP, INC. EMPLOYEE STOCK OWNERSHIP PLAN",
@@ -1770,31 +1804,43 @@
       "industry": "Administrative & Waste Services",
       "plan_year_started": 2019,
       "is_ksop": false,
-      "total_participants": 160,
+      "total_participants": 140,
       "active_participants": 89,
       "total_assets": 498477.0,
       "employer_securities": 58000.0
     },
     {
       "plan_name": "SPEC EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Spec",
+      "sponsor": "SPEC Process Engineering & Construction, Inc.",
       "city": "Tewksbury",
       "industry": "Professional & Technical Services",
       "plan_year_started": 2010,
       "is_ksop": false,
-      "total_participants": 34,
+      "total_participants": 45,
       "active_participants": 35,
       "total_assets": 350549.0,
-      "employer_securities": null
+      "employer_securities": 296938.0
+    },
+    {
+      "plan_name": "ATLANTIC SINTERED EMPLOYEE STOCK OWNERSHIP PLAN",
+      "sponsor": "Atlantic Holdings, Inc. (Atlantic Sintered)",
+      "city": "Wrentham",
+      "industry": "Manufacturing",
+      "plan_year_started": 2023,
+      "is_ksop": false,
+      "total_participants": 223,
+      "active_participants": 204,
+      "total_assets": 192000.0,
+      "employer_securities": 192000.0
     },
     {
       "plan_name": "SEAL-RYT CORP. EMPLOYEE STOCK OWNERSHIP PLAN AND TRUST",
       "sponsor": "Seal-Ryt Corp.",
       "city": "Westfield",
-      "industry": "Construction",
+      "industry": "Manufacturing",
       "plan_year_started": 2015,
       "is_ksop": false,
-      "total_participants": 31,
+      "total_participants": 28,
       "active_participants": 19,
       "total_assets": 145245.0,
       "employer_securities": null
@@ -1806,34 +1852,22 @@
       "industry": "Wholesale Trade",
       "plan_year_started": 1990,
       "is_ksop": false,
-      "total_participants": 12,
+      "total_participants": 11,
       "active_participants": 10,
       "total_assets": 114538.0,
-      "employer_securities": null
+      "employer_securities": 114538.0
     },
     {
       "plan_name": "ASC MANAGEMENT HOLDINGS, INC EMPLOYEE STOCK OWNERSHIP 401(K) PLAN",
-      "sponsor": "Asc Management Holdings, Inc",
+      "sponsor": "ASC Management Holdings, Inc.",
       "city": "Boston",
-      "industry": "Education",
+      "industry": "Management of Companies",
       "plan_year_started": 2024,
       "is_ksop": true,
-      "total_participants": 15,
+      "total_participants": 13,
       "active_participants": 13,
       "total_assets": 1000.0,
-      "employer_securities": null
-    },
-    {
-      "plan_name": "SAVOGRAN COMPANY EMPLOYEE STOCK OWNERSHIP PLAN",
-      "sponsor": "Savogran Company",
-      "city": "Norwood",
-      "industry": "Manufacturing",
-      "plan_year_started": 1988,
-      "is_ksop": false,
-      "total_participants": 5,
-      "active_participants": 3,
-      "total_assets": 0.0,
-      "employer_securities": null
+      "employer_securities": 1000.0
     }
   ]
 }

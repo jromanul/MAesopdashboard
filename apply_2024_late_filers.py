@@ -68,6 +68,11 @@ Also fixes two data-entry inconsistencies:
 
 Idempotent: re-running only re-applies the normalizations (inserts are
 INSERT OR IGNORE).
+
+SUPERSEDED: already applied. Kept for the record; the data it wrote has since
+been re-derived from each row's return (participants are the year-end total,
+line 6f; a KSOP is code 2J). New returns are imported by
+`scan_dol_filers.py --import-new`.
 """
 import csv
 import io
@@ -189,7 +194,7 @@ def main():
         row["filing_year"] = 2024
         row["sponsor_state"] = "MA"
         row["is_esop"] = 1
-        row["is_ksop"] = 1 if ("2J" in codes and "2K" in codes) else 0
+        row["is_ksop"] = 1 if "2J" in codes else 0
         row["industry_sector"] = fa.NAICS_SECTORS.get(row["naics_code"][:2], "") if row["naics_code"] else ""
         row["fetched"] = now
         cols = ", ".join(row)

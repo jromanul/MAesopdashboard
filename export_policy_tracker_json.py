@@ -12,11 +12,11 @@ numbers are identical by construction.
 Two population bases appear in the output, and mixing them up is the single
 easiest way to publish a wrong number, so each block states which one it uses:
 
-  active (115 for 2024) - plans reporting at least one active participant, minus
+  active (119 for 2024) - plans reporting at least one active participant, minus
       a short list of known defunct/wind-down plans. Answers "how many working
       Massachusetts ESOPs are there". Every per-plan average and the whole
       industry section uses this.
-  filed (128 for 2024) - every ESOP that filed a Form 5500 for the year,
+  filed (133 for 2024) - every ESOP that filed a Form 5500 for the year,
       including plans winding down. Answers "how many ESOPs filed". The
       year-over-year trend series uses this, because a trend line has to count
       the same way in every year and prior years cannot be re-adjudicated.
@@ -210,6 +210,7 @@ def build():
             "title": "Massachusetts ESOPs — Form 5500",
             "form_year": year,
             "data_as_of": config.DATA_AS_OF,
+            "dol_release": config.DOL_RELEASE_DATE,
             "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "source": "U.S. Department of Labor, EFAST2 Form 5500 bulk datasets",
             "source_url": "https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/public-disclosure/foia/form-5500-datasets",
@@ -223,19 +224,23 @@ def build():
                           "winding down. Use for year-over-year trend lines."),
             },
             "caveats": [
-                ("total_participants is the plan total at the BEGINNING of the plan year "
-                 "(Form 5500 line 5); active_participants is current employees at the END "
-                 "of the year (line 6a). DOL publishes no end-of-year total, so the two sit "
-                 "on different dates and a growing plan can show more active than total. "
-                 "Reproduced exactly as filed."),
-                ("employer_securities (company stock) is reported only on Schedule H, which "
-                 "large plans file. It is null for plans filing Schedule I or 5500-SF — null "
-                 "means not reported, which is not the same as zero. Do not divide it by "
-                 "total assets across all plans; the denominators differ."),
-                ("A form year keeps growing for roughly 18 months as fiscal-year and extended "
-                 "filers arrive, so the most recent year is not final."),
-                ("Ordinary 401(k)/savings plans at large public companies that merely offer "
-                 "employer stock are deliberately excluded; they are not employee-owned firms."),
+                ("total_participants is the plan total at the END of the plan year "
+                 "(Form 5500 line 6f: current employees, retirees, former employees still "
+                 "owed a balance, beneficiaries); active_participants is current employees "
+                 "on the same date (line 6a)."),
+                ("employer_securities (company stock) is Schedule H line 1d(1) for large "
+                 "plans and Schedule I line 3d for small plans. null means the plan left "
+                 "the line blank, which is not the same as zero."),
+                ("total_assets and employer_securities are end-of-plan-year balances; "
+                 "employer_contributions and benefits_paid are totals for the plan year. "
+                 "All come from the plan's own Schedule H or I, as filed."),
+                ("Plans may file up to 9.5 months after a plan year ends (about 21.5 months "
+                 "after it begins), so the most recent form year keeps growing as fiscal-year "
+                 "and extended filers arrive and is not final."),
+                ("Every ESOP of a Massachusetts-based employer is counted, closely held or "
+                 "publicly traded. Large public companies' 401(k) savings plans, in which "
+                 "company stock is one investment option among many (even where that fund is "
+                 "designated an ESOP), are not counted."),
             ],
         },
         "headline": headline,

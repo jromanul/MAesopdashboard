@@ -6,14 +6,24 @@ import os
 # ──────────────────────────────────────────────
 # GENERAL
 # ──────────────────────────────────────────────
-APP_TITLE = "Form 5500 ESOP Dashboard"
-APP_ICON = "🔬"
+APP_TITLE = "Massachusetts ESOP Dashboard"
+APP_SUBTITLE = ("Employee stock ownership plans sponsored by Massachusetts employers, "
+                "compiled from the annual Form 5500 returns they file with the "
+                "U.S. Department of Labor.")
+APP_ICON = "📊"
+# Publishing organization, shown in the masthead, sidebar and data-package README.
+ORG_NAME = "Massachusetts Center for Employee Ownership"
+DASHBOARD_URL = "https://maesopdashboard.streamlit.app"
 DB_PATH = os.path.join(os.path.dirname(__file__) or ".", "data", "form5500_dashboard.db")
 
-# Single source of truth for the "as of" date shown across pages (DOL EFAST2
-# bulk-data vintage + public-records research date). Use everywhere instead of
+# Single source of truth for the "as of" date shown across pages (the date the
+# database was last reconciled against DOL). Use everywhere instead of
 # hardcoding the date in individual captions.
-DATA_AS_OF = "August 6, 2026"
+DATA_AS_OF = "October 28, 2026"
+
+# Publication date of the DOL EFAST2 "Latest" bulk files that refresh used
+# (the Last-Modified date DOL serves for F_5500_<year>_Latest.zip).
+DOL_RELEASE_DATE = "September 30, 2026"
 
 # ──────────────────────────────────────────────
 # AUTHORITATIVE DATA SOURCES
@@ -50,6 +60,33 @@ CHART_COLORS = {
 }
 
 CHART_PALETTE = ["#14558F", "#F6C51B", "#12805C", "#C0392B", "#6C3483", "#7C8DA1", "#4A8FD4", "#E0A93A"]
+
+# One colour per industry sector, used by every industry chart so a sector is
+# the same colour wherever it appears (the share charts used to colour by rank,
+# so Construction was green in one and navy in the next).
+SECTOR_COLORS = {
+    "Professional & Technical Services": "#14558F",
+    "Manufacturing": "#F6C51B",
+    "Construction": "#12805C",
+    "Wholesale Trade": "#C0392B",
+    "Finance & Insurance": "#6C3483",
+    "Retail Trade": "#E0A93A",
+    "Administrative & Waste Services": "#4A8FD4",
+    "Information & Technology": "#0E7C86",
+    "Transportation & Warehousing": "#8C564B",
+    "Healthcare & Social Assistance": "#C2185B",
+    "Management of Companies": "#5D6D7E",
+    "Mining, Oil & Gas": "#795548",
+    "Education": "#2E7D32",
+    "Other Services": "#9E9D24",
+    "Real Estate": "#AD1457",
+    "Accommodation & Food Services": "#EF6C00",
+    "Arts, Entertainment, Recreation": "#7B1FA2",
+    "Utilities": "#00838F",
+    "Agriculture, Forestry, Fishing": "#558B2F",
+    "(Unclassified)": "#B0BEC5",
+    "Other": "#A4B0BE",
+}
 CHART_FONT_FAMILY = "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
 CHART_HEIGHT_SM = 300
 CHART_HEIGHT_MD = 400
@@ -63,7 +100,9 @@ FORM5500_YEARS = list(range(2014, 2026))
 
 # The form year DOL is still receiving filings for. Plans file 7 months after
 # their plan year ends (9.5 with an extension), so a year keeps trickling in for
-# roughly 18 months — see the "2025 Filers" page, which tracks this year on its
+# about two years (a calendar-year plan can file 21.5 months after its plan year
+# begins; a fiscal year that begins late in the year, later still) — see the
+# "2025 Filers" page, which tracks this year on its
 # own. It is deliberately EXCLUDED from form5500_annual_summary, which drives the
 # complete-year Overview / Trends / Year-over-Year analyses; see
 # form5500_analysis.recompute_annual_summaries(). Bump once a year is
@@ -118,10 +157,9 @@ All data in this section is derived from **DOL Form 5500 Annual Return/Report** 
 downloaded as bulk datasets from the U.S. Department of Labor.
 
 ### ESOP Identification Methodology
-A filing is treated as a Massachusetts ESOP when **both** of the following hold in the
-DOL bulk data:
+A filing is treated as a Massachusetts ESOP when **both** of the following hold:
 
-1. **Sponsor state** (SPONS_DFE_MAIL_US_STATE) = "MA" — see Geographic Filtering below.
+1. The employer it covers is **based in Massachusetts** — see Geographic Filtering below.
 2. **Type of Pension Benefit code** (TYPE_PENSION_BNFT_CODE) contains **2O** (ESOP),
    **2P** (leveraged ESOP — company stock acquired with borrowed funds), or **2Q**.
    2Q normally accompanies 2P on leveraged plans, but a plan winding down or restating
@@ -137,51 +175,86 @@ Massachusetts filing by **plan name** (ESOP / "employee stock" / "stock ownershi
 "stock bonus") and reconciles the result against the code-based set, so a plan cannot go
 missing merely because its codes changed between years.
 
-Plans carrying both **2J** (401(k)) and **2K** (401(m)) alongside an ESOP code are flagged
-as **KSOPs** (included in ESOP counts but separately identified).
+Plans carrying **2J** (a 401(k) feature) alongside an ESOP code are flagged as **KSOPs**
+(included in ESOP counts but separately identified).
 
-**Deliberate exclusion — employer stock inside a conventional 401(k).** Some large,
-publicly traded employers attach an ESOP code to an ordinary savings plan that merely
-offers company stock as one investment option among many (e.g. a "401(K) PLAN" or
-"SAVINGS AND INVESTMENT PLAN" carrying 2O alongside 2J/2K). These are not closely held,
-employee-owned companies in the sense this dashboard tracks, and counting them would
-overstate Massachusetts employee ownership by thousands of participants apiece. Such
-filings are reviewed and excluded by hand; the exclusions are recorded in
+**Every ESOP counts.** A company either sponsors an ESOP or it does not; the dashboard
+draws no line by the share of the company the ESOP owns, by whether the company is closely
+held or publicly traded (bank ESOPs are counted like any other), or by whether the plan is
+being wound down after a sale.
+
+**Deliberate exclusion — plans that are not ESOPs.** Seven large, publicly traded employers'
+broad 401(k) savings plans carry an ESOP code (e.g. a "401(K) PLAN" or "SAVINGS AND INVESTMENT
+PLAN" coded 2O alongside 2J/2K). In most of them the company-stock fund is formally designated
+an ESOP, for the dividend deduction or to deliver the match, but company stock is one
+investment option among many (typically 3-8% of assets), not the employee-ownership vehicle a
+tracked KSOP is. They are treated as 401(k) plans, not ESOPs (owner's decision, 2026-10-28);
+counting them would add some 300,000-450,000 participants a year to a dataset of about 30,000. Likewise, a profit-sharing or 401(k) plan at an employee-owned company
+is not an ESOP. Such filings are reviewed and excluded by hand; the exclusions are recorded in
 `scan_dol_filers.py` so they are not silently re-imported on a later refresh.
 
 ### Geographic Filtering
-Massachusetts plans are identified by the sponsor's mailing state (SPONS_DFE_MAIL_US_STATE = "MA").
+Only **Massachusetts-based** ESOPs are counted: the employer the plan covers is headquartered
+in Massachusetts in that plan year. The sponsor's mailing address on the return
+(SPONS_DFE_MAIL_US_STATE = "MA", with a Massachusetts ZIP code, 010–027, where one is given)
+is the evidence, so a state typo on a return (an "MA" beside a Maryland ZIP) cannot bring an
+out-of-state plan in. Where the address is not the company's home, a reviewed list decides
+(`scan_dol_filers.MA_BASED_OVERRIDES`): a Massachusetts company whose parent or plan
+administrator files from another state is counted, and a company based elsewhere whose return
+carries a Massachusetts address (an acquirer's, lawyer's or administrator's) is not.
+
+### Which returns are read
+DOL publishes each form year twice: a **Latest** file with one accepted return per EIN, plan
+number and plan year, and an **All** file with every version it holds. Latest can drop an
+ESOP's return — when the sponsor later files a different plan under the same plan number, or
+when the newest version of the return is flagged FILING_ERROR — so both are read for every
+form year, and an accepted version is preferred to one flagged with errors.
+
+Every return counts in the form year in which its plan year **begins**. A plan catching up on
+missed years (for example through DOL's Delinquent Filer Voluntary Compliance program) files
+each overdue year on the form current when it files, and a plan that ends early in a year
+files its short final return on the form then current, which is the previous year's. Each
+form year therefore also includes returns on later forms, and on the previous form, whose
+plan year begins in it. One refinement: a plan year that begins in the last week of December
+(a 52/53-week fiscal year, or a final return starting December 31) counts in the following
+year, the year it covers, so such a plan is not missing from the year it was active.
 
 ### Financial Data
-Asset and contribution figures are sourced from the main Form 5500 filing and supplemented
-with Schedule H (for large plans, 100+ participants) and Schedule I (for small plans, <100
-participants) data where available. **Employer securities** data (company stock held in the ESOP
-trust) is extracted from Schedule H Part I, line 1c — this is unique to ESOPs and represents
-the core ESOP asset.
+Financial figures come from the schedule attached to each plan's own return, joined by
+DOL's filing identifier (ACK_ID): **Schedule H** for large plans (generally 100+ participants)
+and **Schedule I** for small plans. Balances (assets, liabilities, employer securities) are **end-of-plan-year**
+values and contributions, benefits and net income are totals for the plan year, as filed; a blank on the schedule is stored as "not reported" and shown as "—", never "$0".
 
-**Employer securities is a Schedule H-only line item.** Plans that file Schedule I or
-Form 5500-SF (small plans) do not itemize company stock, so this figure is *unavailable*
-for them rather than zero. Such values are shown as "—" (not reported), never "$0", and are
-excluded from employer-securities totals and stock-as-%-of-assets ratios — those figures
-therefore reflect only the plans that report company stock. A "$0" appears only where a plan
-explicitly reported zero employer securities on its Schedule H.
+**Employer securities** (company stock held in the ESOP trust) is Schedule H line 1d(1) for
+large plans and Schedule I line 3d for small plans. A value above the plan's total assets is
+impossible and is treated as not reported.
 
-Schedule H/I data can be loaded from pre-downloaded CSV files placed in `data/form5500/`.
+When a plan files two returns on one form (typically its regular year and a short final year
+that began in the next calendar year), the row describes the return whose plan year begins in
+the form year, and participants and dollars both come from that return.
+
+### Participant counts
+"Participants" is the plan's total at the **end** of the plan year (Form 5500 line 6f):
+current employees, retirees and former employees still owed a balance, and beneficiaries.
+"Active participants" are the current employees at the end of the year (line 6a). Both are
+measured on the same date as every dollar figure, so a plan never shows more active
+participants than total. (Line 5, the total at the start of the year, is not used: a plan
+that grows during the year adds members after it is measured, and a plan's first year can
+begin before it has any.)
 
 ### Years Covered
-Complete filing years **2014–2024** (11 years of DOL bulk data) drive the Overview, Trends,
-and Year-over-Year pages. Early **2025** filers — fiscal-year, short, and final filings already
-published by DOL — are tracked separately on the **2025 Filers** page; form year 2025 stays out
-of the complete-year analyses until it is substantially filed (most calendar-year plans file
-July–October of the following year).
+Complete form years **2014–2024** drive the Overview, Trends, Industry and Geography pages.
+Form year **2025** is tracked on its own **2025 Filers** page until it is substantially filed:
+calendar-year plans file by October 15 of the following year with an extension, fiscal-year
+plans later, and DOL's bulk files trail receipt by several weeks.
 
 ### Caveats
-- Some plans may be missed if they don't use standard ESOP type codes
+- Plans that do not carry an ESOP code are not found by the code test; the name-based coverage
+  check above is what guards against that
 - KSOP plans (combined 401(k)/ESOP) are included but flagged separately
-- Participant counts may include both active and retired participants
-- Asset values represent beginning-of-year or end-of-year figures depending on the filing
+- "Participants" includes retirees and former employees still owed a balance
 - Some large companies file multiple plans (counted as separate plans)
-- Late filers from recent years may not be captured in the current dataset
+- The most recent form years keep growing as late filers arrive
 
 ### Reproduction
 The dataset is rebuilt from DOL EFAST2 bulk filings by the scripts in the project root,
@@ -189,17 +262,24 @@ run from a checkout of the repository. Stop the app first so the SQLite database
 locked. On Windows use the project's virtual environment — `python3` is not a Windows
 command, and the system `python` does not carry this project's packages:
 
-1. `venv\\Scripts\\python scan_dol_filers.py --year <YEAR>` — reports what DOL holds that
-   the database does not, and writes `dol_scan_<YEAR>_report.csv`. Changes nothing.
-2. Review that report. Adding `--import-new` imports the RETURNING bucket as well as the
-   NEW one, and that bucket can contain superseded re-filings and the same plan filed
-   under two EINs, which would double-count plans. Those are resolved by hand.
-3. `venv\\Scripts\\python refetch_dol_financials.py` — re-derives financials for the
-   complete years from the authoritative Schedule H/I data. Participant counts are never
-   touched here; they come from the main form.
-4. `venv\\Scripts\\python export_seed_csvs.py` — refreshes the CSV copies of the database.
+DOL's bulk zips are cached in the folder named by the `DOL_CACHE_DIR` environment variable
+(default `/tmp/dol`; on Windows set it, e.g. `set DOL_CACHE_DIR=C:\\tmp\\dol`).
 
-A form year keeps growing for roughly 18 months after it opens, because plans may file up
+1. `venv\\Scripts\\python scan_dol_filers.py --year <YEAR>` — reports what DOL holds that
+   the database does not, verifies every stored row against its own return, runs the
+   name-based coverage check, and writes `dol_scan_<YEAR>_report.csv`. Changes nothing.
+2. Review that report. `--import-new` imports the NEW and RETURNING buckets; returns that
+   look like the same plan filed under a second EIN or plan number are held back as
+   POSSIBLE_DUPE, and reviewed exclusions are listed in `KNOWN_NOT_TRACKED`. Anything
+   new in those buckets is resolved by hand and recorded there.
+3. `venv\\Scripts\\python refetch_dol_financials.py` — re-derives every row's financials
+   from its own return's Schedule H/I (joined by ACK_ID) and rewrites `data/form5500/`.
+   Participant counts are verified, not changed.
+4. `venv\\Scripts\\python export_seed_csvs.py` and `export_policy_tracker_json.py` —
+   refresh the CSV copies of the database and the Policy Tracker export, then update
+   `DATA_AS_OF` and `DOL_RELEASE_DATE` above.
+
+A form year keeps growing for about two years after it opens, because plans may file up
 to 9.5 months after a plan year ends and many run on a fiscal year, so a completed year
 should be re-scanned periodically rather than assumed final. An empty database is
 auto-seeded from `form5500_ma_esops.csv` if that file is present in the project root.

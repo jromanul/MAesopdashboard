@@ -1,0 +1,8 @@
+bucket,sponsor_name,city,ein,plan_num,source,participants,detail
+EXCLUDED,UNITED BANK,W. SPRINGFIELD,041858810,003,F_5500,0.0,"not Massachusetts-based: New England Bank's ESOP: New England Bancshares was an Enfield, CT bank; United Bank wound the plan down from West Springfield"
+EXCLUDED,STATE STREET CORPORATION,BOSTON,042456637,002,F_5500,22674.0,"State Street Corporation (NYSE: STT) - 'SALARY SAVINGS PROGRAM', 2O alongside 2J/2K"
+EXCLUDED,RAYTHEON COMPANY,WALTHAM,951778500,026,F_5500,83192.0,"Raytheon Company - 'RAYTHEON SAVINGS AND INVESTMENT PLAN', 2O alongside 2J/2K"
+EXCLUDED,NYPRO INC,CLINTON,042193872,003,F_5500,198.0,Nypro Inc. Defined Contribution Plan: not an ESOP - no employer securities on any return; 2P appears on the 2014 return only
+EXCLUDED,CABOT CORPORATION,BILLERICA,042271897,022,F_5500,2270.0,"Cabot Corporation (NYSE: CBT) - 'CABOT 401(K) PLAN', 2O alongside 2J/2K"
+EXCLUDED,RANELLA HIRSCH MD PC,CAMBRIDGE,352223136,001,F_5500,2.0,Ranella Hirsch MD PC 401(k): two-person 401(k); 2Q with no ESOP code
+EXCLUDED,BERKSHIRE BANK,PITTSFIELD,043312097,005,F_5500,0.0,"not Massachusetts-based: Beacon Federal's ESOP: an East Syracuse, NY bank's plan, wound down by Berkshire Bank from Pittsfield after the 2012 acquisition"
