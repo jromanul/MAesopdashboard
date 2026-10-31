@@ -2,9 +2,9 @@
   "meta": {
     "title": "Massachusetts ESOPs — Form 5500",
     "form_year": 2024,
-    "data_as_of": "October 28, 2026",
+    "data_as_of": "October 31, 2026",
     "dol_release": "September 30, 2026",
-    "generated_utc": "2026-10-30T20:05:21+00:00",
+    "generated_utc": "2026-10-31T00:48:58+00:00",
     "source": "U.S. Department of Labor, EFAST2 Form 5500 bulk datasets",
     "source_url": "https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/public-disclosure/foia/form-5500-datasets",
     "dashboard_url": "https://maesopdashboard.streamlit.app",
@@ -840,7 +840,7 @@
     {
       "plan_name": "CAMBRIDGE BANCORP EMPLOYEE STOCK OWNERSHIP PLAN",
       "sponsor": "Cambridge Bancorp",
-      "city": "Boston",
+      "city": "Cambridge",
       "industry": "Finance & Insurance",
       "plan_year_started": 1986,
       "is_ksop": false,
@@ -1378,7 +1378,7 @@
       "employer_securities": 3152585.0
     },
     {
-      "plan_name": "GEMINI STOCK PROGRAM (Gemini Industries ESOP)",
+      "plan_name": "GEMINI STOCK PROGRAM",
       "sponsor": "Gemini Industries Inc.",
       "city": "Burlington",
       "industry": "Professional & Technical Services",
