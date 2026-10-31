@@ -1045,7 +1045,10 @@ button[data-testid="stBaseButton-secondary"] span,
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius);
-    padding: .55rem .65rem .2rem;
+    /* No side padding: Plotly sizes the figure to the card's full inner
+       width, so side padding would clip the figure's right edge. Each
+       figure's own margins keep its content off the border. */
+    padding: .55rem 0 .2rem;
     box-shadow: var(--shadow);
     overflow: hidden;
 }

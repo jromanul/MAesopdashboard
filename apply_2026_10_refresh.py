@@ -223,8 +223,12 @@ def align_open_year_identity(conn, located: dict, dry_run: bool) -> int:
             continue
         want = {k: prior[k] for k in ("sponsor_name", "naics_code", "industry_sector")
                 if prior[k]}
-        want["sponsor_city"] = scan.inherit_city(prior["sponsor_city"],
-                                                 filed_city.get(r["id"], r["sponsor_city"]))
+        hit = scan._ma_override(dol_bulk.norm_ein(r["ein"]), dol_bulk.norm_pn(r["plan_num"]), y)
+        if hit and hit[1] and hit[2]:
+            want["sponsor_city"] = hit[2][0]  # filed by a parent or acquirer: the company's home
+        else:
+            want["sponsor_city"] = scan.inherit_city(prior["sponsor_city"],
+                                                     filed_city.get(r["id"], r["sponsor_city"]))
         diff = {k: v for k, v in want.items() if r[k] != v}
         if not diff:
             continue
@@ -248,25 +252,36 @@ def fix_address_from_own_return(conn, located: dict, dry_run: bool) -> tuple[int
     (as was its 2021 return, which is correctly absent); only its plan-year-2023
     final return, filed on the same form, gives a Boston address.
     """
+    # Later passes refined both tests, and this step follows them so a re-run
+    # cannot undo them: "Massachusetts-based" is scan_dol_filers.is_ma_based()
+    # (the return's address, or a reviewed MA_BASED_OVERRIDES entry), a row
+    # filed by a parent or acquirer keeps the company's home city, and a town
+    # is spelled as scan_dol_filers.CITY_SPELLINGS has it.
     moved = removed = 0
     for row_id, (y, ret, _sched) in located.items():
         r = conn.execute("SELECT * FROM form5500_filings WHERE id=?", (row_id,)).fetchone()
         if r is None:
             continue
-        if ret["state"] != "MA":
+        if not scan.is_ma_based(ret["ein"], ret["pn"], y, ret):
             removed += 1
             print(f"  {y} {r['sponsor_name']}: its return is addressed to {ret['sponsor_city']}, "
-                  f"{ret['state']} - not a Massachusetts filing; row removed")
+                  f"{ret['state']} - not a Massachusetts-based company; row removed")
             if not dry_run:
                 conn.execute("DELETE FROM form5500_filings WHERE id=?", (row_id,))
             continue
-        filed = ret["sponsor_city"].strip()
-        if filed and filed.lower() != (r["sponsor_city"] or "").strip().lower():
+        hit = scan._ma_override(ret["ein"], ret["pn"], y)
+        if hit and hit[1] and hit[2]:
+            want = hit[2][0]
+        elif ret["sponsor_city"].strip():
+            want = scan.inherit_city(r["sponsor_city"], ret["sponsor_city"])
+        else:
+            continue
+        if want != (r["sponsor_city"] or ""):
             moved += 1
-            print(f"  {y} {r['sponsor_name']}: city {r['sponsor_city']!r} -> {filed.title()!r}")
+            print(f"  {y} {r['sponsor_name']}: city {r['sponsor_city']!r} -> {want!r}")
             if not dry_run:
                 conn.execute("UPDATE form5500_filings SET sponsor_city=? WHERE id=?",
-                             (filed.title(), row_id))
+                             (want, row_id))
     if not dry_run:
         conn.commit()
     return moved, removed

@@ -10,9 +10,10 @@ data/form5500_dashboard.db is committed to git and already populated, they are
 not read in normal operation -- but they should still reflect the database, in
 case the DB is ever reset and the app falls back to reseeding from them.
 
-filing_year=2025 (config.FORM5500_OPEN_FORM_YEAR) is excluded from both files,
-matching form5500_analysis.recompute_annual_summaries(): that year is tracked
-separately on the "2025 Filers" page and must not seed a complete-year row.
+The filings CSV holds every form year, the open year (2025) included, so a
+reseeded database also rebuilds the "2025 Filers" page. The summary CSV stops
+before the open year, matching form5500_analysis.recompute_annual_summaries(),
+which never writes a summary row for it.
 
 Column set is a superset of what import_from_csv()/import_from_summary_csv()
 read (both use dict-style .get() lookups, so extra columns are ignored) --
@@ -62,15 +63,14 @@ def main():
     filings_path = os.path.join(os.path.dirname(__file__) or ".", config.FORM5500_RECORDS_CSV)
     rows = conn.execute(
         f"SELECT {', '.join(FILINGS_COLS)} FROM form5500_filings "
-        f"WHERE is_esop = 1 AND filing_year < ? ORDER BY filing_year, ein, plan_num",
-        (OPEN_YEAR,),
+        f"WHERE is_esop = 1 ORDER BY filing_year, ein, plan_num",
     ).fetchall()
     with open(filings_path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(FILINGS_COLS)
         for r in rows:
             w.writerow([r[c] if r[c] is not None else "" for c in FILINGS_COLS])
-    print(f"{config.FORM5500_RECORDS_CSV}: {len(rows)} rows (filing_year < {OPEN_YEAR})")
+    print(f"{config.FORM5500_RECORDS_CSV}: {len(rows)} rows (all form years)")
 
     summary_path = os.path.join(os.path.dirname(__file__) or ".", config.FORM5500_SUMMARY_CSV)
     srows = conn.execute(
