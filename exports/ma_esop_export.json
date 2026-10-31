@@ -4,7 +4,7 @@
     "form_year": 2024,
     "data_as_of": "October 31, 2026",
     "dol_release": "September 30, 2026",
-    "generated_utc": "2026-10-31T00:48:58+00:00",
+    "generated_utc": "2026-10-31T02:52:46+00:00",
     "source": "U.S. Department of Labor, EFAST2 Form 5500 bulk datasets",
     "source_url": "https://www.dol.gov/agencies/ebsa/about-ebsa/our-activities/public-disclosure/foia/form-5500-datasets",
     "dashboard_url": "https://maesopdashboard.streamlit.app",
