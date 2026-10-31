@@ -37,8 +37,8 @@ WHAT THE AUDIT FOUND, AND WHAT IS FIXED
 
 5. SMALLER FIELDS. Two 2024 rows had no plan-entity type; one plan name
    differed from its return in punctuation (Applied Marketing Science 2020).
-   The annotated name kept for Gemini Industries' "Gemini Stock Program" is
-   left as is.
+   (Gemini Industries' 2024 plan name, once annotated "(Gemini Industries
+   ESOP)", is as filed since the 2024-2025 verification.)
 
 6. SPONSOR NAMES. Formatting slips that made one company read differently
    from one year to the next, and casing left by title-casing DOL's capitals

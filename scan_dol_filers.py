@@ -488,6 +488,9 @@ MA_BASED_OVERRIDES: dict[tuple[str, str], tuple] = {
     ("41782600", "4"): ({2014}, True, ("Somerville", "02144"),
                         "Central Co-operative Bank (Central Bancorp, 399 Highland Ave, Somerville): "
                         "ESOP wound down by Rockland Trust after the 2012 acquisition"),
+    ("42777442", "3"): ({2024, 2025}, True, ("Cambridge", "021383842"),
+                        "Cambridge Bancorp (Cambridge Trust, 1336 Massachusetts Ave): ESOP filed by "
+                        "Eastern Bank from Boston after the 2024 acquisition"),
     ("611570944", "2"): ({2019}, True, ("Cohasset", "02025"),
                          "Pilgrim Bank (Cohasset): final return filed by Hometown Financial from "
                          "Easthampton after the 2019 acquisition"),

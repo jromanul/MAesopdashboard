@@ -19,7 +19,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__) or ".", "data", "form5500_dashb
 # Single source of truth for the "as of" date shown across pages (the date the
 # database was last reconciled against DOL). Use everywhere instead of
 # hardcoding the date in individual captions.
-DATA_AS_OF = "October 28, 2026"
+DATA_AS_OF = "October 31, 2026"
 
 # Publication date of the DOL EFAST2 "Latest" bulk files that refresh used
 # (the Last-Modified date DOL serves for F_5500_<year>_Latest.zip).
