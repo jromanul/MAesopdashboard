@@ -1189,9 +1189,8 @@ if f5500_summaries:
                                utils.export_csv_bytes(_f25),
                                f"MA_ESOP_Form5500_{_yr}_received_so_far.csv", "text/csv")
         else:
-            st.info(f"No {_yr} filings imported yet. Run "
-                    f"`python3 scan_dol_filers.py --year {_yr} --import-new` "
-                    f"to scan DOL bulk data and import {_yr} filers.")
+            st.info(f"No {_yr} returns from Massachusetts ESOPs are in DOL's published "
+                    f"data yet. They will appear here as DOL releases them.")
 
     # ── Footer (every page) ──
     st.markdown(

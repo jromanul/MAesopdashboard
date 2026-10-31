@@ -223,8 +223,10 @@ CITY_SPELLINGS: dict[str, str] = {
 # change of business). Keyed by EIN; the sector follows the code.
 #
 # OWNER_VERIFIED_NAICS: the owner's May 31, 2026 review of every company active
-# in 2024, each checked against its website (commit 2d5ab22). Sullivan Tire's
-# padded 441300 is the tire-dealer code, 441340.
+# in 2024, each checked against its website (commit 2d5ab22). The twelve the
+# owner left as padded codes (a 3- or 4-digit group with zeros appended, such
+# as Sullivan Tire's 441300 or Physical Sciences' 541700) carry the specific
+# 6-digit code in the same sector, reviewed and confirmed October 2026.
 OWNER_VERIFIED_NAICS: dict[str, str] = {
     "934368162": "541910",  # Abt Global, Inc. (Abt Associates)
     "43024663": "541990",   # Acentech Incorporated
@@ -254,16 +256,16 @@ OWNER_VERIFIED_NAICS: dict[str, str] = {
     "43152864": "238290",   # Colonial Systems, Inc.
     "42279997": "334310",   # Comrex Corporation
     "42482120": "444110",   # Concord Lumber Corp.
-    "270396940": "236200",  # Consigli Building Group, Inc.
-    "43358086": "519100",   # CourtSmart Digital Systems
-    "471008886": "561300",  # Creative Financial Staffing, Inc.
+    "270396940": "236220",  # Consigli Building Group, Inc.
+    "43358086": "513210",   # CourtSmart Digital Systems
+    "471008886": "561320",  # Creative Financial Staffing, Inc.
     "42300185": "339110",   # Dale Medical Products
-    "844259761": "339900",  # David Clark Holdings, Inc.
+    "844259761": "334310",  # David Clark Holdings, Inc.
     "43577380": "541990",   # Daymark Energy Advisors, Inc.
     "43177356": "541310",   # Dietz & Company Architects, Inc.
     "43257145": "561720",   # Donnelly Service Group, Inc.
     "43067724": "522110",   # Eastern Bank
-    "42624147": "423600",   # Electro-Term, Inc.
+    "42624147": "423610",   # Electro-Term, Inc.
     "42489159": "238210",   # Elm Electrical, Inc.
     "42993095": "541620",   # Environmental Health & Engineering, Inc.
     "743073286": "522120",  # Envision Bank
@@ -274,18 +276,18 @@ OWNER_VERIFIED_NAICS: dict[str, str] = {
     "42086300": "238220",   # Fraser Engineering Company
     "43041248": "238110",   # G&C Concrete Construction
     "42917465": "541330",   # Gemini Industries Inc.
-    "813268325": "332900",  # The Gillette Company
-    "43495686": "423400",   # Gillette Restaurant Equipment, Inc.
+    "813268325": "332215",  # The Gillette Company
+    "43495686": "423440",   # Gillette Restaurant Equipment, Inc.
     "770370729": "445310",  # Global Beer Network, Inc.
     "42301242": "541310",   # Goody, Clancy & Associates
     "42175284": "541330",   # Green International Affiliates, Inc.
     "332432954": "453990",  # Green Tech Enterprises Inc.
-    "43408953": "541600",   # Halloran Consulting Group, Inc.
+    "43408953": "541690",   # Halloran Consulting Group, Inc.
     "41123040": "522130",   # HarborOne Bank
     "42925204": "312120",   # Harpoon Brewery
     "42137249": "423910",   # Imtra Corporation
     "42550058": "441110",   # International Cars
-    "43061714": "561300",   # Isaacson Miller, Inc.
+    "43061714": "561312",   # Isaacson Miller, Inc.
     "42348065": "334516",   # Janis Research
     "41866480": "333515",   # The L.S. Starrett Company
     "42774191": "333510",   # Lampin Corporation
@@ -293,7 +295,7 @@ OWNER_VERIFIED_NAICS: dict[str, str] = {
     "43071690": "541330",   # Meridian Associates, Inc.
     "42941854": "523930",   # Middleton & Company, Inc.
     "843556185": "522110",  # Needham Bank
-    "42837729": "423600",   # Nelco Products, Inc.
+    "42837729": "423610",   # Nelco Products, Inc.
     "43347358": "541511",   # Nevo Technologies, Inc.
     "42389826": "423830",   # New England Controls, Inc.
     "43490470": "445120",   # New England Discount Retailers, Inc.
@@ -303,7 +305,7 @@ OWNER_VERIFIED_NAICS: dict[str, str] = {
     "42587894": "238220",   # Notch
     "43223296": "423420",   # OEM Connect, Ltd.
     "204270900": "541519",  # Paragus Strategic IT
-    "42517090": "541700",   # Physical Sciences Inc.
+    "42517090": "541715",   # Physical Sciences Inc.
     "42887710": "541310",   # Prellwitz/Chilinski Associates, Inc.
     "42760904": "333415",   # Process Cooling Systems, Inc.
     "42637381": "335929",   # Quirk Wire Co., Inc.
